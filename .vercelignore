@@ -1,0 +1,15 @@
+node_modules
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.firebase
+firebase-debug.log
+firestore-debug.log
+.DS_Store
+*.swp
+*.swo
+.vscode
+.idea
+

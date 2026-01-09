@@ -146,6 +146,56 @@ The system uses these 15 fixed subjects:
 14. Automata and Complexity Theory
 15. Compiler Design
 
+## Deployment to Vercel
+
+This app is configured for easy deployment to Vercel.
+
+### Prerequisites
+
+1. A Vercel account (sign up at [vercel.com](https://vercel.com))
+2. A Firebase project with Firestore enabled
+3. Your Firebase configuration credentials
+
+### Deployment Steps
+
+1. **Push your code to GitHub** (already done if you're reading this)
+
+2. **Import your project to Vercel:**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "Add New Project"
+   - Import your GitHub repository: `natnaelesk/my_exit_preparation_app`
+   - Vercel will auto-detect Vite configuration
+
+3. **Add Environment Variables:**
+   - In Vercel project settings, go to "Environment Variables"
+   - Add the following variables (use the same names as in `.env.example`):
+     - `VITE_FIREBASE_API_KEY`
+     - `VITE_FIREBASE_AUTH_DOMAIN`
+     - `VITE_FIREBASE_PROJECT_ID`
+     - `VITE_FIREBASE_STORAGE_BUCKET`
+     - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+     - `VITE_FIREBASE_APP_ID`
+   - Make sure to add them for all environments (Production, Preview, Development)
+
+4. **Deploy:**
+   - Click "Deploy"
+   - Vercel will build and deploy your app automatically
+   - Your app will be live at `https://your-project-name.vercel.app`
+
+### Build Configuration
+
+The app uses the following build settings (configured in `vercel.json`):
+- **Framework:** Vite
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+- **Install Command:** `npm install`
+
+### Important Notes
+
+- Environment variables must be prefixed with `VITE_` to be accessible in the browser
+- The app uses client-side routing, so Vercel is configured to redirect all routes to `index.html`
+- Make sure your Firestore security rules are set up correctly (see Firestore Security Rules section above)
+
 ## License
 
 MIT

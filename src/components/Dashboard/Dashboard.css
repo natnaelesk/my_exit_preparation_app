@@ -1,0 +1,147 @@
+.dashboard {
+  width: 100%;
+}
+
+.dashboard-header {
+  margin-bottom: 2rem;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.dashboard-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.exams-section {
+  margin: 3rem 0;
+}
+
+.exams-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.exams-section-header h2 {
+  color: var(--text-primary);
+}
+
+.btn-view-exams {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.btn-view-exams:hover {
+  background-color: var(--border-color);
+}
+
+.exam-modes-section {
+  margin: 3rem 0;
+}
+
+.exam-modes-section h2 {
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.exam-modes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.exam-mode-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+  transition: all 0.2s;
+}
+
+.exam-mode-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.exam-mode-card.highlight {
+  border: 2px solid var(--accent-color);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+.exam-mode-card h3 {
+  font-size: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+}
+
+.exam-mode-card p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.btn-start-exam {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--accent-color);
+  color: white;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.btn-start-exam:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.subjects-overview {
+  margin: 3rem 0;
+}
+
+.subjects-overview h2 {
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+.subjects-grid-mini {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn-view-all {
+  display: block;
+  margin: 0 auto;
+  padding: 0.75rem 2rem;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.btn-view-all:hover {
+  background-color: var(--border-color);
+}
+
+@media (max-width: 768px) {
+  .dashboard-header h1 {
+    font-size: 2rem;
+  }
+
+  .exam-modes {
+    grid-template-columns: 1fr;
+  }
+}
+

@@ -1,0 +1,44 @@
+{
+  "title": "Test Exam - 3 Questions",
+  "questions": [
+    {
+      "question": "What is 2 + 2?",
+      "choices": [
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "correctAnswer": "4",
+      "explanation": "2 + 2 equals 4. This is basic arithmetic.",
+      "subject": "Design and Analysis of Algorithms",
+      "topic": "Basic Arithmetic"
+    },
+    {
+      "question": "What does HTML stand for?",
+      "choices": [
+        "HyperText Markup Language",
+        "High Tech Modern Language",
+        "Home Tool Markup Language",
+        "Hyperlink Text Management Language"
+      ],
+      "correctAnswer": "HyperText Markup Language",
+      "explanation": "HTML stands for HyperText Markup Language. It is the standard markup language for creating web pages.",
+      "subject": "Web Programming",
+      "topic": "HTML Basics"
+    },
+    {
+      "question": "What is the capital of Ethiopia?",
+      "choices": [
+        "Gondar",
+        "Addis Ababa",
+        "Dire Dawa",
+        "Hawassa"
+      ],
+      "correctAnswer": "Addis Ababa",
+      "explanation": "Addis Ababa is the capital and largest city of Ethiopia. It is the political and economic center of the country.",
+      "subject": "Computer Programming",
+      "topic": "General Knowledge"
+    }
+  ]
+}

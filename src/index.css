@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Professional Indigo - Light */
+    --color-bg: 249 250 251;       /* gray-50 */
+    --color-surface: 243 244 246;  /* gray-100 */
+    --color-card: 255 255 255;     /* white */
+    --color-border: 229 231 235;   /* gray-200 */
+    --color-text: 17 24 39;        /* gray-900 */
+    --color-muted: 107 114 128;    /* gray-500 */
+  }
+
+  .dark {
+    /* Clear Dark Theme - Neutral Black */
+    --color-bg: 0 0 0;              /* pure black */
+    --color-surface: 17 17 17;      /* near-black */
+    --color-card: 23 23 23;         /* dark gray */
+    --color-border: 38 38 38;       /* medium gray */
+    --color-text: 245 245 245;      /* off-white */
+    --color-muted: 163 163 163;      /* light gray */
+  }
+
+  * {
+    @apply antialiased;
+  }
+  
+  body {
+    @apply bg-bg text-text;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  }
+  
+  /* Safe area for mobile bottom nav */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 active:bg-primary-700 text-white font-medium px-4 py-2.5 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply bg-card hover:bg-surface text-text font-medium px-4 py-2.5 rounded-lg border border-border transition-all duration-200 active:scale-95;
+  }
+  
+  .card {
+    @apply bg-card border border-border rounded-xl p-4 shadow-lg;
+  }
+  
+  .input {
+    @apply bg-surface border border-border text-text rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full;
+  }
+  
+  .text-primary {
+    @apply text-primary-500;
+  }
+}

@@ -1,0 +1,265 @@
+{
+  "title": "Computer Science Exit Exam – Model 1",
+  "questions": [
+    {
+      "question": "Which of the following best describes an algorithm?",
+      "choices": [
+        "A programming language",
+        "A finite set of well-defined steps to solve a problem",
+        "A hardware component",
+        "A data structure"
+      ],
+      "correctAnswer": "A finite set of well-defined steps to solve a problem",
+      "explanation": "An algorithm is a finite, well-defined sequence of steps used to solve a problem.",
+      "subject": "Computer Programming",
+      "topic": "Algorithms Basics"
+    },
+    {
+      "question": "Which OOP concept allows using the same method name with different implementations?",
+      "choices": [
+        "Encapsulation",
+        "Inheritance",
+        "Polymorphism",
+        "Abstraction"
+      ],
+      "correctAnswer": "Polymorphism",
+      "explanation": "Polymorphism allows methods to behave differently based on the object invoking them.",
+      "subject": "Object Oriented Programming",
+      "topic": "Polymorphism"
+    },
+    {
+      "question": "What is the time complexity of binary search in a sorted array?",
+      "choices": [
+        "O(n)",
+        "O(log n)",
+        "O(n log n)",
+        "O(1)"
+      ],
+      "correctAnswer": "O(log n)",
+      "explanation": "Binary search halves the search space each time, giving O(log n) complexity.",
+      "subject": "Data Structures and Algorithms",
+      "topic": "Searching Algorithms"
+    },
+    {
+      "question": "Which data structure follows the FIFO principle?",
+      "choices": [
+        "Stack",
+        "Tree",
+        "Queue",
+        "Graph"
+      ],
+      "correctAnswer": "Queue",
+      "explanation": "Queue follows First-In-First-Out (FIFO) order.",
+      "subject": "Data Structures and Algorithms",
+      "topic": "Queue"
+    },
+    {
+      "question": "Which algorithm design technique divides a problem into smaller subproblems?",
+      "choices": [
+        "Greedy",
+        "Dynamic Programming",
+        "Divide and Conquer",
+        "Backtracking"
+      ],
+      "correctAnswer": "Divide and Conquer",
+      "explanation": "Divide and Conquer splits a problem into smaller subproblems and combines solutions.",
+      "subject": "Design and Analysis of Algorithms",
+      "topic": "Divide and Conquer"
+    },
+    {
+      "question": "Which normal form removes partial dependency?",
+      "choices": [
+        "1NF",
+        "2NF",
+        "3NF",
+        "BCNF"
+      ],
+      "correctAnswer": "2NF",
+      "explanation": "Second Normal Form (2NF) removes partial dependency.",
+      "subject": "Database Systems",
+      "topic": "Normalization"
+    },
+    {
+      "question": "Which SDLC model emphasizes risk analysis?",
+      "choices": [
+        "Waterfall",
+        "V-Model",
+        "Spiral",
+        "Agile"
+      ],
+      "correctAnswer": "Spiral",
+      "explanation": "The Spiral model focuses heavily on identifying and mitigating risks.",
+      "subject": "Software Engineering",
+      "topic": "SDLC Models"
+    },
+    {
+      "question": "Which HTTP method is used to retrieve data from a server?",
+      "choices": [
+        "POST",
+        "PUT",
+        "GET",
+        "DELETE"
+      ],
+      "correctAnswer": "GET",
+      "explanation": "GET is used to request data from a server.",
+      "subject": "Web Programming",
+      "topic": "HTTP Methods"
+    },
+    {
+      "question": "Which OS component is responsible for CPU scheduling?",
+      "choices": [
+        "File system",
+        "Memory manager",
+        "Process scheduler",
+        "Device driver"
+      ],
+      "correctAnswer": "Process scheduler",
+      "explanation": "The process scheduler decides which process gets CPU time.",
+      "subject": "Operating System",
+      "topic": "CPU Scheduling"
+    },
+    {
+      "question": "Which memory is volatile?",
+      "choices": [
+        "ROM",
+        "Hard Disk",
+        "RAM",
+        "SSD"
+      ],
+      "correctAnswer": "RAM",
+      "explanation": "RAM is volatile and loses data when power is off.",
+      "subject": "Computer Organization and Architecture",
+      "topic": "Memory Types"
+    },
+    {
+      "question": "Which protocol is used for reliable data transmission?",
+      "choices": [
+        "UDP",
+        "IP",
+        "TCP",
+        "ICMP"
+      ],
+      "correctAnswer": "TCP",
+      "explanation": "TCP provides reliable, ordered, and error-checked delivery.",
+      "subject": "Data Communication and Computer Networking",
+      "topic": "Transport Layer"
+    },
+    {
+      "question": "Which attack involves overwhelming a system with traffic?",
+      "choices": [
+        "Phishing",
+        "Man-in-the-middle",
+        "SQL Injection",
+        "Denial of Service"
+      ],
+      "correctAnswer": "Denial of Service",
+      "explanation": "Denial of Service attacks flood a system to make it unavailable.",
+      "subject": "Computer Security",
+      "topic": "Network Attacks"
+    },
+    {
+      "question": "Which task is primarily performed by a system administrator?",
+      "choices": [
+        "Writing algorithms",
+        "Managing users and permissions",
+        "Designing databases",
+        "Compiling programs"
+      ],
+      "correctAnswer": "Managing users and permissions",
+      "explanation": "System administrators manage users, permissions, and system resources.",
+      "subject": "Network and System Administration",
+      "topic": "User Management"
+    },
+    {
+      "question": "Which AI technique uses heuristics to explore possible solutions?",
+      "choices": [
+        "Machine Learning",
+        "Search Algorithms",
+        "Expert Systems",
+        "Neural Networks"
+      ],
+      "correctAnswer": "Search Algorithms",
+      "explanation": "Search algorithms use heuristics to guide solution exploration.",
+      "subject": "Introduction to Artificial Intelligence",
+      "topic": "Search Techniques"
+    },
+    {
+      "question": "Which language class is accepted by a finite automaton?",
+      "choices": [
+        "Context-free languages",
+        "Regular languages",
+        "Context-sensitive languages",
+        "Recursive languages"
+      ],
+      "correctAnswer": "Regular languages",
+      "explanation": "Finite automata recognize regular languages.",
+      "subject": "Automata and Complexity Theory",
+      "topic": "Finite Automata"
+    },
+    {
+      "question": "Which phase of a compiler checks syntax?",
+      "choices": [
+        "Lexical analysis",
+        "Syntax analysis",
+        "Semantic analysis",
+        "Code generation"
+      ],
+      "correctAnswer": "Syntax analysis",
+      "explanation": "Syntax analysis verifies grammatical structure using parsing.",
+      "subject": "Compiler Design",
+      "topic": "Compiler Phases"
+    },
+    {
+      "question": "Which scheduling algorithm may cause starvation?",
+      "choices": [
+        "FCFS",
+        "Round Robin",
+        "Priority Scheduling",
+        "FIFO"
+      ],
+      "correctAnswer": "Priority Scheduling",
+      "explanation": "Priority scheduling can starve low-priority processes.",
+      "subject": "Operating System",
+      "topic": "Scheduling Algorithms"
+    },
+    {
+      "question": "Which SQL command is used to remove a table?",
+      "choices": [
+        "DELETE",
+        "DROP",
+        "REMOVE",
+        "TRUNCATE"
+      ],
+      "correctAnswer": "DROP",
+      "explanation": "DROP removes the table structure and data permanently.",
+      "subject": "Database Systems",
+      "topic": "SQL Commands"
+    },
+    {
+      "question": "Which sorting algorithm has the best average-case time complexity?",
+      "choices": [
+        "Bubble Sort",
+        "Insertion Sort",
+        "Quick Sort",
+        "Selection Sort"
+      ],
+      "correctAnswer": "Quick Sort",
+      "explanation": "Quick Sort has O(n log n) average-case complexity.",
+      "subject": "Data Structures and Algorithms",
+      "topic": "Sorting Algorithms"
+    },
+    {
+      "question": "Which software testing ensures individual units work correctly?",
+      "choices": [
+        "Integration Testing",
+        "System Testing",
+        "Unit Testing",
+        "Acceptance Testing"
+      ],
+      "correctAnswer": "Unit Testing",
+      "explanation": "Unit testing validates individual components in isolation.",
+      "subject": "Software Engineering",
+      "topic": "Software Testing"
+    }
+  ]
+}

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import QuestionCard from './QuestionCard';
 import ExamProgress from './ExamProgress';
-import QuestionTimer from './QuestionTimer';
 import GrokAssistant from './GrokAssistant';
 
 const ExamInterface = () => {
@@ -27,36 +26,7 @@ const ExamInterface = () => {
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
   const [showConfirmPause, setShowConfirmPause] = useState(false);
   const [showGrokAssistant, setShowGrokAssistant] = useState(false);
-  const [timerKey, setTimerKey] = useState(0); // Key to reset timer on question change
-
-  // Get time per question from session config
-  const timePerQuestion = currentSession?.timePerQuestion || null;
-
-  // Handle timer expiration - auto-submit current question and move to next
-  const handleTimeUp = () => {
-    const question = questions[currentQuestionIndex];
-    if (question && !answers[question.questionId]) {
-      // Auto-select first choice if no answer selected
-      selectAnswer(question.choices[0]);
-    }
-    // Auto-advance to next question after a brief delay
-    setTimeout(() => {
-      if (currentQuestionIndex < questions.length - 1) {
-        nextQuestion();
-        setTimerKey(prev => prev + 1); // Reset timer
-      } else {
-        // If last question, show finish confirmation
-        setShowConfirmFinish(true);
-      }
-    }, 1000);
-  };
-
-  // Reset timer when question changes
-  useEffect(() => {
-    if (currentQuestion && timePerQuestion) {
-      setTimerKey(prev => prev + 1);
-    }
-  }, [currentQuestionIndex, currentQuestion, timePerQuestion]);
+  // Timer removed: exams are untimed (no countdown UI, no auto-advance).
 
   if (isLoading) {
     return (
@@ -195,16 +165,6 @@ const ExamInterface = () => {
           total={questions.length}
           progress={progress}
         />
-        {timePerQuestion && (
-          <div className="mt-2">
-            <QuestionTimer
-              key={timerKey}
-              timePerQuestion={timePerQuestion}
-              onTimeUp={handleTimeUp}
-              isActive={!!currentQuestion}
-            />
-          </div>
-        )}
       </div>
 
       {/* Question Content */}

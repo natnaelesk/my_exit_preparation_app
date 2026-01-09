@@ -4,6 +4,7 @@ import { useExam } from '../../contexts/ExamContext';
 import QuestionCard from './QuestionCard';
 import ExamProgress from './ExamProgress';
 import QuestionTimer from './QuestionTimer';
+import GrokAssistant from './GrokAssistant';
 
 const ExamInterface = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const ExamInterface = () => {
 
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
   const [showConfirmPause, setShowConfirmPause] = useState(false);
+  const [showGrokAssistant, setShowGrokAssistant] = useState(false);
   const [timerKey, setTimerKey] = useState(0); // Key to reset timer on question change
 
   // Get time per question from session config
@@ -82,6 +84,31 @@ const ExamInterface = () => {
 
   const handleAnswerSelect = (answer) => {
     selectAnswer(answer);
+  };
+
+  // Handle Grok AI button click - marks question as wrong and opens AI assistant
+  const handleGrokClick = () => {
+    if (!currentQuestion) return;
+    
+    // Mark the question as wrong by selecting an incorrect answer
+    // Find the first choice that is NOT the correct answer
+    const incorrectAnswer = currentQuestion.choices.find(
+      choice => choice !== currentQuestion.correctAnswer
+    );
+    
+    if (incorrectAnswer) {
+      // Mark as wrong by selecting incorrect answer
+      selectAnswer(incorrectAnswer);
+    }
+    
+    // Open Grok assistant
+    setShowGrokAssistant(true);
+  };
+
+  const handleMarkAsWrong = () => {
+    // This is called when Grok modal closes
+    // The question is already marked as wrong when the button is clicked
+    // This is just a callback for any additional logic if needed
   };
 
   const handleNext = () => {
@@ -187,6 +214,7 @@ const ExamInterface = () => {
           questionNumber={currentQuestionIndex + 1}
           selectedAnswer={selectedAnswer}
           onAnswerSelect={handleAnswerSelect}
+          onGrokClick={handleGrokClick}
         />
       </div>
 
@@ -258,6 +286,14 @@ const ExamInterface = () => {
           </div>
         </div>
       )}
+
+      {/* Grok AI Assistant Modal */}
+      <GrokAssistant
+        question={currentQuestion}
+        isOpen={showGrokAssistant}
+        onClose={() => setShowGrokAssistant(false)}
+        onMarkAsWrong={handleMarkAsWrong}
+      />
     </div>
   );
 };

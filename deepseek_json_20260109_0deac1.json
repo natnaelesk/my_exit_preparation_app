@@ -1,0 +1,805 @@
+{
+  "title": "Admas University Model Exit Exam III CODE MK-003",
+  "questions": [
+    {
+      "question": "Amen Hospital wants to use surgery management system. This system will helps to the Doctor by identifying the surgery activities based on the pre-stored information and give appropriate message immediately when the doctor miss any activity related to surgery.\nThe software developer team must be given more emphasize which types of software quality requirements?",
+      "choices": ["Flexibility", "Reliability", "Modifiability", "maintainability"],
+      "correctAnswer": "Reliability",
+      "explanation": "The system must work correctly and consistently during surgery, giving immediate alerts if an activity is missed. Reliability ensures the system performs as expected under critical conditions.",
+      "subject": "Software Engineering",
+      "topic": "Software Quality Requirements"
+    },
+    {
+      "question": "What types of software process model is using more fit with the system requirement?",
+      "choices": ["Agile model", "Spiral model", "Rational Unified Process Model", "Waterfall model"],
+      "correctAnswer": "Spiral model",
+      "explanation": "The Spiral model is risk-driven and iterative, suitable for critical systems like surgery management where reliability and risk analysis are essential.",
+      "subject": "Software Engineering",
+      "topic": "Software Process Models"
+    },
+    {
+      "question": "Ethiopian Airline Company is decided to use automated human resource management system. Assume you are working in Alsam Software Development Company (ASDC). ASDC agrees with the Ethiopian Airline Company to develop this system. The Ethiopian Airline Company administrator says that “the implementation language must be Csharp” but the software developer team want to implement the system by java programming language.\nWhat types of requirement asked by Ethiopian Airline Company Administrator?",
+      "choices": ["Quality requirement", "Functional requirement", "Pseudo requirement", "Analysis requirement"],
+      "correctAnswer": "Pseudo requirement",
+      "explanation": "A pseudo requirement is a constraint imposed by the client that doesn't directly relate to system functionality, such as the choice of programming language.",
+      "subject": "Software Engineering",
+      "topic": "Requirements Engineering"
+    },
+    {
+      "question": "Assume you are project manager, what is your decision?",
+      "choices": ["Accept the software development team idea and the system will be implementing by java.", "Discuss with both Ethiopian airline administrator and software developer team to select common software programing language. If does not agree, the system development stop at early stage.", "Decide to stop system development automatically.", "According to software engineering rule, the software developer team idea has more acceptance than clients. Therefore, the system will be implementing by java."],
+      "correctAnswer": "Discuss with both Ethiopian airline administrator and software developer team to select common software programing language. If does not agree, the system development stop at early stage.",
+      "explanation": "As a project manager, you should facilitate communication between stakeholders to resolve conflicts. If no agreement is reached, it's better to stop early to avoid future disputes and wasted resources.",
+      "subject": "Software Engineering",
+      "topic": "Project Management"
+    },
+    {
+      "question": "Which one of the following false about UML object model can be mapped to relational database during software design phase?",
+      "choices": ["Each class is mapped to its own table", "Each class attribute is mapped to a column in the table", "Each class method is mapped to a relationship in the table", "An instance of a class represents a row in the table"],
+      "correctAnswer": "Each class method is mapped to a relationship in the table",
+      "explanation": "Methods (behavior) in a class are not mapped to database relationships. Only attributes (data) and relationships between classes are mapped to tables and foreign keys.",
+      "subject": "Software Engineering",
+      "topic": "UML and Database Mapping"
+    },
+    {
+      "question": "Assume below two sentence are described non-functional requirements of Woldia university Student Information Management System (SIMS). What types of problem have been between those two non-functional requirement statements?\n“The system must work 24 hours per day, 7 days per week and 365 days per year” “The system can maintain within 3 hours ”",
+      "choices": ["Consistency", "Completeness", "Traceability", "Realism"],
+      "correctAnswer": "Consistency",
+      "explanation": "The two requirements conflict: one demands 24/7 availability, the other allows 3 hours of maintenance downtime. They are inconsistent with each other.",
+      "subject": "Software Engineering",
+      "topic": "Non-Functional Requirements"
+    },
+    {
+      "question": "What is the correct HTML for creating a hyperlink?",
+      "choices": ["<a>http://www.google.com</a>", "<a name='http://www.google.com'>Google.com</a>", "<a href='http://www.google.com'>Google</a>", "<a url='http://www.google.com'>Google.com</a>"],
+      "correctAnswer": "<a href='http://www.google.com'>Google</a>",
+      "explanation": "The correct syntax for a hyperlink in HTML uses the <a> tag with the href attribute specifying the URL.",
+      "subject": "Web Programming",
+      "topic": "HTML Basics"
+    },
+    {
+      "question": "How can you open a link in a new tab/browser window?",
+      "choices": ["<a href='url' target='_blank'>", "<a href='url' new>", "<a href='url' target='new'>", "<a href='url'>new tab</a>"],
+      "correctAnswer": "<a href='url' target='_blank'>",
+      "explanation": "The target='_blank' attribute opens the linked document in a new tab or window.",
+      "subject": "Web Programming",
+      "topic": "HTML Links"
+    },
+    {
+      "question": "In html, which attribute is used to specify that an input field must be filled out?",
+      "choices": ["formvalidate", "required", "validate", "placeholder"],
+      "correctAnswer": "required",
+      "explanation": "The 'required' attribute in HTML5 specifies that an input field must be filled out before submitting the form.",
+      "subject": "Web Programming",
+      "topic": "HTML Forms"
+    },
+    {
+      "question": "What is the correct HTML for inserting an image:",
+      "choices": ["<img alt='MyImage'>image.gif</img>", "<imghref='image.gif' alt='MyImage'>", "<image src='image.gif' alt='MyImage'>", "<img src='image.gif' alt='MyImage'>"],
+      "correctAnswer": "<img src='image.gif' alt='MyImage'>",
+      "explanation": "The correct HTML tag for images is <img> with src (source) and alt (alternative text) attributes.",
+      "subject": "Web Programming",
+      "topic": "HTML Images"
+    },
+    {
+      "question": "______ is a metalanguage used to define new markup languages, and help you to create a language crafted specifically for your application or domain.",
+      "choices": ["PHP", "HTML", "XML", "JavaScript"],
+      "correctAnswer": "XML",
+      "explanation": "XML (eXtensible Markup Language) is a metalanguage that allows users to define their own custom markup languages.",
+      "subject": "Web Programming",
+      "topic": "XML Basics"
+    },
+    {
+      "question": "______ are the software programs people use to consume the web?",
+      "choices": ["Languages", "Browsers", "HTTP", "Web Servers"],
+      "correctAnswer": "Browsers",
+      "explanation": "Web browsers (like Chrome, Firefox) are client-side applications used to access and display web content.",
+      "subject": "Web Programming",
+      "topic": "Web Basics"
+    },
+    {
+      "question": "How do you create a cookie in PHP?",
+      "choices": ["setcookie()", "createcookie", "makecookie()", "addcookie"],
+      "correctAnswer": "setcookie()",
+      "explanation": "The setcookie() function in PHP is used to create a cookie.",
+      "subject": "Web Programming",
+      "topic": "PHP Cookies"
+    },
+    {
+      "question": "How do you create an array in PHP?",
+      "choices": ["$cars = 'Volvo', 'BMW', 'Toyota';", "$cars[3] = 'Volvo', 'BMW', 'Toyota';", "$cars = array('Volvo', 'BMW', 'Toyota');", "$cars = array['Volvo', 'BMW', 'Toyota'];"],
+      "correctAnswer": "$cars = array('Volvo', 'BMW', 'Toyota');",
+      "explanation": "In PHP, arrays are created using the array() function or shorthand [].",
+      "subject": "Web Programming",
+      "topic": "PHP Arrays"
+    },
+    {
+      "question": "What is MySQL?",
+      "choices": ["A relational database management system", "Cross-platform, open-source and free", "Developed, distributed, and supported by Oracle Corporation", "All"],
+      "correctAnswer": "All",
+      "explanation": "MySQL is a relational DBMS that is open-source, cross-platform, and currently maintained by Oracle.",
+      "subject": "Web Programming",
+      "topic": "MySQL Introduction"
+    },
+    {
+      "question": "Which statement is false?",
+      "choices": ["When using the POST method, variables are displayed in the URL.", "PHP can generate dynamic page content.", "The if statement is used to execute some code only if a specified condition is true.", "PHP scripts are executed on the server."],
+      "correctAnswer": "When using the POST method, variables are displayed in the URL.",
+      "explanation": "POST method sends data in the request body, not in the URL. GET method displays variables in the URL.",
+      "subject": "Web Programming",
+      "topic": "PHP and HTTP Methods"
+    },
+    {
+      "question": "Schema normalization is not for?",
+      "choices": ["Reducing the number of tables in the schema.", "Eliminating uncontrolled redundancy of data.", "Eliminating anomalies that could otherwise occur with inserts.", "Eliminating anomalies that could otherwise occur with deletes."],
+      "correctAnswer": "Reducing the number of tables in the schema.",
+      "explanation": "Normalization often increases the number of tables to reduce redundancy and anomalies, not decrease them.",
+      "subject": "Fundamental of Database Systems",
+      "topic": "Normalization"
+    },
+    {
+      "question": "Which one of the following statements is used to create a table?",
+      "choices": ["CREATE TABLE table_name (column_name column_type);", "CREATE table_name (column_type column_name);", "CREATE table_name (column_name column_type);", "CREATE TABLE table_name (column_type column_name);"],
+      "correctAnswer": "CREATE TABLE table_name (column_name column_type);",
+      "explanation": "Correct SQL syntax: CREATE TABLE table_name (column1 datatype, column2 datatype, ...);",
+      "subject": "Fundamental of Database Systems",
+      "topic": "SQL DDL"
+    },
+    {
+      "question": "What is the difference between Generalization and Specialization?",
+      "choices": ["Generalization and Specialization is like the Top-Down Approach", "Generalization and Specialization is like the Bottom-Up Approach", "Generalization is like a Bottom-Up approach and Specialization is like a Top-Down Approach", "Generalization is like the Top-Down approach and Specialization is like the Bottom-Up Approach"],
+      "correctAnswer": "Generalization is like a Bottom-Up approach and Specialization is like a Top-Down Approach",
+      "explanation": "Generalization combines lower-level entities into a higher-level entity (Bottom-Up). Specialization breaks a higher-level entity into sub-entities (Top-Down).",
+      "subject": "Fundamental of Database Systems",
+      "topic": "ER Modeling"
+    },
+    {
+      "question": "A database language which provides users with high privilege command granting privileges and allowing granted privileges by the owner at any time is called ______?",
+      "choices": ["Transaction Control Language", "Data Manipulation Language", "Data Control Language", "Data Definition Language"],
+      "correctAnswer": "Data Control Language",
+      "explanation": "DCL (Data Control Language) includes commands like GRANT and REVOKE to manage user privileges.",
+      "subject": "Fundamental of Database Systems",
+      "topic": "SQL Languages"
+    },
+    {
+      "question": "A rule assigned to a column in a table that prevents certain types of inconsistency data value from being inserted or placed in the column?",
+      "choices": ["Keys", "Constraint", "Tuple", "Attribute"],
+      "correctAnswer": "Constraint",
+      "explanation": "Constraints enforce rules on data in columns (e.g., NOT NULL, UNIQUE, CHECK).",
+      "subject": "Fundamental of Database Systems",
+      "topic": "Constraints"
+    },
+    {
+      "question": "Which one of the following is not Functions of Structured Query Language?",
+      "choices": ["It can execute and retrieve queries against a database", "It can insert and update records in a database", "It can create stored procedures and views in a database", "All of the above"],
+      "correctAnswer": "All of the above",
+      "explanation": "All listed are functions of SQL: querying (SELECT), modifying data (INSERT, UPDATE), and defining objects (CREATE PROCEDURE, VIEW).",
+      "subject": "Fundamental of Database Systems",
+      "topic": "SQL Overview"
+    },
+    {
+      "question": "______ is a set of one or more attributes taken collectively to uniquely identify a record?",
+      "choices": ["Candidate key", "Super key", "Primary key", "Foreign key"],
+      "correctAnswer": "Super key",
+      "explanation": "A super key is any set of attributes that uniquely identifies a record. Candidate keys are minimal super keys.",
+      "subject": "Fundamental of Database Systems",
+      "topic": "Keys"
+    },
+    {
+      "question": "Which of the following is an example of object based logical model?",
+      "choices": ["Entity Relationship Model", "Relational Model", "Hierarchical Model", "Network Model"],
+      "correctAnswer": "Entity Relationship Model",
+      "explanation": "ER Model is an object-based logical model that represents data as entities and relationships.",
+      "subject": "Fundamental of Database Systems",
+      "topic": "Data Models"
+    },
+    {
+      "question": "Which of the following refers to the number of attributes in a relation?",
+      "choices": ["Cardinality", "Degree", "Row", "Domain"],
+      "correctAnswer": "Degree",
+      "explanation": "Degree is the number of attributes (columns) in a relation. Cardinality is the number of tuples (rows).",
+      "subject": "Fundamental of Database Systems",
+      "topic": "Relational Model"
+    },
+    {
+      "question": "Which of the following is odd?",
+      "choices": ["Locking", "Time Stamping", "Optimistic", "All of the Above"],
+      "correctAnswer": "Optimistic",
+      "explanation": "Locking and Time Stamping are concurrency control methods. Optimistic is a type of concurrency control, but the question likely asks for the odd one out in context.",
+      "subject": "Advance Database Systems",
+      "topic": "Concurrency Control"
+    },
+    {
+      "question": "Which level of security measures concerned with authorization of database users for access the content at different levels and privileges?",
+      "choices": ["Application level", "Physical level", "Human level", "Database system"],
+      "correctAnswer": "Database system",
+      "explanation": "Database system-level security includes authorization mechanisms like roles and privileges.",
+      "subject": "Computer Security",
+      "topic": "Database Security"
+    },
+    {
+      "question": "What is a mechanism for enforcing limits on access to a resource in an environment where there are many threads of execution?",
+      "choices": ["Timestamping", "Concurrency control", "Transaction", "Locking"],
+      "correctAnswer": "Locking",
+      "explanation": "Locking restricts access to shared resources to prevent concurrent modifications and ensure data consistency.",
+      "subject": "Advance Database Systems",
+      "topic": "Concurrency Control"
+    },
+    {
+      "question": "Quality programming that comes from good program design is necessary for the economic and correct solution of problems. Assume you are the program designer and the program that you design cannot adapt one type of computer to another with minimum modification. So, what need of a good program design is failed?",
+      "choices": ["Reliability", "Efficiency", "Maintainability", "Portability"],
+      "correctAnswer": "Portability",
+      "explanation": "Portability is the ability of software to run on different platforms with minimal changes.",
+      "subject": "Computer Programming",
+      "topic": "Software Quality Attributes"
+    },
+    {
+      "question": "Which one of the following is INCORRECT about an algorithm?",
+      "choices": ["Set of instructions showing the steps of solving the problem.", "All the steps can be dependent on any programming language or machine.", "The steps must be efficient in time, memory and other resources", "It must produce expected output and can be simple and correct"],
+      "correctAnswer": "All the steps can be dependent on any programming language or machine.",
+      "explanation": "Algorithms should be language- and machine-independent. They describe logic, not implementation details.",
+      "subject": "Computer Programming",
+      "topic": "Algorithm Basics"
+    },
+    {
+      "question": "Which one of the following should include under every C++ program?",
+      "choices": ["int", "double", "main()", "length()"],
+      "correctAnswer": "main()",
+      "explanation": "Every C++ program must have a main() function as the entry point.",
+      "subject": "Computer Programming",
+      "topic": "C++ Basics"
+    },
+    {
+      "question": "A symbolic name for memory location in which data can be stored and subsequently recalled is called______.",
+      "choices": ["Keyword", "Literal", "Variable", "Reserved words"],
+      "correctAnswer": "Variable",
+      "explanation": "A variable is a named memory location used to store data.",
+      "subject": "Computer Programming",
+      "topic": "Variables"
+    },
+    {
+      "question": "Which one of the following statements provides a way of choosing between a set of alternatives based on the value of an expression?",
+      "choices": ["if statement", "if...else statement", "switch statement", "while statement"],
+      "correctAnswer": "switch statement",
+      "explanation": "The switch statement selects one of many code blocks to execute based on the value of an expression.",
+      "subject": "Computer Programming",
+      "topic": "Control Structures"
+    },
+    {
+      "question": "Which one of the following is used to execute block of code known times?",
+      "choices": ["For loop", "While loop", "Do…while loop", "Switch"],
+      "correctAnswer": "For loop",
+      "explanation": "For loops are typically used when the number of iterations is known beforehand.",
+      "subject": "Computer Programming",
+      "topic": "Loops"
+    },
+    {
+      "question": "Which one of the following is false about abstract classes?",
+      "choices": ["Abstract classes are declared using the keyword abstract.", "An abstract class can be a superclass.", "An abstract class can also be a final class.", "An object of an abstract class cannot be created."],
+      "correctAnswer": "An abstract class can also be a final class.",
+      "explanation": "An abstract class cannot be final because final classes cannot be subclassed, and abstract classes are meant to be inherited.",
+      "subject": "Object Oriented Programming",
+      "topic": "Abstract Classes"
+    },
+    {
+      "question": "Which one of the following is true about interfaces?",
+      "choices": ["An interface’s methods are by default public and final.", "An interfaces variable is by default private, static and final.", "An interface’s methods are by default public and abstract.", "An interface cannot be part of the inheritance hierarchy."],
+      "correctAnswer": "An interface’s methods are by default public and abstract.",
+      "explanation": "In Java, interface methods are implicitly public and abstract (before Java 8).",
+      "subject": "Object Oriented Programming",
+      "topic": "Interfaces"
+    },
+    {
+      "question": "When a subclass object is created ______",
+      "choices": ["The very first constructor called is the subclass’ constructor.", "Any one of the constructors across the hierarchy can be called in a random order.", "The last constructor called is the constructor of the superclass’ constructor.", "The very first constructor called is the top most superclass’ constructor in the hierarchy."],
+      "correctAnswer": "The very first constructor called is the top most superclass’ constructor in the hierarchy.",
+      "explanation": "Constructor chaining starts from the topmost superclass (Object) down to the subclass.",
+      "subject": "Object Oriented Programming",
+      "topic": "Inheritance and Constructors"
+    },
+    {
+      "question": "When a method is overridden ______",
+      "choices": ["Both methods have exactly same signature.", "Java uses it to implement compile time polymorphism.", "The super keyword is used to call the overriding (subclass’) method.", "The overridden method must be final always so that the subclass can override it"],
+      "correctAnswer": "Both methods have exactly same signature.",
+      "explanation": "Method overriding requires the same method signature (name, parameters, return type) in the subclass.",
+      "subject": "Object Oriented Programming",
+      "topic": "Method Overriding"
+    },
+    {
+      "question": "A reference variable can refer to ______.",
+      "choices": ["An object of the superclass", "An object of its class type only", "An object of any class", "An object of subclass’s or its class type"],
+      "correctAnswer": "An object of subclass’s or its class type",
+      "explanation": "In polymorphism, a reference of a superclass type can refer to an object of its subclass or its own class.",
+      "subject": "Object Oriented Programming",
+      "topic": "Polymorphism"
+    },
+    {
+      "question": "When a class must not be inherited, it must be declared using the ______ keyword.",
+      "choices": ["this", "super", "final", "abstract"],
+      "correctAnswer": "final",
+      "explanation": "A final class cannot be subclassed.",
+      "subject": "Object Oriented Programming",
+      "topic": "Final Classes"
+    },
+    {
+      "question": "Which one of the following is an incorrect statement about algorithms?",
+      "choices": ["algorithm is composed of a finite set of steps", "each steps of algorithm may require one or more operations", "Each operation has to be effective but not necessarily definite", "All of the above"],
+      "correctAnswer": "Each operation has to be effective but not necessarily definite",
+      "explanation": "Each operation in an algorithm must be both effective (doable) and definite (unambiguous).",
+      "subject": "Design and Analysis of Algorithms",
+      "topic": "Algorithm Properties"
+    },
+    {
+      "question": "Which one of the following is correct about running time analysis?",
+      "choices": ["Determine how running time increases as the computer resources increases", "Determine how running time increases as the size of the problem increases", "Determine how running time decreases as the computer resources increases", "None of the above"],
+      "correctAnswer": "Determine how running time increases as the size of the problem increases",
+      "explanation": "Running time analysis focuses on how time grows with input size n, not with hardware resources.",
+      "subject": "Design and Analysis of Algorithms",
+      "topic": "Time Complexity"
+    },
+    {
+      "question": "Which one of the following is correct about comparing algorithms?",
+      "choices": ["Comparing based on execution times is good for all cases", "Comparing based on number of statements helps to compare universally", "Express running time as a function of the input size n is ideal", "All of the above"],
+      "correctAnswer": "Express running time as a function of the input size n is ideal",
+      "explanation": "Asymptotic analysis (Big O, Θ, Ω) based on input size n provides a machine-independent comparison.",
+      "subject": "Design and Analysis of Algorithms",
+      "topic": "Algorithm Comparison"
+    },
+    {
+      "question": "Which one of the following is incorrect about principle of optimality?",
+      "choices": ["an optimal sequence of decisions, some subsequence may not be optimal", "an optimal sequence of decisions, each subsequence must also be optimal", "we need to show principle of optimality applies to the problem before using dynamic programming", "All of the above"],
+      "correctAnswer": "an optimal sequence of decisions, some subsequence may not be optimal",
+      "explanation": "Principle of optimality states that an optimal solution consists of optimal sub-solutions.",
+      "subject": "Design and Analysis of Algorithms",
+      "topic": "Dynamic Programming"
+    },
+    {
+      "question": "Which one of the following is a correct asymptotic notation?",
+      "choices": ["Big O is asymptotic upper bound", "Big O is asymptotic lower bound", "Big Θ is asymptotic tight bound", "All of the above"],
+      "correctAnswer": "Big Θ is asymptotic tight bound",
+      "explanation": "Big O is upper bound, Ω is lower bound, Θ is tight bound (both upper and lower).",
+      "subject": "Design and Analysis of Algorithms",
+      "topic": "Asymptotic Notation"
+    },
+    {
+      "question": "Which one of the following is correct about heap data structure?",
+      "choices": ["A heap is a nearly complete binary tree", "all levels are always full", "the last level may not be full, as heap is filled in order right to left", "None"],
+      "correctAnswer": "A heap is a nearly complete binary tree",
+      "explanation": "A heap is a complete binary tree (or nearly complete) where all levels are filled except possibly the last, which is filled left to right.",
+      "subject": "Data Structure and Algorithms",
+      "topic": "Heaps"
+    },
+    {
+      "question": "What does each iteration of the insertion sort algorithm do?",
+      "choices": ["Each iteration takes the next smallest element and inserts it at the beginning of the array", "Each iteration takes the next element in the unsorted portion of the array and inserts it into the sorted portion", "Sorted subarrays are inserted into the larger array", "Each iteration determines the location of a pivot and inserts it into place"],
+      "correctAnswer": "Each iteration takes the next element in the unsorted portion of the array and inserts it into the sorted portion",
+      "explanation": "Insertion sort builds the sorted array one element at a time by inserting each new element into its correct position.",
+      "subject": "Data Structure and Algorithms",
+      "topic": "Sorting Algorithms"
+    },
+    {
+      "question": "Using a binary search, what is the maximum number of comparisons required to find a search key in a 31-element sorted array",
+      "choices": ["4", "5", "32", "1"],
+      "correctAnswer": "5",
+      "explanation": "Binary search on n elements requires at most ⌈log₂(n+1)⌉ comparisons. For n=31, ⌈log₂(32)⌉ = 5.",
+      "subject": "Data Structure and Algorithms",
+      "topic": "Searching Algorithms"
+    },
+    {
+      "question": "In order to get the information stored in a binary search tree in the descending order, one should traverse it in which of the following order?",
+      "choices": ["Left, parent, right", "Right, parent, left", "Parent, left, right", "Right, left, parent"],
+      "correctAnswer": "Right, parent, left",
+      "explanation": "To get descending order in a BST, perform reverse in-order traversal: right subtree, then root, then left subtree.",
+      "subject": "Data Structure and Algorithms",
+      "topic": "Binary Search Trees"
+    },
+    {
+      "question": "Which of the following statement is true?",
+      "choices": ["The binary search algorithm is less efficient than the linear search , but it requires that the array be sorted", "The binary search algorithm is more efficient than the linear search , but it requires that the array be sorted", "The binary search algorithm is more efficient than the linear search , but it requires that the array be unsorted", "The binary search algorithm is less efficient than the linear search , but it requires that the array be unsorted"],
+      "correctAnswer": "The binary search algorithm is more efficient than the linear search , but it requires that the array be sorted",
+      "explanation": "Binary search runs in O(log n) vs O(n) for linear search, but requires a sorted array.",
+      "subject": "Data Structure and Algorithms",
+      "topic": "Searching Algorithms"
+    },
+    {
+      "question": "What happens when you push a new node onto a stack?",
+      "choices": ["The new node is placed at the front of the linked list", "The new node is placed at the back of the linked list", "The new node is placed at the middle of the linked list", "No Changes happens"],
+      "correctAnswer": "The new node is placed at the front of the linked list",
+      "explanation": "In a linked list implementation of a stack, push adds the new node at the head (front) for O(1) time.",
+      "subject": "Data Structure and Algorithms",
+      "topic": "Stacks"
+    },
+    {
+      "question": "______ is very useful in situation when data have to stored and then retrieved in reverse order.",
+      "choices": ["Stack", "Queue", "List", "Link List"],
+      "correctAnswer": "Stack",
+      "explanation": "Stack follows LIFO (Last In First Out), ideal for reversing order.",
+      "subject": "Data Structure and Algorithms",
+      "topic": "Stacks"
+    },
+    {
+      "question": "Which OSI layer defines the functions of logical network addressing and routing?",
+      "choices": ["Physical", "Network", "Data link", "Transport"],
+      "correctAnswer": "Network",
+      "explanation": "The Network layer (Layer 3) handles logical addressing (IP) and routing.",
+      "subject": "Data Communication and Computer Networking",
+      "topic": "OSI Model"
+    },
+    {
+      "question": "Dialogue and conversation between the sender and the receiver device is established by______",
+      "choices": ["Physical", "Session", "Data link", "Presentation"],
+      "correctAnswer": "Session",
+      "explanation": "Session layer (Layer 5) establishes, manages, and terminates connections between applications.",
+      "subject": "Data Communication and Computer Networking",
+      "topic": "OSI Model"
+    },
+    {
+      "question": "Which of the following devices translates hostnames into IP addresses?",
+      "choices": ["DNS Server", "DHCP Server", "Hub", "Firewall"],
+      "correctAnswer": "DNS Server",
+      "explanation": "DNS (Domain Name System) servers resolve domain names to IP addresses.",
+      "subject": "Data Communication and Computer Networking",
+      "topic": "Networking Services"
+    },
+    {
+      "question": "Delivery and storage of E-Mail message to a server is achieved using______",
+      "choices": ["post office protocol (POP)", "Internet mail access protocol (IMAP)", "Simple mail transfer protocol (SMTP)", "Hypertext transfer protocol (HTTP)"],
+      "correctAnswer": "Simple mail transfer protocol (SMTP)",
+      "explanation": "SMTP is used for sending and relaying email between servers.",
+      "subject": "Data Communication and Computer Networking",
+      "topic": "Email Protocols"
+    },
+    {
+      "question": "Changing a stream of data bits in to a predefined code is known as______",
+      "choices": ["Decoding", "Encoding", "Signaling", "Data transferring"],
+      "correctAnswer": "Encoding",
+      "explanation": "Encoding converts data into a specific format for transmission or storage.",
+      "subject": "Data Communication and Computer Networking",
+      "topic": "Data Encoding"
+    },
+    {
+      "question": "If we want to remove the message from mail box, which protocol is available to remove it",
+      "choices": ["SMTP", "IMAP", "POP3", "SNMP"],
+      "correctAnswer": "POP3",
+      "explanation": "POP3 (Post Office Protocol) allows email clients to download and optionally delete messages from the server.",
+      "subject": "Data Communication and Computer Networking",
+      "topic": "Email Protocols"
+    },
+    {
+      "question": "An information system that processes sensitive information is configured to require a valid userid and strong password from any user. This process of accepting and validating this information is known as ______",
+      "choices": ["Authentication", "Strong authentication", "Two-factor authentication", "Single sign-on"],
+      "correctAnswer": "Authentication",
+      "explanation": "Authentication verifies the identity of a user (e.g., via userid and password).",
+      "subject": "Computer Security",
+      "topic": "Authentication"
+    },
+    {
+      "question": "An organization wants to prevent SQL and script injection attacks on its Internet web application. The organization should implement a/an ______",
+      "choices": ["Intrusion detection system", "Firewall", "Application firewall", "SSL certificate"],
+      "correctAnswer": "Application firewall",
+      "explanation": "Web Application Firewalls (WAFs) are designed to protect against injection attacks like SQLi and XSS.",
+      "subject": "Computer Security",
+      "topic": "Web Security"
+    },
+    {
+      "question": "CIA is known as ______",
+      "choices": ["Confidentiality, Integrity, and Availability", "Computers, Information, and Assets", "Confidence In Applications", "Controls, Integrity, and Availability"],
+      "correctAnswer": "Confidentiality, Integrity, and Availability",
+      "explanation": "CIA triad is the core model of information security.",
+      "subject": "Computer Security",
+      "topic": "Security Principles"
+    },
+    {
+      "question": "A database administrator (DBA) is responsible for carrying out security policy, which includes controlling which users have access to which data. The DBA has been asked to make just certain fields in some database tables visible to some new users. What is the best course of action for the DBA to take?",
+      "choices": ["Implement column-based access controls", "Export the table to a data warehouse, including only the fields that the users are permitted to see", "Clone the table, including only the fields that the users are permitted to see", "Create a view that contains only the fields that the users are permitted to see"],
+      "correctAnswer": "Create a view that contains only the fields that the users are permitted to see",
+      "explanation": "Views provide a secure and efficient way to restrict column-level access without duplicating data.",
+      "subject": "Computer Security",
+      "topic": "Database Security"
+    },
+    {
+      "question": "Public key cryptography is so-named because ______",
+      "choices": ["It is the world standard for HTTPS", "It works on all popular computer operating systems", "It uses an encryption key that can be released to the public", "The encryption algorithms reside in the public domain"],
+      "correctAnswer": "It uses an encryption key that can be released to the public",
+      "explanation": "Public key cryptography uses a pair of keys: a public key (shared) and a private key (kept secret).",
+      "subject": "Computer Security",
+      "topic": "Cryptography"
+    },
+    {
+      "question": "A particular encryption algorithm transforms plaintext to cipher text by XORing the plaintext with the encryption key. This is known as ______",
+      "choices": ["Electronic codebook", "Cipher block chaining", "Block cipher", "Stream cipher"],
+      "correctAnswer": "Stream cipher",
+      "explanation": "Stream ciphers encrypt plaintext one bit/byte at a time by XORing with a keystream.",
+      "subject": "Computer Security",
+      "topic": "Cryptography"
+    },
+    {
+      "question": "Company.com, facebook.com, kpmim.edu.my are examples of ______",
+      "choices": ["Hostname", "Domain Name", "Fully Qualified Domain Name", "Servers"],
+      "correctAnswer": "Fully Qualified Domain Name",
+      "explanation": "FQDN includes the hostname and domain name, uniquely identifying a device in DNS.",
+      "subject": "Network and System Administration",
+      "topic": "DNS"
+    },
+    {
+      "question": "An Active Directory container used to organize a network’s users and resources into logical administrative units?",
+      "choices": ["Organizational Units", "Users Units", "Container object", "Leaf object"],
+      "correctAnswer": "Organizational Units",
+      "explanation": "OUs are AD containers that hold users, groups, computers, and other OUs for administrative delegation.",
+      "subject": "Network and System Administration",
+      "topic": "Active Directory"
+    },
+    {
+      "question": "To which of the following can a GPO be linked?",
+      "choices": ["Domains", "Sites", "Leaf object", "Container object"],
+      "correctAnswer": "Domains",
+      "explanation": "Group Policy Objects can be linked to Sites, Domains, and Organizational Units.",
+      "subject": "Network and System Administration",
+      "topic": "Group Policy"
+    },
+    {
+      "question": "Which of the following is a container object?",
+      "choices": ["Domain & OU", "Users", "Computers", "Groups"],
+      "correctAnswer": "Domain & OU",
+      "explanation": "Domains and Organizational Units are container objects that can contain other objects.",
+      "subject": "Network and System Administration",
+      "topic": "Active Directory"
+    },
+    {
+      "question": "Which of the following is arranged in the correct Active Directory organizational order (largest to smallest)?",
+      "choices": ["Forest, Domain, Tree, Branch, Computer", "Computer, Forest, Domain, Tree", "Forest, Tree, Domain, Computer", "Forest, Tree, Computer, Domain"],
+      "correctAnswer": "Forest, Tree, Domain, Computer",
+      "explanation": "Forest (largest) contains Trees, which contain Domains, which contain objects like Computers.",
+      "subject": "Network and System Administration",
+      "topic": "Active Directory"
+    },
+    {
+      "question": "A network of Windows machine utilizing the same name to share resources",
+      "choices": ["Active Directory", "Domain", "Forest", "Workgroup"],
+      "correctAnswer": "Workgroup",
+      "explanation": "Workgroup is a peer-to-peer network where each computer manages its own resources and security.",
+      "subject": "Network and System Administration",
+      "topic": "Networking Models"
+    },
+    {
+      "question": "In Artificial Intelligence(AI), the simple reflex agent selects action on the basis of",
+      "choices": ["Current percept, completely ignoring rest of the percept history.", "Rest of the percept history, completely ignoring current percept.", "Both current percept and complete percept history", "Both current percept and just previous history"],
+      "correctAnswer": "Current percept, completely ignoring rest of the percept history.",
+      "explanation": "Simple reflex agents act only on the current percept, with no memory of past percepts.",
+      "subject": "Introduction to Artificial Intelligence",
+      "topic": "Intelligent Agents"
+    },
+    {
+      "question": "______ environment is random in nature& can’t be determined completely by an agent.",
+      "choices": ["Deterministic", "Stochastic", "Static", "Dynamic"],
+      "correctAnswer": "Stochastic",
+      "explanation": "Stochastic environments have random or uncertain outcomes.",
+      "subject": "Introduction to Artificial Intelligence",
+      "topic": "Environment Types"
+    },
+    {
+      "question": "______ is an agent that works based on the percept and the stored internal state.",
+      "choices": ["Goal-based agents", "Learning agents", "Model-based reflex agents", "Utility-based agents"],
+      "correctAnswer": "Model-based reflex agents",
+      "explanation": "Model-based reflex agents maintain an internal state based on percept history to make decisions.",
+      "subject": "Introduction to Artificial Intelligence",
+      "topic": "Agent Types"
+    },
+    {
+      "question": "______ Among the given options, which is not the required property of Knowledge representation?",
+      "choices": ["Inferential Efficiency", "Differential Adequacy", "Representational Verification", "Representational Adequacy"],
+      "correctAnswer": "Representational Verification",
+      "explanation": "Properties of KR include Representational Adequacy, Inferential Adequacy, Inferential Efficiency, and Acquisitional Efficiency. 'Verification' is not standard.",
+      "subject": "Introduction to Artificial Intelligence",
+      "topic": "Knowledge Representation"
+    },
+    {
+      "question": "Which of the following logical equivalent is proved by law of contraposition?",
+      "choices": ["(α → β) ≡ (-β → α)", "(α → β) ≡ (β → α)", "(-α → β) ≡ (-β → α)", "(α → β) ≡ (-β → -α)"],
+      "correctAnswer": "(α → β) ≡ (-β → -α)",
+      "explanation": "Contraposition states: α → β is logically equivalent to ¬β → ¬α.",
+      "subject": "Introduction to Artificial Intelligence",
+      "topic": "Logic"
+    },
+    {
+      "question": "Data, information, and past experience combined together are termed as ______.",
+      "choices": ["Inference", "Acquisition", "Vision", "knowledge"],
+      "correctAnswer": "knowledge",
+      "explanation": "Knowledge is synthesized from data, information, and experience.",
+      "subject": "Introduction to Artificial Intelligence",
+      "topic": "Knowledge Acquisition"
+    },
+    {
+      "question": "If a process fails, most operating system write the error information to a ______",
+      "choices": ["log file", "another running process", "new file", "none of the mentioned"],
+      "correctAnswer": "log file",
+      "explanation": "OS logs error information to log files for debugging and auditing.",
+      "subject": "Operating System",
+      "topic": "Process Management"
+    },
+    {
+      "question": "Which of the following is not the state of a process?",
+      "choices": ["New", "Old", "Waiting", "Running"],
+      "correctAnswer": "Old",
+      "explanation": "Process states: New, Ready, Running, Waiting, Terminated. 'Old' is not a standard state.",
+      "subject": "Operating System",
+      "topic": "Process States"
+    },
+    {
+      "question": "What is the degree of multiprogramming?",
+      "choices": ["the number of processes executed per unit time", "the number of processes in the ready queue", "the number of processes in the I/O queue", "the number of processes in memory"],
+      "correctAnswer": "the number of processes in memory",
+      "explanation": "Degree of multiprogramming refers to the number of processes resident in memory at a given time.",
+      "subject": "Operating System",
+      "topic": "Multiprogramming"
+    },
+    {
+      "question": "Which one of the following is not advantage of single level directory?",
+      "choices": ["Implementation is very simple.", "If the sizes of the files are very small, then the searching becomes faster.", "File creation, searching, deletion is very simple since we have only one directory.", "The directory may be very big therefore searching for a file may take so much time."],
+      "correctAnswer": "The directory may be very big therefore searching for a file may take so much time.",
+      "explanation": "That is a disadvantage, not an advantage, of single-level directories.",
+      "subject": "Operating System",
+      "topic": "File Systems"
+    },
+    {
+      "question": "Memory block assigned to process is bigger. Some portion of memory is left unused, as it cannot be used by another process.",
+      "choices": ["External fragmentation", "Internal fragmentation"],
+      "correctAnswer": "Internal fragmentation",
+      "explanation": "Internal fragmentation occurs when allocated memory is larger than requested, leaving unused space inside the block.",
+      "subject": "Operating System",
+      "topic": "Memory Management"
+    },
+    {
+      "question": "______ is a memory management technique in which process address space is broken into blocks of the same size called pages.",
+      "choices": ["External fragmentation", "Internal fragmentation", "paging", "segmentation"],
+      "correctAnswer": "paging",
+      "explanation": "Paging divides memory into fixed-size pages and logical address space into page frames.",
+      "subject": "Operating System",
+      "topic": "Memory Management"
+    },
+    {
+      "question": "Which of the architecture is power efficient?",
+      "choices": ["RISC", "ISA", "IANA", "CISC"],
+      "correctAnswer": "RISC",
+      "explanation": "RISC architectures typically have simpler instructions, leading to lower power consumption.",
+      "subject": "Computer organization and architecture",
+      "topic": "Processor Architecture"
+    },
+    {
+      "question": "The memory devices which are similar to EEPROM but differ in the cost effectiveness is?",
+      "choices": ["CMOS", "Memory sticks", "Blue-ray devices", "Flash memory"],
+      "correctAnswer": "Flash memory",
+      "explanation": "Flash memory is a type of EEPROM that is more cost-effective and used in USB drives, SSDs, etc.",
+      "subject": "Computer organization and architecture",
+      "topic": "Memory Types"
+    },
+    {
+      "question": "The number successful accesses to memory stated as a fraction is called as ______.",
+      "choices": ["Access rate", "Success rate", "Hit rate", "Miss rate"],
+      "correctAnswer": "Hit rate",
+      "explanation": "Hit rate = (Number of cache hits) / (Total accesses).",
+      "subject": "Computer organization and architecture",
+      "topic": "Cache Memory"
+    },
+    {
+      "question": "Which of the following memory of the computer is used to speed up the computer processing?",
+      "choices": ["Cache memory", "RAM", "ROM", "SRAM"],
+      "correctAnswer": "Cache memory",
+      "explanation": "Cache memory is a small, fast memory located close to the CPU to speed up data access.",
+      "subject": "Computer organization and architecture",
+      "topic": "Memory Hierarchy"
+    },
+    {
+      "question": "Which of the following is not considered as a peripheral device?",
+      "choices": ["CPU", "Keyboard", "Monitor", "Printer"],
+      "correctAnswer": "CPU",
+      "explanation": "CPU is the central processing unit, not a peripheral. Peripherals are external devices like keyboard, monitor, printer.",
+      "subject": "Computer organization and architecture",
+      "topic": "Computer Components"
+    },
+    {
+      "question": "Which of the following circuit is used to store one bit of data?",
+      "choices": ["Flip Flop", "Decoder", "Encoder", "Register"],
+      "correctAnswer": "Flip Flop",
+      "explanation": "A flip-flop is a basic sequential circuit that stores one bit of data.",
+      "subject": "Computer organization and architecture",
+      "topic": "Digital Logic"
+    },
+    {
+      "question": "Which one of the following is not part of Turing machine",
+      "choices": ["Finite control", "Input", "Tape", "Head"],
+      "correctAnswer": "Input",
+      "explanation": "Turing machine components: finite control, tape (memory), and head. Input is placed on the tape initially.",
+      "subject": "Automata and Complexity Theory",
+      "topic": "Turing Machines"
+    },
+    {
+      "question": "f(x) = x+2 over N is ______ function",
+      "choices": ["Total", "Partial", "recursive", "both total and partial"],
+      "correctAnswer": "Total",
+      "explanation": "Total function defined for all natural numbers N.",
+      "subject": "Automata and Complexity Theory",
+      "topic": "Computability"
+    },
+    {
+      "question": "S(S(S(Z(4)))) is equal to ______",
+      "choices": ["U₁³ (2, 1, 3)", "U₁³ (2, 1, 3)", "U₃³ (2, 1, 3)", "none of these"],
+      "correctAnswer": "U₃³ (2, 1, 3)",
+      "explanation": "This appears to be a question about primitive recursive functions. S is successor, Z is zero. S(S(S(Z(4)))) = 7? The notation Uₙᵐ is for projection functions. Likely refers to projection of the 3rd argument.",
+      "subject": "Automata and Complexity Theory",
+      "topic": "Recursive Functions"
+    },
+    {
+      "question": "Which one of the following grammars is in Chomsky Normal Form?",
+      "choices": ["S→AS/a, A→SA/aa", "S→AS/a, A→SA/b", "S→AS/ASS/a, A→SA/b", "B and C"],
+      "correctAnswer": "S→AS/a, A→SA/b",
+      "explanation": "CNF requires productions of form A→BC or A→a. S→AS (binary), S→a, A→SA (binary), A→b are valid.",
+      "subject": "Compiler Design",
+      "topic": "Normal Forms"
+    },
+    {
+      "question": "One of the following grammars is correctly matched?",
+      "choices": ["S→S₁ab,S₁→S₁ab|S₂,S₂→a is context-free grammar", "S→S₁ab,S₁→S₁ab|S₂,S₂→a is Regular grammar", "S→S₁ab,S₁→S₁ab|S₂,S₂→a left linear grammar", "A and B"],
+      "correctAnswer": "S→S₁ab,S₁→S₁ab|S₂,S₂→a left linear grammar",
+      "explanation": "The grammar is left-linear (non-terminal at left of string), which is a type of regular grammar.",
+      "subject": "Automata and Complexity Theory",
+      "topic": "Grammar Types"
+    },
+    {
+      "question": "How many languages are over the alphabet R?",
+      "choices": ["countably infinite", "countably finite", "uncountable finite", "uncountable infinite"],
+      "correctAnswer": "uncountable infinite",
+      "explanation": "The set of all languages over an alphabet is uncountably infinite (power set of Σ*).",
+      "subject": "Automata and Complexity Theory",
+      "topic": "Languages"
+    },
+    {
+      "question": "Which of the following represents a dynamic semantic error?",
+      "choices": ["type mismatch", "Missing semi-colon", "illegal character", "division by zero"],
+      "correctAnswer": "division by zero",
+      "explanation": "Dynamic semantic errors occur at runtime (e.g., division by zero). Type mismatch is usually static.",
+      "subject": "Compiler Design",
+      "topic": "Error Types"
+    },
+    {
+      "question": "When is the type checking usually done?",
+      "choices": ["During lexical analysis", "During syntax analysis", "During code optimization", "During syntax directed translation"],
+      "correctAnswer": "During syntax directed translation",
+      "explanation": "Type checking is typically performed during the semantic analysis phase, which is part of syntax-directed translation.",
+      "subject": "Compiler Design",
+      "topic": "Semantic Analysis"
+    },
+    {
+      "question": "Which of the following can NOT represent a target Code?",
+      "choices": ["Three address code", "Assembly language", "Absolute machine code", "Byte Code"],
+      "correctAnswer": "Three address code",
+      "explanation": "Three-address code is an intermediate representation, not target code. Target code is machine/assembly/bytecode.",
+      "subject": "Compiler Design",
+      "topic": "Code Generation"
+    },
+    {
+      "question": "All of the following can represent intermediate code except______",
+      "choices": ["Syntax tree", "Three address code", "lexemes", "Quadruples"],
+      "correctAnswer": "lexemes",
+      "explanation": "Lexemes are tokens from lexical analysis, not intermediate code representations.",
+      "subject": "Compiler Design",
+      "topic": "Intermediate Code"
+    },
+    {
+      "question": "The recognizer to syntax analysis is______",
+      "choices": ["Deterministic finite automata", "Non-deterministic finite automata", "non-deterministic pushdown automata", "deterministic push down automata"],
+      "correctAnswer": "deterministic push down automata",
+      "explanation": "Syntax analysis (parsing) for CFGs uses pushdown automata, typically deterministic for practical parsers.",
+      "subject": "Compiler Design",
+      "topic": "Parsing"
+    },
+    {
+      "question": "All of the following grammar types are implemented with predictive parser except______",
+      "choices": ["Right recursive", "Left recursive", "deterministic", "left-factored"],
+      "correctAnswer": "Left recursive",
+      "explanation": "Predictive parsers (LL parsers) cannot handle left recursion directly; it must be eliminated.",
+      "subject": "Compiler Design",
+      "topic": "Parsing Techniques"
+    }
+  ]
+}

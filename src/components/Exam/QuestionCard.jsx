@@ -1,13 +1,25 @@
-const QuestionCard = ({ question, questionNumber, selectedAnswer, onAnswerSelect }) => {
+import { SparklesIcon } from '@heroicons/react/24/outline';
+
+const QuestionCard = ({ question, questionNumber, selectedAnswer, onAnswerSelect, onGrokClick }) => {
   if (!question) return null;
 
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-border">
         <span className="text-primary-500 font-semibold">Question {questionNumber}</span>
-        <span className="text-xs text-text-secondary bg-surface px-2 py-1 rounded">
-          {question.subject}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onGrokClick}
+            className="p-2 rounded-lg bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 transition-colors active:scale-95"
+            title="Get AI explanation (marks question as wrong for learning)"
+            aria-label="Grok AI Assistant"
+          >
+            <SparklesIcon className="w-5 h-5" />
+          </button>
+          <span className="text-xs text-text-secondary bg-surface px-2 py-1 rounded">
+            {question.subject}
+          </span>
+        </div>
       </div>
 
       <div className="text-base md:text-lg text-text mb-4 leading-relaxed">

@@ -196,12 +196,23 @@ service cloud.firestore {
               </p>
               {uploadResult.errors && (
                 <div className="mt-3 pt-3 border-t border-green-500/30">
-                  <p className="text-sm font-medium text-green-500 mb-2">Some questions had errors:</p>
-                  <ul className="text-xs text-text-secondary list-disc list-inside space-y-1">
-                    {uploadResult.errors.map((err, idx) => (
-                      <li key={idx}>Question {err.index}: {err.error}</li>
-                    ))}
-                  </ul>
+                  <p className="text-sm font-medium text-yellow-500 mb-2">
+                    {uploadResult.errors.length} question(s) failed validation:
+                  </p>
+                  <div className="max-h-60 overflow-y-auto">
+                    <ul className="text-xs text-text-secondary space-y-2">
+                      {uploadResult.errors.map((err, idx) => (
+                        <li key={idx} className="bg-surface/50 p-2 rounded border border-border">
+                          <span className="font-semibold text-text">Question {err.index}</span>
+                          {err.subject && <span className="text-muted"> ({err.subject})</span>}
+                          <div className="text-red-400 mt-1">{err.error}</div>
+                          {err.question && (
+                            <div className="text-muted mt-1 italic truncate">{err.question}...</div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
             </div>

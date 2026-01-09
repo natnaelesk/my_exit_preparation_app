@@ -9,6 +9,13 @@ A single-user personal exam preparation and analysis platform for the Ethiopian 
   - Topic-Focused Mode: Focus on specific subjects and topics
   - Weak-Area Mode: Automatically targets your weak areas
 
+- **AI Assistant (Grok Integration):**
+  - Click the ✨ button on any question during exam mode
+  - Get instant AI explanations of questions, answers, and topics
+  - Chat with AI to ask follow-up questions
+  - Questions are marked as incorrect when using AI (for learning purposes)
+  - No chat data is saved - all interactions are temporary
+
 - **Comprehensive Analytics:**
   - Subject-level performance analysis
   - Topic-level drill-down
@@ -61,17 +68,48 @@ npm install
    5. Click on the web app icon (</>) or add a web app
    6. Copy the config values from the `firebaseConfig` object
 
-3. Set up Firestore:
+3. Configure AI Assistant (Optional - for AI assistant feature):
+   - **Recommended: Use OpenAI** (works immediately, free tier available)
+     - Get API key from [OpenAI](https://platform.openai.com/api-keys)
+     - Add to `.env` file:
+     ```
+     VITE_GROK_API_KEY=sk-your-openai-api-key
+     VITE_GROK_API_URL=https://api.openai.com/v1/chat/completions
+     VITE_GROK_MODEL=gpt-3.5-turbo
+     ```
+   - **Alternative: Use Grok/xAI** (if API is available)
+     - Get API key from [xAI](https://x.ai)
+     - Add to `.env` file:
+     ```
+     VITE_GROK_API_KEY=your-grok-api-key
+     VITE_GROK_API_URL=https://api.x.ai/v1/chat/completions
+     VITE_GROK_MODEL=grok-beta
+     ```
+   - **Note**: The AI assistant feature is optional. If you don't add the API key, the AI button will show an error message when clicked.
+   - **Troubleshooting**: If you get a 400 error, check the browser console (F12) for detailed error messages. The service supports OpenAI-compatible APIs.
+
+4. Set up Firestore:
    - Create the following collections:
      - `questions` - Store question data
      - `exams` - Store exam metadata
      - `attempts` - Store user attempts
      - `examSessions` - Store exam session state
 
-4. Run the development server:
+5. Run the development server:
 ```bash
 npm run dev
 ```
+
+## Features
+
+### AI Assistant (Grok Integration)
+During exam mode, you can click the Grok AI button (✨) on any question to:
+- Get instant explanations of the question and answer
+- Understand why the correct answer is correct
+- Learn about the topic in detail
+- Chat with AI to ask follow-up questions
+- **Note**: Using Grok marks the question as incorrect for learning purposes (this is intentional for study mode)
+- **Privacy**: No chat data is saved - all AI interactions are temporary and not stored
 
 ## Firestore Security Rules
 

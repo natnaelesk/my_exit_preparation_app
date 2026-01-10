@@ -218,3 +218,84 @@ export const sendChatMessage = async (conversationHistory, userMessage, apiKey) 
   }
 };
 
+/**
+ * Get a short daily motivation message for the Plan page.
+ * Nothing is saved; callers should cache it locally if desired.
+ */
+export const getDailyPlanMotivation = async (
+  {
+    dateKey,
+    focusSubject,
+    focusTopic,
+    subjectAccuracy,
+    weakestTopics = []
+  },
+  apiKey
+) => {
+  if (!apiKey) {
+    throw new Error('Groq/Grok API key is required. Please add VITE_GROK_API_KEY to your environment variables.');
+  }
+
+  const weakTopicsText =
+    weakestTopics && weakestTopics.length > 0
+      ? weakestTopics
+          .slice(0, 4)
+          .map((t) => `${t.topic}: ${Math.round(t.accuracy || 0)}%`)
+          .join(', ')
+      : 'N/A';
+
+  const prompt = `Return your answer in plain text (NO Markdown).
+Constraints:
+- 1 short paragraph, 2-3 sentences max.
+- Simple English.
+- No emojis.
+- Talk directly to the user ("you").
+- Be motivating but not cheesy.
+
+Context:
+Date: ${dateKey}
+Today's focus subject: ${focusSubject}
+Today's focus topic: ${focusTopic || 'All topics'}
+Current subject accuracy: ${Math.round(subjectAccuracy || 0)}%
+Weak topics (accuracy): ${weakTopicsText}
+
+Task:
+Write a motivation message for today's practice plan that helps the user stay consistent and focus on improving weak areas.`;
+
+  try {
+    const response = await fetch(GROK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: GROK_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a concise, practical study coach.'
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.6,
+        max_tokens: 180
+      })
+    });
+
+    if (!response.ok) {
+      let errorMessage = `API error: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData?.error?.message) errorMessage = errorData.error.message;
+      } catch {}
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    return (data.choices[0]?.message?.content || '').trim() || 'Stay consistent today — one focused session is enough to move your score.';
+  } catch (error) {
+    throw new Error(`Failed to get daily motivation: ${error.message}`);
+  }
+};
+

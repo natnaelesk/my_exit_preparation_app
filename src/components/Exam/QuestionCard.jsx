@@ -1,4 +1,5 @@
 import { SparklesIcon } from '@heroicons/react/24/outline';
+import RichText from '../Common/RichText';
 
 const QuestionCard = ({ question, questionNumber, selectedAnswer, onAnswerSelect, onGrokClick }) => {
   if (!question) return null;
@@ -23,7 +24,7 @@ const QuestionCard = ({ question, questionNumber, selectedAnswer, onAnswerSelect
       </div>
 
       <div className="text-base md:text-lg text-text mb-4 leading-relaxed">
-        {question.question}
+        <RichText text={question.question} />
       </div>
 
       {question.topic && (
@@ -51,7 +52,9 @@ const QuestionCard = ({ question, questionNumber, selectedAnswer, onAnswerSelect
                 <span className={`font-bold ${isSelected ? 'text-white' : 'text-primary-500'}`}>
                   {choiceLabel}.
                 </span>
-                <span className="flex-1">{choice}</span>
+                <div className="flex-1">
+                  <RichText text={choice} isInverted={isSelected} compact />
+                </div>
               </div>
             </button>
           );

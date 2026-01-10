@@ -229,18 +229,24 @@ export const generateExamWeakAreaExam = async (examId, questionCount = 50) => {
 /**
  * Generate topic-focused exam
  */
-export const generateTopicFocusedExam = async (subject, topics, excludeIds = [], questionCount = 50) => {
+export const generateTopicFocusedExam = async (subject, topics, excludeIds = [], questionCount = 50, allowReattempts = false) => {
   try {
-    const answeredIds = await getAnsweredQuestionIds();
-    const excludeSet = new Set([...excludeIds, ...answeredIds]);
+    const excludeSet = new Set(excludeIds);
+    if (!allowReattempts) {
+      const answeredIds = await getAnsweredQuestionIds();
+      for (const id of answeredIds) excludeSet.add(id);
+    }
 
     // Get questions for the specified subject and topics
     const questions = await getQuestionsByTopic(subject, topics);
 
-    // Filter out answered questions
-    const availableQuestions = questions.filter(
-      q => !excludeSet.has(q.questionId)
-    );
+    // Filter questions
+    let availableQuestions = questions.filter(q => !excludeSet.has(q.questionId));
+
+    // If we're not allowing reattempts but ran out, fall back to allowing repeats (practice)
+    if (!allowReattempts && availableQuestions.length === 0) {
+      availableQuestions = questions.filter(q => !excludeIds.includes(q.questionId));
+    }
 
     if (availableQuestions.length === 0) {
       throw new Error(`No available questions for ${subject} - ${topics.join(', ')}. All questions have been answered.`);
@@ -295,7 +301,7 @@ export const generateExamSubjectFocusedExam = async (examId, subject, questionCo
  * Generate weak-area exam (MOST IMPORTANT)
  * Prioritizes weak topics, falls back to medium, avoids strong unless needed
  */
-export const generateWeakAreaExam = async (excludeIds = [], questionCount = 50, subjectFilter = null, topicFilter = null) => {
+export const generateWeakAreaExam = async (excludeIds = [], questionCount = 50, subjectFilter = null, topicFilter = null, allowReattempts = false) => {
   try {
     // Get questions - filter by subject/topic if specified
     let allQuestions;
@@ -312,9 +318,12 @@ export const generateWeakAreaExam = async (excludeIds = [], questionCount = 50, 
     // Get weak topics
     const weakTopics = await getWeakTopics(subjectFilter, 20);
     
-    // Get answered question IDs
-    const answeredIds = await getAnsweredQuestionIds();
-    const excludeSet = new Set([...excludeIds, ...answeredIds]);
+    // Build exclusion set
+    const excludeSet = new Set(excludeIds);
+    if (!allowReattempts) {
+      const answeredIds = await getAnsweredQuestionIds();
+      for (const id of answeredIds) excludeSet.add(id);
+    }
 
     // Categorize questions by topic strength
     const weakQuestionIds = new Set();
@@ -366,11 +375,22 @@ export const generateWeakAreaExam = async (excludeIds = [], questionCount = 50, 
       selectedQuestions.push(...shuffledAll.slice(0, questionCount - selectedQuestions.length));
     }
 
+    // If we STILL don't have enough (usually because most questions are already answered),
+    // fall back to allowing reattempts so the user can keep practicing.
+    if (!allowReattempts && selectedQuestions.length < questionCount) {
+      const alreadySelected = new Set(selectedQuestions.map(q => q.questionId));
+      const backfillPool = allQuestions.filter(
+        q => !excludeIds.includes(q.questionId) && !alreadySelected.has(q.questionId)
+      );
+      const shuffledBackfill = shuffleArray(backfillPool);
+      selectedQuestions.push(...shuffledBackfill.slice(0, questionCount - selectedQuestions.length));
+    }
+
     if (selectedQuestions.length === 0) {
       throw new Error('No available questions for weak-area exam.');
     }
 
-    return selectedQuestions.map(q => q.questionId);
+    return selectedQuestions.slice(0, questionCount).map(q => q.questionId);
   } catch (error) {
     console.error('Error generating weak-area exam:', error);
     throw error;
@@ -390,6 +410,7 @@ export const createExamSession = async (mode, config = {}) => {
     const questionCount = config.questionCount || 50;
     const examId = config.examId || null;
     const timePerQuestion = config.timePerQuestion || null; // in seconds (null = unlimited)
+    const allowReattempts = !!config.allowReattempts;
 
     switch (mode) {
       case EXAM_MODES.RANDOM:
@@ -417,7 +438,8 @@ export const createExamSession = async (mode, config = {}) => {
           config.subject,
           config.topics,
           [],
-          questionCount
+          questionCount,
+          allowReattempts
         );
         break;
       case EXAM_MODES.WEAK_AREA:
@@ -425,7 +447,8 @@ export const createExamSession = async (mode, config = {}) => {
           [],
           questionCount,
           config.subject || null,
-          config.topics || null
+          config.topics || null,
+          allowReattempts
         );
         break;
       default:

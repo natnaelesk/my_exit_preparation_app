@@ -451,32 +451,39 @@ export const createExamSession = async (mode, config = {}) => {
     const examId = config.examId || null;
     const timePerQuestion = config.timePerQuestion || null; // in seconds (null = unlimited)
     const allowReattempts = !!config.allowReattempts;
+    const planDateKey = config.planDateKey || null; // For daily plan sessions
+    const planQuestionIds = config.planQuestionIds || null; // Pre-selected question IDs from daily plan
 
-    switch (mode) {
-      case EXAM_MODES.RANDOM:
-        questionIds = await generateRandomExam([], questionCount, examId, true);
-        break;
-      case EXAM_MODES.SUBJECT:
-        if (!config.subject) {
-          throw new Error('Subject mode requires subject');
-        }
-        questionIds = await generateSubjectExam(config.subject, [], questionCount, allowReattempts);
-        break;
-      case 'exam-weak-area':
-        // Exam-specific weak area mode
-        if (!examId) {
-          throw new Error('Exam-specific weak area mode requires examId');
-        }
-        questionIds = await generateExamWeakAreaExam(examId, questionCount);
-        break;
-      case 'exam-subject-focused':
-        // Exam-specific subject-focused mode
-        if (!examId || !config.subject) {
-          throw new Error('Exam-specific subject-focused mode requires examId and subject');
-        }
-        questionIds = await generateExamSubjectFocusedExam(examId, config.subject, questionCount);
-        break;
-      case EXAM_MODES.TOPIC_FOCUSED:
+    // If planQuestionIds provided, use them directly (daily plan mode)
+    // Daily plans already have up to 35 questions selected, so use all of them
+    if (planQuestionIds && Array.isArray(planQuestionIds) && planQuestionIds.length > 0) {
+      questionIds = planQuestionIds; // Use all plan questions (up to 35)
+    } else {
+      switch (mode) {
+        case EXAM_MODES.RANDOM:
+          questionIds = await generateRandomExam([], questionCount, examId, true);
+          break;
+        case EXAM_MODES.SUBJECT:
+          if (!config.subject) {
+            throw new Error('Subject mode requires subject');
+          }
+          questionIds = await generateSubjectExam(config.subject, [], questionCount, allowReattempts);
+          break;
+        case 'exam-weak-area':
+          // Exam-specific weak area mode
+          if (!examId) {
+            throw new Error('Exam-specific weak area mode requires examId');
+          }
+          questionIds = await generateExamWeakAreaExam(examId, questionCount);
+          break;
+        case 'exam-subject-focused':
+          // Exam-specific subject-focused mode
+          if (!examId || !config.subject) {
+            throw new Error('Exam-specific subject-focused mode requires examId and subject');
+          }
+          questionIds = await generateExamSubjectFocusedExam(examId, config.subject, questionCount);
+          break;
+        case EXAM_MODES.TOPIC_FOCUSED:
         if (!config.subject || !config.topics || config.topics.length === 0) {
           throw new Error('Topic-focused mode requires subject and topics');
         }
@@ -511,7 +518,10 @@ export const createExamSession = async (mode, config = {}) => {
       sessionId,
       examId: examId || null,
       mode,
-      config,
+      config: {
+        ...config,
+        planDateKey: planDateKey || null // Include planDateKey in config for attempt tagging
+      },
       currentIndex: 0,
       questionIds,
       answers: {},
@@ -520,7 +530,8 @@ export const createExamSession = async (mode, config = {}) => {
       isComplete: false,
       isPaused: false,
       lastUpdated: Timestamp.now(),
-      timePerQuestion: timePerQuestion || null
+      timePerQuestion: timePerQuestion || null,
+      planDateKey: planDateKey || null // Also store at top level for easy access
     };
 
     // Create new session document - old sessions remain untouched

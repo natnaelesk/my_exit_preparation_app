@@ -243,7 +243,8 @@ export const ExamProvider = ({ children }) => {
               examId: currentSession.examId || null,
               mode: currentSession.mode,
               subject: question.subject,
-              topic: question.topic || 'Unknown'
+              topic: question.topic || 'Unknown',
+              planDateKey: currentSession.planDateKey || currentSession.config?.planDateKey || null // Tag with plan date for daily isolation
             }).catch(err => {
               console.error(`Error saving attempt for question ${questionId}:`, err);
             })
@@ -257,6 +258,18 @@ export const ExamProvider = ({ children }) => {
       } catch (err) {
         console.error('Some attempts failed to save:', err);
         // Continue anyway - we still have the examData
+      }
+
+      // If this was a daily plan session, recompute daily plan stats and mark complete if needed
+      const planDateKey = currentSession.planDateKey || currentSession.config?.planDateKey;
+      if (planDateKey) {
+        try {
+          const { recomputeDailyPlanStats } = await import('../services/dailyPlanService');
+          await recomputeDailyPlanStats(planDateKey);
+        } catch (err) {
+          console.error('Error recomputing daily plan stats:', err);
+          // Continue anyway
+        }
       }
 
       // Mark session as complete (non-blocking)
@@ -359,7 +372,8 @@ export const ExamProvider = ({ children }) => {
               examId: currentSession.examId || null,
               mode: currentSession.mode,
               subject: question.subject,
-              topic: question.topic || 'Unknown'
+              topic: question.topic || 'Unknown',
+              planDateKey: currentSession.planDateKey || currentSession.config?.planDateKey || null // Tag with plan date for daily isolation
             }).catch(err => {
               console.error(`Error saving attempt for question ${questionId}:`, err);
             })

@@ -13,6 +13,7 @@ import CreateExam from './components/Exams/CreateExam';
 import ExamDetail from './components/Exams/ExamDetail';
 import PlanPage from './components/Plan/PlanPage';
 import ResetData from './components/Admin/ResetData';
+import QuestionBank from './components/Bank/QuestionBank';
 
 function AppContent() {
   const location = useLocation();
@@ -36,6 +37,7 @@ function AppContent() {
           <Route path="/results" element={<ExamResults />} />
           <Route path="/analytics" element={<AnalyticsDashboard />} />
           <Route path="/plan" element={<PlanPage />} />
+          <Route path="/bank" element={<QuestionBank />} />
           <Route path="/admin/reset" element={<ResetData />} />
                   <Route path="/topic-focused" element={<TopicFocusedMode />} />
                   <Route path="/exams" element={<ExamsList />} />

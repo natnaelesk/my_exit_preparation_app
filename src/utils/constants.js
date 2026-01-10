@@ -28,7 +28,8 @@ export const STATUS_THRESHOLDS = {
 export const EXAM_MODES = {
   RANDOM: 'random',
   TOPIC_FOCUSED: 'topic-focused',
-  WEAK_AREA: 'weak-area'
+  WEAK_AREA: 'weak-area',
+  SUBJECT: 'subject'
 };
 
 // Weak Area Selection Probabilities

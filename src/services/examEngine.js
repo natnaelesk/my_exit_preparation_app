@@ -31,6 +31,46 @@ const shuffleArray = (array) => {
 };
 
 /**
+ * Generate subject-only random exam
+ * @param {string} subject - Subject to filter
+ * @param {string[]} excludeIds - IDs to exclude
+ * @param {number} questionCount - Number of questions
+ * @param {boolean} allowReattempts - If false, excludes answered questions (falls back to reattempts if needed)
+ */
+export const generateSubjectExam = async (subject, excludeIds = [], questionCount = 50, allowReattempts = true) => {
+  try {
+    const questions = await getQuestionsBySubject(subject);
+    if (!questions || questions.length === 0) {
+      throw new Error(`No questions found for subject: ${subject}`);
+    }
+
+    const excludeSet = new Set(excludeIds);
+    let available = questions.filter((q) => !excludeSet.has(q.questionId));
+
+    if (!allowReattempts) {
+      const answeredIds = await getAnsweredQuestionIds();
+      const answeredSet = new Set(answeredIds);
+      available = available.filter((q) => !answeredSet.has(q.questionId));
+
+      // If everything is answered, fall back to allowing repeats (practice)
+      if (available.length === 0) {
+        available = questions.filter((q) => !excludeSet.has(q.questionId));
+      }
+    }
+
+    if (available.length === 0) {
+      throw new Error('No available questions for this subject.');
+    }
+
+    const shuffled = shuffleArray(available);
+    return shuffled.slice(0, Math.min(questionCount, shuffled.length)).map((q) => q.questionId);
+  } catch (error) {
+    console.error('Error generating subject exam:', error);
+    throw error;
+  }
+};
+
+/**
  * Generate random exam questions
  * @param {string[]} excludeIds - Question IDs to exclude
  * @param {number} questionCount - Number of questions to generate
@@ -415,6 +455,12 @@ export const createExamSession = async (mode, config = {}) => {
     switch (mode) {
       case EXAM_MODES.RANDOM:
         questionIds = await generateRandomExam([], questionCount, examId, true);
+        break;
+      case EXAM_MODES.SUBJECT:
+        if (!config.subject) {
+          throw new Error('Subject mode requires subject');
+        }
+        questionIds = await generateSubjectExam(config.subject, [], questionCount, allowReattempts);
         break;
       case 'exam-weak-area':
         // Exam-specific weak area mode

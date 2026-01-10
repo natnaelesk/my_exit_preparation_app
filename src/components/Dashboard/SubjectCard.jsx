@@ -75,7 +75,7 @@ const SubjectCard = ({ stats, onClick }) => {
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted flex items-center gap-1">
               <BookOpenIcon className="w-3 h-3" />
-              {totalAttempted} questions
+              {totalAttempted} attempts
             </span>
           </div>
         </>

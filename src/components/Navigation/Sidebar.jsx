@@ -4,7 +4,8 @@ import {
   HomeIcon, 
   BookOpenIcon, 
   ChartBarIcon, 
-  CalendarDaysIcon 
+  CalendarDaysIcon,
+  RectangleStackIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
@@ -20,6 +21,7 @@ const Sidebar = () => {
   const navItems = [
     { path: '/', icon: HomeIcon, label: 'Dashboard' },
     { path: '/exams', icon: BookOpenIcon, label: 'Exams' },
+    { path: '/bank', icon: RectangleStackIcon, label: 'Question Bank' },
     { path: '/plan', icon: CalendarDaysIcon, label: 'Plan' },
     { path: '/analytics', icon: ChartBarIcon, label: 'Analytics' },
   ];

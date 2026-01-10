@@ -4,6 +4,7 @@ import { OFFICIAL_SUBJECTS, EXAM_MODES } from '../../utils/constants';
 import { getAllQuestions } from '../../services/questionService';
 import { getAnsweredQuestionIds } from '../../services/attemptService';
 import { useExam } from '../../contexts/ExamContext';
+import LoadingAnimation from '../Common/LoadingAnimation';
 import { BookOpenIcon, PlayIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { normalizeSubject } from '../../utils/subjectNormalization';
 
@@ -91,7 +92,7 @@ const QuestionBank = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center pb-24 md:pb-6">
-        <div className="text-muted">Loading question bank...</div>
+        <LoadingAnimation message="Loading question bank" size="large" />
       </div>
     );
   }

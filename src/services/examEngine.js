@@ -484,28 +484,29 @@ export const createExamSession = async (mode, config = {}) => {
           questionIds = await generateExamSubjectFocusedExam(examId, config.subject, questionCount);
           break;
         case EXAM_MODES.TOPIC_FOCUSED:
-        if (!config.subject || !config.topics || config.topics.length === 0) {
-          throw new Error('Topic-focused mode requires subject and topics');
-        }
-        questionIds = await generateTopicFocusedExam(
-          config.subject,
-          config.topics,
-          [],
-          questionCount,
-          allowReattempts
-        );
-        break;
-      case EXAM_MODES.WEAK_AREA:
-        questionIds = await generateWeakAreaExam(
-          [],
-          questionCount,
-          config.subject || null,
-          config.topics || null,
-          allowReattempts
-        );
-        break;
-      default:
-        throw new Error(`Unknown exam mode: ${mode}`);
+          if (!config.subject || !config.topics || config.topics.length === 0) {
+            throw new Error('Topic-focused mode requires subject and topics');
+          }
+          questionIds = await generateTopicFocusedExam(
+            config.subject,
+            config.topics,
+            [],
+            questionCount,
+            allowReattempts
+          );
+          break;
+        case EXAM_MODES.WEAK_AREA:
+          questionIds = await generateWeakAreaExam(
+            [],
+            questionCount,
+            config.subject || null,
+            config.topics || null,
+            allowReattempts
+          );
+          break;
+        default:
+          throw new Error(`Unknown exam mode: ${mode}`);
+      }
     }
 
     if (questionIds.length === 0) {

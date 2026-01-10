@@ -6,6 +6,8 @@ import { getAllExams } from '../../services/examService';
 import { getExamSessions } from '../../services/examEngine';
 import SubjectCard from './SubjectCard';
 import QuickStats from './QuickStats';
+import LoadingAnimation from '../Common/LoadingAnimation';
+import ButtonLoading from '../Common/ButtonLoading';
 import { EXAM_MODES, OFFICIAL_SUBJECTS } from '../../utils/constants';
 import { format } from 'date-fns';
 import { 
@@ -147,10 +149,7 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center pb-24 md:pb-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <div className="text-muted">Loading dashboard...</div>
-        </div>
+        <LoadingAnimation message="Loading your dashboard" size="large" />
       </div>
     );
   }
@@ -250,10 +249,7 @@ const Dashboard = () => {
                 disabled={isStarting}
               >
                 {isStarting && startingMode === EXAM_MODES.RANDOM ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Starting...</span>
-                  </>
+                  <ButtonLoading text="Starting..." />
                 ) : (
                   <>
                     <PlayIcon className="w-4 h-4" />
@@ -283,10 +279,7 @@ const Dashboard = () => {
                 disabled={isStarting}
               >
                 {isStarting && startingMode === EXAM_MODES.WEAK_AREA ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Preparing...</span>
-                  </>
+                  <ButtonLoading text="Preparing..." />
                 ) : (
                   <>
                     <FireIcon className="w-4 h-4" />

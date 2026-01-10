@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import { calculateTopicStats } from '../../services/analyticsService';
+import LoadingAnimation from '../Common/LoadingAnimation';
 import PerformanceChart from './PerformanceChart';
 
 const SubjectAnalysis = ({ subject, stats, onBack, onImproveTopic }) => {
@@ -103,7 +104,9 @@ const SubjectAnalysis = ({ subject, stats, onBack, onImproveTopic }) => {
         <div>
           <h3 className="text-xl font-bold text-text mb-4">Topic-Level Analysis</h3>
           {isLoading ? (
-            <div className="text-center py-8 text-text-secondary">Loading topics...</div>
+            <div className="text-center py-8">
+              <LoadingAnimation message="Loading topics" size="default" />
+            </div>
           ) : topics.length === 0 ? (
             <div className="card text-center py-8 text-text-secondary">
               No topic data available. Attempt some questions in this subject to see topic-level analysis.

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import { getQuestionsBySubject } from '../../services/questionService';
+import LoadingAnimation from '../Common/LoadingAnimation';
 import { OFFICIAL_SUBJECTS, EXAM_MODES } from '../../utils/constants';
 
 const TopicFocusedMode = () => {
@@ -95,7 +96,9 @@ const TopicFocusedMode = () => {
                 Select Topics (select one or more)
               </label>
               {isLoading ? (
-                <div className="text-text-secondary text-sm">Loading topics...</div>
+                <div className="py-4">
+                  <LoadingAnimation message="Loading topics" size="default" />
+                </div>
               ) : availableTopics.length === 0 ? (
                 <div className="text-text-secondary text-sm">No topics available for this subject</div>
               ) : (

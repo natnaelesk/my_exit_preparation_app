@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getAllExams } from '../../services/examService';
 import { resumeExamSession } from '../../services/examEngine';
 import { useExam } from '../../contexts/ExamContext';
+import LoadingAnimation from '../Common/LoadingAnimation';
 import ExamConfig from './ExamConfig';
 import ExamCard from './ExamCard';
 import { BookOpenIcon } from '@heroicons/react/24/outline';
@@ -56,7 +57,7 @@ const ExamsList = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="text-muted">Loading exams...</div>
+        <LoadingAnimation message="Loading exams" size="large" />
       </div>
     );
   }

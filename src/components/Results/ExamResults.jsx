@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import LoadingAnimation from '../Common/LoadingAnimation';
 import QuestionReview from './QuestionReview';
 import ExamAnalytics from './ExamAnalytics';
 import { formatDuration } from '../../utils/analyticsHelpers';
@@ -121,7 +122,7 @@ const ExamResults = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="text-text-secondary">Loading results...</div>
+        <LoadingAnimation message="Loading results" size="large" />
       </div>
     );
   }

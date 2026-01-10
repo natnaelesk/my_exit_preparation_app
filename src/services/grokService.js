@@ -244,23 +244,30 @@ export const getDailyPlanMotivation = async (
           .join(', ')
       : 'N/A';
 
-  const prompt = `Return your answer in plain text (NO Markdown).
-Constraints:
-- 1 short paragraph, 2-3 sentences max.
-- Simple English.
-- No emojis.
-- Talk directly to the user ("you").
-- Be motivating but not cheesy.
+  const accuracyLevel = subjectAccuracy >= 80 ? 'strong' : subjectAccuracy >= 60 ? 'moderate' : 'needs improvement';
+  
+  const prompt = `You are a study coach. Write a brief, practical daily motivation message.
+
+Requirements:
+- 2-3 sentences maximum
+- Plain text only (NO markdown, NO emojis, NO formatting)
+- Be specific and actionable, not generic
+- Focus on what the user should do TODAY
+- Use "you" and "your" (direct address)
+- Sound professional but encouraging
 
 Context:
-Date: ${dateKey}
-Today's focus subject: ${focusSubject}
-Today's focus topic: ${focusTopic || 'All topics'}
-Current subject accuracy: ${Math.round(subjectAccuracy || 0)}%
-Weak topics (accuracy): ${weakTopicsText}
+- Subject: ${focusSubject}
+- Current accuracy: ${Math.round(subjectAccuracy || 0)}% (${accuracyLevel})
+- Focus topic: ${focusTopic || 'All topics in this subject'}
+${weakTopicsText !== 'N/A' ? `- Weak areas: ${weakTopicsText}` : ''}
 
-Task:
-Write a motivation message for today's practice plan that helps the user stay consistent and focus on improving weak areas.`;
+Write a specific, actionable message that:
+1. Acknowledges their current performance level
+2. Gives ONE concrete tip for today's practice
+3. Encourages consistency without being cheesy
+
+Example format: "Your ${focusSubject} accuracy is ${Math.round(subjectAccuracy || 0)}%. Today, focus on [specific action]. [One practical tip]."`;
 
   try {
     const response = await fetch(GROK_API_URL, {
@@ -274,12 +281,12 @@ Write a motivation message for today's practice plan that helps the user stay co
         messages: [
           {
             role: 'system',
-            content: 'You are a concise, practical study coach.'
+            content: 'You are a practical, no-nonsense study coach. Give specific, actionable advice. Be brief and direct. No fluff, no emojis, no markdown.'
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.6,
-        max_tokens: 180
+        temperature: 0.4,
+        max_tokens: 120
       })
     });
 

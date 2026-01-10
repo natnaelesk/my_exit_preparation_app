@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import { getIncompleteSessions } from '../../services/examEngine';
+import LoadingAnimation from '../Common/LoadingAnimation';
 import { format } from 'date-fns';
 
 const ResumeExam = () => {
@@ -58,7 +59,7 @@ const ResumeExam = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="text-text-secondary">Loading sessions...</div>
+        <LoadingAnimation message="Finding your sessions" size="large" />
       </div>
     );
   }

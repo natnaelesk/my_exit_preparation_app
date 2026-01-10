@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import { calculateSubjectStats, calculateTopicStats, calculateOverallTrend } from '../../services/analyticsService';
 import { OFFICIAL_SUBJECTS, STATUS_THRESHOLDS } from '../../utils/constants';
+import LoadingAnimation from '../Common/LoadingAnimation';
+import ButtonLoading from '../Common/ButtonLoading';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
@@ -231,10 +233,7 @@ const AnalyticsDashboard = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center pb-20 md:pb-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <div className="text-muted">Loading analytics...</div>
-        </div>
+        <LoadingAnimation message="Crunching your analytics" size="large" />
       </div>
     );
   }
@@ -456,10 +455,7 @@ const AnalyticsDashboard = () => {
                     disabled={isImproving}
                   >
                     {isImproving && improvingSubject === selectedSubject ? (
-                      <>
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                        <span>Loading...</span>
-                      </>
+                      <ButtonLoading text="Loading..." />
                     ) : (
                       'Improve'
                     )}
@@ -671,10 +667,7 @@ const AnalyticsDashboard = () => {
                       disabled={isImproving}
                     >
                       {isImproving && improvingSubject === selectedSubject ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          <span>Preparing Questions...</span>
-                        </>
+                        <ButtonLoading text="Preparing Questions..." />
                       ) : (
                         'Improve This Area'
                       )}

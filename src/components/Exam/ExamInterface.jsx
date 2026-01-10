@@ -4,6 +4,7 @@ import { useExam } from '../../contexts/ExamContext';
 import QuestionCard from './QuestionCard';
 import ExamProgress from './ExamProgress';
 import GrokAssistant from './GrokAssistant';
+import LoadingAnimation from '../Common/LoadingAnimation';
 
 const ExamInterface = () => {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ const ExamInterface = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="text-text-secondary">Loading exam...</div>
+        <LoadingAnimation message="Preparing your exam" size="large" />
       </div>
     );
   }

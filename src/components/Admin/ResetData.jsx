@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { resetAllData, getCollectionCounts } from '../../services/resetService';
+import LoadingAnimation from '../Common/LoadingAnimation';
+import ButtonLoading from '../Common/ButtonLoading';
 import { ExclamationTriangleIcon, TrashIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 const ResetData = () => {
@@ -63,9 +65,8 @@ const ResetData = () => {
           <h2 className="text-xl font-bold text-text mb-4">Current Data</h2>
           <div className="space-y-2 mb-4">
             {isLoadingCounts ? (
-              <div className="text-muted text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500 mx-auto mb-2"></div>
-                Loading counts...
+              <div className="text-center py-4">
+                <LoadingAnimation message="Loading counts" size="default" />
               </div>
             ) : counts ? (
               <>
@@ -193,10 +194,7 @@ const ResetData = () => {
                     disabled={isResetting}
                   >
                     {isResetting ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>Deleting...</span>
-                      </>
+                      <ButtonLoading text="Deleting..." />
                     ) : (
                       <>
                         <TrashIcon className="w-5 h-5" />

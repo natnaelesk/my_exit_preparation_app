@@ -12,7 +12,7 @@ function TextBlock({ value, className }) {
 
 function CodeBlock({ value, isInverted = false, compact = false }) {
   const container = isInverted
-    ? 'bg-white/10 border-white/20'
+    ? 'bg-white/20 border-white/30'
     : 'bg-surface border-border';
 
   const text = isInverted ? 'text-white' : 'text-text';

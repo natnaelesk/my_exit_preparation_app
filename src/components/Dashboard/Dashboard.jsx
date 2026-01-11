@@ -422,7 +422,7 @@ const Dashboard = () => {
 
           {/* Quick Insights */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-green-500/10 to-dark-card rounded-xl p-4 border border-green-500/30">
+            <div className="bg-gradient-to-br from-green-500/10 to-surface rounded-xl p-4 border border-green-500/30">
               <div className="flex items-center gap-2 mb-2">
                 <TrophyIcon className="w-5 h-5 text-green-500" />
                 <h4 className="text-sm font-semibold text-text">Strong Areas</h4>

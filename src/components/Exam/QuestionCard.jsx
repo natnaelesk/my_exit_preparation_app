@@ -44,7 +44,7 @@ const QuestionCard = ({ question, questionNumber, selectedAnswer, onAnswerSelect
               className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 active:scale-[0.98] ${
                 isSelected
                   ? 'bg-primary-500 border-primary-500 text-white'
-                  : 'bg-surface border-border text-text hover:border-primary-500/50'
+                  : 'bg-card border-border text-text hover:border-primary-500/50 hover:bg-surface'
               }`}
               onClick={() => onAnswerSelect(choice)}
             >

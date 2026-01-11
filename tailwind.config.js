@@ -8,18 +8,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Professional Indigo (accent)
+        // Theme-based primary color (set dynamically via CSS variables)
         primary: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1', // Main indigo
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
+          50: 'rgb(var(--color-primary-400) / 0.1)',
+          100: 'rgb(var(--color-primary-400) / 0.2)',
+          200: 'rgb(var(--color-primary-400) / 0.3)',
+          300: 'rgb(var(--color-primary-400) / 0.4)',
+          400: 'rgb(var(--color-primary-400) / <alpha-value>)',
+          500: 'rgb(var(--color-primary-500) / <alpha-value>)', // Main primary
+          600: 'rgb(var(--color-primary-600) / <alpha-value>)',
+          700: 'rgb(var(--color-primary-700) / <alpha-value>)',
+          800: 'rgb(var(--color-primary-600) / 0.8)',
+          900: 'rgb(var(--color-primary-700) / 0.9)',
         },
         // Semantic tokens (themeable via CSS variables in src/index.css)
         bg: 'rgb(var(--color-bg) / <alpha-value>)',

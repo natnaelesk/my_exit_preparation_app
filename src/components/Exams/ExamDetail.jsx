@@ -257,7 +257,7 @@ const ExamDetail = () => {
           </div>
 
           {/* Exam Configuration Section */}
-          <div className="p-6 bg-gradient-to-br from-dark-card to-dark-surface rounded-xl border border-border mb-6">
+          <div className="p-6 bg-gradient-to-br from-card to-surface rounded-xl border border-border mb-6">
             <h2 className="text-xl font-bold text-text mb-4">Exam Configuration</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -399,7 +399,7 @@ const ExamDetail = () => {
 
         {/* Progress Overview - If has progress */}
         {progress && progress.hasProgress && (
-          <div className="mb-8 p-6 bg-gradient-to-br from-dark-card to-dark-surface rounded-2xl border border-border">
+          <div className="mb-8 p-6 bg-gradient-to-br from-card to-surface rounded-2xl border border-border">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-text">Your Progress</h2>
               <span className={`text-3xl font-bold ${progress.isComplete ? 'text-green-500' : 'text-primary-500'}`}>

@@ -4,23 +4,23 @@
 
 @layer base {
   :root {
-    /* Professional Indigo - Light */
-    --color-bg: 249 250 251;       /* gray-50 */
-    --color-surface: 243 244 246;  /* gray-100 */
-    --color-card: 255 255 255;     /* white */
-    --color-border: 229 231 235;   /* gray-200 */
-    --color-text: 17 24 39;        /* gray-900 */
-    --color-muted: 107 114 128;    /* gray-500 */
+    /* Default theme colors - will be overridden by ThemeContext */
+    --color-bg: 30 30 30;
+    --color-surface: 37 37 38;
+    --color-card: 45 45 45;
+    --color-border: 62 62 66;
+    --color-text: 212 212 212;
+    --color-muted: 156 156 156;
+    /* Default primary color (indigo) - will be overridden by ThemeContext */
+    --color-primary-500: 99 102 241;
+    --color-primary-400: 129 140 248;
+    --color-primary-600: 79 70 229;
+    --color-primary-700: 67 56 202;
   }
 
+  /* Dark mode class for Tailwind - colors are set dynamically via JS */
   .dark {
-    /* Clear Dark Theme - Neutral Black */
-    --color-bg: 0 0 0;              /* pure black */
-    --color-surface: 17 17 17;      /* near-black */
-    --color-card: 23 23 23;         /* dark gray */
-    --color-border: 38 38 38;       /* medium gray */
-    --color-text: 245 245 245;      /* off-white */
-    --color-muted: 163 163 163;      /* light gray */
+    /* Colors are set dynamically by ThemeContext */
   }
 
   * {

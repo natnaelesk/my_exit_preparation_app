@@ -19,9 +19,13 @@ export const OFFICIAL_SUBJECTS = [
 
 // Subject Status Thresholds
 export const STATUS_THRESHOLDS = {
-  STRONG: 80,    // >= 80% accuracy
-  MEDIUM: 60,    // 60-79% accuracy
-  WEAK: 0        // < 60% accuracy
+  EXCELLENT: 90,           // >= 90% accuracy
+  VERY_GOOD: 80,           // >= 80% accuracy
+  GOOD: 70,                // >= 70% accuracy
+  MODERATE: 60,            // >= 60% accuracy
+  NEED_IMPROVEMENT: 50,    // >= 50% accuracy
+  NEED_IMPROVEMENT_VERY_MUCH: 30, // >= 30% accuracy
+  DEAD_ZONE: 0             // < 30% accuracy
 };
 
 // Exam Modes

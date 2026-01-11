@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import { calculateSubjectStats, calculateTopicStats, calculateOverallTrend } from '../../services/analyticsService';
-import { OFFICIAL_SUBJECTS, STATUS_THRESHOLDS } from '../../utils/constants';
+import { OFFICIAL_SUBJECTS } from '../../utils/constants';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import ButtonLoading from '../Common/ButtonLoading';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { getStatusColor, getStatusLabel } from '../../utils/statusHelpers';
 
 const AnalyticsDashboard = () => {
   const [subjectStats, setSubjectStats] = useState({});
@@ -85,14 +86,43 @@ const AnalyticsDashboard = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'STRONG': return { primary: '#10b981', bg: 'rgba(16, 185, 129, 0.1)', border: 'rgba(16, 185, 129, 0.3)' };
-      case 'MEDIUM': return { primary: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', border: 'rgba(245, 158, 11, 0.3)' };
-      case 'WEAK': return { primary: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)', border: 'rgba(239, 68, 68, 0.3)' };
-      default: return { primary: '#6b7280', bg: 'rgba(107, 114, 128, 0.1)', border: 'rgba(107, 114, 128, 0.3)' };
-    }
+  // Use status helper for colors - keeping local function for backward compatibility
+  const getStatusColorLocal = (status) => {
+    const colors = getStatusColor(status);
+    return { primary: colors.primary, bg: colors.bg, border: colors.border };
   };
+
+  // Get status priority for sorting (lower number = higher priority/better)
+  const getStatusPriority = (status) => {
+    const priorityMap = {
+      'EXCELLENT': 1,
+      'VERY_GOOD': 2,
+      'GOOD': 3,
+      'MODERATE': 4,
+      'NEED_IMPROVEMENT': 5,
+      'NEED_IMPROVEMENT_VERY_MUCH': 6,
+      'DEAD_ZONE': 7,
+      'N/A': 8
+    };
+    return priorityMap[status] || 9;
+  };
+
+  // Sort subjects by status (Excellent to Dead Zone), then by accuracy within same status
+  const sortedSubjects = [...OFFICIAL_SUBJECTS].sort((a, b) => {
+    const statsA = subjectStats[a] || { status: 'N/A', accuracy: 0, totalAttempted: 0 };
+    const statsB = subjectStats[b] || { status: 'N/A', accuracy: 0, totalAttempted: 0 };
+    
+    const priorityA = getStatusPriority(statsA.status);
+    const priorityB = getStatusPriority(statsB.status);
+    
+    // First sort by status priority
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
+    
+    // If same status, sort by accuracy (higher first)
+    return (statsB.accuracy || 0) - (statsA.accuracy || 0);
+  });
 
   // Calculate overall statistics
   const overallStats = Object.values(subjectStats).reduce((acc, stat) => {
@@ -109,9 +139,13 @@ const AnalyticsDashboard = () => {
     : 0;
 
   const subjectsWithData = Object.values(subjectStats).filter(s => s && s.totalAttempted > 0);
-  const strongCount = subjectsWithData.filter(s => s.status === 'STRONG').length;
-  const mediumCount = subjectsWithData.filter(s => s.status === 'MEDIUM').length;
-  const weakCount = subjectsWithData.filter(s => s.status === 'WEAK').length;
+  const excellentCount = subjectsWithData.filter(s => s.status === 'EXCELLENT').length;
+  const veryGoodCount = subjectsWithData.filter(s => s.status === 'VERY_GOOD').length;
+  const goodCount = subjectsWithData.filter(s => s.status === 'GOOD').length;
+  const moderateCount = subjectsWithData.filter(s => s.status === 'MODERATE').length;
+  const needImprovementCount = subjectsWithData.filter(s => s.status === 'NEED_IMPROVEMENT').length;
+  const needImprovementVeryMuchCount = subjectsWithData.filter(s => s.status === 'NEED_IMPROVEMENT_VERY_MUCH').length;
+  const deadZoneCount = subjectsWithData.filter(s => s.status === 'DEAD_ZONE').length;
 
   // Prepare chart data - with validation to prevent NaN
   const performanceData = Object.values(subjectStats)
@@ -128,9 +162,13 @@ const AnalyticsDashboard = () => {
     }));
 
   const statusDistribution = [
-    { name: 'Strong', value: strongCount, color: '#10b981' },
-    { name: 'Medium', value: mediumCount, color: '#f59e0b' },
-    { name: 'Weak', value: weakCount, color: '#ef4444' },
+    { name: 'Excellent', value: excellentCount, color: '#fbbf24' },
+    { name: 'Very Good', value: veryGoodCount, color: '#10b981' },
+    { name: 'Good', value: goodCount, color: '#22c55e' },
+    { name: 'Moderate', value: moderateCount, color: '#f59e0b' },
+    { name: 'Need Improvement', value: needImprovementCount, color: '#f97316' },
+    { name: 'Need Improvement Very Much', value: needImprovementVeryMuchCount, color: '#ef4444' },
+    { name: 'Dead Zone', value: deadZoneCount, color: '#dc2626' },
     { name: 'Not Started', value: Math.max(0, 15 - subjectsWithData.length), color: '#6b7280' }
   ].filter(item => item.value > 0);
 
@@ -270,9 +308,9 @@ const AnalyticsDashboard = () => {
               <div className="text-2xl font-bold text-red-500 mb-1">{overallStats.totalWrong}</div>
               <div className="text-xs text-text-secondary">Needs attention</div>
             </div>
-            <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-xl p-4 border border-blue-500/30">
-              <div className="text-xs text-text-secondary uppercase tracking-wide mb-1">Strong</div>
-              <div className="text-2xl font-bold text-blue-500 mb-1">{strongCount}</div>
+            <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 rounded-xl p-4 border border-yellow-500/30">
+              <div className="text-xs text-text-secondary uppercase tracking-wide mb-1">Excellent</div>
+              <div className="text-2xl font-bold text-yellow-500 mb-1">{excellentCount}</div>
               <div className="text-xs text-text-secondary">{subjectsWithData.length} subjects</div>
             </div>
           </div>
@@ -362,7 +400,7 @@ const AnalyticsDashboard = () => {
           {/* Subject List - Mobile Optimized */}
           <div className="space-y-3">
             <h2 className="text-lg font-bold text-text px-2">All Subjects</h2>
-            {OFFICIAL_SUBJECTS.map((subject) => {
+            {sortedSubjects.map((subject) => {
               const stats = subjectStats[subject] || {
                 subject,
                 totalAttempted: 0,
@@ -373,10 +411,13 @@ const AnalyticsDashboard = () => {
               };
               
               const colors = getStatusColor(stats.status);
+              const statusLabel = getStatusLabel(stats.status);
               const isSelected = selectedSubject === subject;
               const progressPercent = stats.totalAttempted > 0 
                 ? ((stats.correctCount || 0) / stats.totalAttempted) * 100 
                 : 0;
+              const isExcellent = stats.status === 'EXCELLENT';
+              const isDeadZone = stats.status === 'DEAD_ZONE';
 
               return (
                 <div
@@ -384,13 +425,18 @@ const AnalyticsDashboard = () => {
                   onClick={() => setSelectedSubject(subject)}
                   className={`p-4 rounded-xl border transition-all cursor-pointer ${
                     isSelected 
-                      ? 'border-primary-500 bg-primary-500/10' 
-                      : 'border-border hover:border-primary-500/50 bg-card'
+                      ? `border-primary-500 bg-primary-500/10` 
+                      : isExcellent
+                      ? 'bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 border-yellow-500/40 hover:border-yellow-500/60'
+                      : isDeadZone
+                      ? 'bg-red-600/15 border-red-600/40 hover:border-red-600/60'
+                      : `${colors.borderClass} ${colors.bgClass} hover:border-primary-500/50`
                   }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="text-sm font-semibold text-text flex-1 leading-tight pr-2">
                       {subject}
+                      {isDeadZone && <span className="ml-2 text-base">☠️</span>}
                     </h3>
                     <span 
                       className="text-xs px-2 py-1 rounded-full font-bold whitespace-nowrap"
@@ -400,7 +446,7 @@ const AnalyticsDashboard = () => {
                         border: `1px solid ${colors.border}`
                       }}
                     >
-                      {stats.status}
+                      {statusLabel}
                     </span>
                   </div>
 
@@ -427,9 +473,15 @@ const AnalyticsDashboard = () => {
                         <span className="text-green-500 font-semibold flex items-center gap-1"><CheckCircleIcon className="w-3 h-3" /> {stats.correctCount || 0}</span>
                         <span className="text-red-500 font-semibold flex items-center gap-1"><XCircleIcon className="w-3 h-3" /> {stats.wrongCount || 0}</span>
                       </div>
-                      {stats.status === 'WEAK' && (
+                      {(stats.status === 'DEAD_ZONE' || stats.status === 'NEED_IMPROVEMENT_VERY_MUCH' || stats.status === 'NEED_IMPROVEMENT') && (
                         <div className="mt-2 pt-2 border-t border-border">
-                          <div className="text-xs text-red-400 flex items-center gap-1"><ExclamationTriangleIcon className="w-3 h-3" /> Needs improvement</div>
+                          <div className="text-xs text-red-400 flex items-center gap-1">
+                            {stats.status === 'DEAD_ZONE' && <span className="text-base">☠️</span>}
+                            <ExclamationTriangleIcon className="w-3 h-3" /> 
+                            {stats.status === 'DEAD_ZONE' ? 'Dead Zone - Critical improvement needed' :
+                             stats.status === 'NEED_IMPROVEMENT_VERY_MUCH' ? 'Needs improvement very much' :
+                             'Needs improvement'}
+                          </div>
                         </div>
                       )}
                     </>
@@ -468,7 +520,7 @@ const AnalyticsDashboard = () => {
                   <div className="grid grid-cols-4 gap-2 mb-4">
                     <div className="bg-surface rounded-lg p-3 text-center border border-border">
                       <div className="text-xs text-text-secondary mb-1">Accuracy</div>
-                      <div className={`text-lg font-bold ${currentSubject.status === 'STRONG' ? 'text-green-500' : currentSubject.status === 'WEAK' ? 'text-red-500' : 'text-yellow-500'}`}>
+                      <div className="text-lg font-bold" style={{ color: getStatusColor(currentSubject.status).primary }}>
                         {Math.round(currentSubject.accuracy)}%
                       </div>
                     </div>
@@ -557,9 +609,9 @@ const AnalyticsDashboard = () => {
                 <div className="text-3xl font-bold text-red-500 mb-1">{overallStats.totalWrong}</div>
                 <div className="text-xs text-text-secondary">Requires attention</div>
               </div>
-              <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 rounded-xl p-4 border border-blue-500/30">
-                <div className="text-xs text-text-secondary uppercase tracking-wide mb-1">Strong Subjects</div>
-                <div className="text-3xl font-bold text-blue-500 mb-1">{strongCount}</div>
+              <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 rounded-xl p-4 border border-yellow-500/30">
+                <div className="text-xs text-text-secondary uppercase tracking-wide mb-1">Excellent</div>
+                <div className="text-3xl font-bold text-yellow-500 mb-1">{excellentCount}</div>
                 <div className="text-xs text-text-secondary">Out of {subjectsWithData.length} attempted</div>
               </div>
             </div>
@@ -680,7 +732,7 @@ const AnalyticsDashboard = () => {
                     <div className="grid grid-cols-4 gap-4 mb-6">
                       <div className="bg-surface rounded-lg p-4 border border-border text-center">
                         <div className="text-xs text-text-secondary mb-1">Accuracy</div>
-                        <div className={`text-2xl font-bold ${currentSubject.status === 'STRONG' ? 'text-green-500' : currentSubject.status === 'WEAK' ? 'text-red-500' : 'text-yellow-500'}`}>
+                        <div className="text-2xl font-bold" style={{ color: getStatusColor(currentSubject.status).primary }}>
                           {Math.round(currentSubject.accuracy)}%
                         </div>
                       </div>
@@ -759,7 +811,7 @@ const AnalyticsDashboard = () => {
             </div>
             
             <div className="p-2 space-y-2">
-              {OFFICIAL_SUBJECTS.map((subject) => {
+              {sortedSubjects.map((subject) => {
                 const stats = subjectStats[subject] || {
                   subject,
                   totalAttempted: 0,
@@ -770,10 +822,13 @@ const AnalyticsDashboard = () => {
                 };
                 
                 const colors = getStatusColor(stats.status);
+                const statusLabel = getStatusLabel(stats.status);
                 const isSelected = selectedSubject === subject;
                 const progressPercent = stats.totalAttempted > 0 
                   ? ((stats.correctCount || 0) / stats.totalAttempted) * 100 
                   : 0;
+                const isExcellent = stats.status === 'EXCELLENT';
+                const isDeadZone = stats.status === 'DEAD_ZONE';
 
                 return (
                   <div
@@ -782,12 +837,17 @@ const AnalyticsDashboard = () => {
                     className={`p-4 rounded-lg border transition-all cursor-pointer ${
                       isSelected 
                         ? 'border-primary-500 bg-primary-500/10' 
-                        : 'border-border hover:border-primary-500/50 bg-surface'
+                        : isExcellent
+                        ? 'bg-gradient-to-br from-yellow-500/20 to-yellow-600/10 border-yellow-500/40 hover:border-yellow-500/60'
+                        : isDeadZone
+                        ? 'bg-red-600/15 border-red-600/40 hover:border-red-600/60'
+                        : `${colors.borderClass} ${colors.bgClass} hover:border-primary-500/50`
                     }`}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="text-sm font-semibold text-text flex-1 leading-tight">
                         {subject}
+                        {isDeadZone && <span className="ml-2 text-base">☠️</span>}
                       </h3>
                       <span 
                         className="text-xs px-2 py-0.5 rounded-full font-bold whitespace-nowrap ml-2"
@@ -797,7 +857,7 @@ const AnalyticsDashboard = () => {
                           border: `1px solid ${colors.border}`
                         }}
                       >
-                        {stats.status}
+                        {statusLabel}
                       </span>
                     </div>
 
@@ -839,19 +899,35 @@ const AnalyticsDashboard = () => {
 
                     {stats.totalAttempted > 0 && (
                       <div className="mt-2 pt-2 border-t border-border">
-                        {stats.status === 'WEAK' && (
-                          <div className="text-xs text-red-400">
-                            <span className="flex items-center gap-1"><ExclamationTriangleIcon className="w-3 h-3" /> Needs significant improvement</span>
+                        {stats.status === 'EXCELLENT' && (
+                          <div className="text-xs text-yellow-400 font-semibold">
+                            ⭐ Excellent performance
                           </div>
                         )}
-                        {stats.status === 'MEDIUM' && (
-                          <div className="text-xs text-yellow-400">
-                            💡 Room for improvement
-                          </div>
-                        )}
-                        {stats.status === 'STRONG' && (
+                        {stats.status === 'VERY_GOOD' && (
                           <div className="text-xs text-green-400">
-                            ✅ Excellent performance
+                            ✅ Very good performance
+                          </div>
+                        )}
+                        {stats.status === 'GOOD' && (
+                          <div className="text-xs text-green-300">
+                            ✓ Good performance
+                          </div>
+                        )}
+                        {stats.status === 'MODERATE' && (
+                          <div className="text-xs text-yellow-400">
+                            💡 Moderate - room for improvement
+                          </div>
+                        )}
+                        {(stats.status === 'NEED_IMPROVEMENT' || stats.status === 'NEED_IMPROVEMENT_VERY_MUCH' || stats.status === 'DEAD_ZONE') && (
+                          <div className="text-xs text-red-400">
+                            <span className="flex items-center gap-1">
+                              {stats.status === 'DEAD_ZONE' && <span className="text-base">☠️</span>}
+                              <ExclamationTriangleIcon className="w-3 h-3" /> 
+                              {stats.status === 'DEAD_ZONE' ? 'Dead Zone - Critical improvement needed' :
+                               stats.status === 'NEED_IMPROVEMENT_VERY_MUCH' ? 'Needs improvement very much' :
+                               'Needs improvement'}
+                            </span>
                           </div>
                         )}
                       </div>

@@ -65,7 +65,7 @@ const ThemeSelector = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full mb-2 left-0 md:left-full md:ml-2 w-80 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden max-h-[85vh]">
+        <div className="absolute bottom-full mb-2 right-0 md:left-full md:ml-2 w-80 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden max-h-[85vh]">
           {/* Header */}
           <div className="p-4 border-b border-border bg-surface/50">
             <div className="flex items-center justify-between mb-3">

@@ -1,5 +1,6 @@
 import { getAllAttempts, getAttemptsBySubject, getAttemptsByTopic } from './attemptService';
-import { OFFICIAL_SUBJECTS, STATUS_THRESHOLDS } from '../utils/constants';
+import { OFFICIAL_SUBJECTS } from '../utils/constants';
+import { calculateStatus } from '../utils/statusHelpers';
 import { format } from 'date-fns';
 
 /**
@@ -43,12 +44,7 @@ export const calculateExamSubjectStats = async (examId) => {
       const accuracy = attempts.length > 0 ? (correctCount / attempts.length) * 100 : 0;
 
       // Determine status
-      let status = 'WEAK';
-      if (accuracy >= STATUS_THRESHOLDS.STRONG) {
-        status = 'STRONG';
-      } else if (accuracy >= STATUS_THRESHOLDS.MEDIUM) {
-        status = 'MEDIUM';
-      }
+      const status = calculateStatus(accuracy);
 
       subjectStats[subject] = {
         subject,
@@ -108,12 +104,7 @@ export const calculateSubjectStats = async () => {
         const accuracy = (correctCount / attempts.length) * 100;
 
         // Determine status
-        let status = 'WEAK';
-        if (accuracy >= STATUS_THRESHOLDS.STRONG) {
-          status = 'STRONG';
-        } else if (accuracy >= STATUS_THRESHOLDS.MEDIUM) {
-          status = 'MEDIUM';
-        }
+        const status = calculateStatus(accuracy);
 
         // Build trend (group by date, calculate accuracy per day)
         const trendMap = {};
@@ -182,12 +173,7 @@ export const calculateTopicStats = async (subject) => {
       const accuracy = (correctCount / topicAttempts.length) * 100;
 
       // Determine status
-      let status = 'WEAK';
-      if (accuracy >= STATUS_THRESHOLDS.STRONG) {
-        status = 'STRONG';
-      } else if (accuracy >= STATUS_THRESHOLDS.MEDIUM) {
-        status = 'MEDIUM';
-      }
+      const status = calculateStatus(accuracy);
 
       topicStats[topic] = {
         topic,

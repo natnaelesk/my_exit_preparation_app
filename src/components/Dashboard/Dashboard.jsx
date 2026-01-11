@@ -9,7 +9,8 @@ import QuickStats from './QuickStats';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import ButtonLoading from '../Common/ButtonLoading';
 import { EXAM_MODES, OFFICIAL_SUBJECTS } from '../../utils/constants';
-import { format } from 'date-fns';
+import { format, addDays, subDays } from 'date-fns';
+import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { 
   AcademicCapIcon, 
   ChartBarIcon, 
@@ -130,11 +131,162 @@ const Dashboard = () => {
   const strongCount = subjectsWithData.filter(s => s.status === 'STRONG').length;
   const weakCount = subjectsWithData.filter(s => s.status === 'WEAK').length;
 
-  // Get recent trend data for mini graph
-  const recentTrendData = overallTrend.slice(-7).map(item => ({
-    ...item,
-    accuracy: isNaN(item.accuracy) || !isFinite(item.accuracy) ? 0 : Math.max(0, Math.min(100, item.accuracy))
-  }));
+  // Prepare 7-day trend data starting from first usage date with dynamic projection
+  const prepareTrendData = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = addDays(today, 1);
+    
+    if (overallTrend.length === 0) {
+      return { chartData: [], tomorrowIndex: -1 };
+    }
+    
+    // Get actual data from overallTrend and find first usage date
+    const actualTrend = overallTrend.map(item => ({
+      date: item.date,
+      dateDisplay: item.dateDisplay || format(new Date(item.date), 'MMM dd'),
+      accuracy: isNaN(item.accuracy) || !isFinite(item.accuracy) ? 0 : Math.max(0, Math.min(100, item.accuracy))
+    }));
+    
+    // Find first usage date (start date)
+    const firstDateStr = actualTrend[0]?.date;
+    if (!firstDateStr) {
+      return { chartData: [], tomorrowIndex: -1 };
+    }
+    
+    const startDate = new Date(firstDateStr);
+    startDate.setHours(0, 0, 0, 0);
+    
+    // Calculate 7-day range (start date to start date + 6 days = 7 days total)
+    const endDate = addDays(startDate, 6);
+    
+    // Calculate growth rate from recent actual data
+    // Use last 2 data points to calculate daily growth rate
+    let dailyGrowthRate = 0;
+    if (actualTrend.length >= 2) {
+      const lastPoint = actualTrend[actualTrend.length - 1];
+      const secondLastPoint = actualTrend[actualTrend.length - 2];
+      const accuracyDiff = lastPoint.accuracy - secondLastPoint.accuracy;
+      const dateDiff = Math.max(1, (new Date(lastPoint.date).getTime() - new Date(secondLastPoint.date).getTime()) / (1000 * 60 * 60 * 24));
+      dailyGrowthRate = accuracyDiff / dateDiff; // Average daily growth
+    } else if (actualTrend.length === 1) {
+      // Only one data point - use a conservative growth rate (1% per day)
+      dailyGrowthRate = 1;
+    }
+    
+    // Get last actual accuracy
+    const lastActualPoint = actualTrend[actualTrend.length - 1];
+    const lastActualAccuracy = lastActualPoint?.accuracy || overallAccuracy;
+    
+    const chartData = [];
+    let tomorrowIndex = -1;
+    let todayIndex = -1;
+    let lastActualIndex = -1;
+    
+    // Fill in 7 days of data starting from first usage date
+    for (let i = 0; i < 7; i++) {
+      const chartDate = addDays(startDate, i);
+      const dateKey = format(chartDate, 'yyyy-MM-dd');
+      const dateDisplay = format(chartDate, 'MMM dd');
+      const isToday = format(chartDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+      const isTomorrow = format(chartDate, 'yyyy-MM-dd') === format(tomorrow, 'yyyy-MM-dd');
+      const isFuture = chartDate > today;
+      
+      // Find matching actual data
+      const actualPoint = actualTrend.find(item => {
+        try {
+          const itemDate = new Date(item.date);
+          itemDate.setHours(0, 0, 0, 0);
+          return format(itemDate, 'yyyy-MM-dd') === dateKey;
+        } catch {
+          return false;
+        }
+      });
+      
+      if (actualPoint) {
+        // Has actual data
+        chartData.push({
+          date: dateDisplay,
+          dateKey,
+          actual: actualPoint.accuracy,
+          projected: isToday ? actualPoint.accuracy : null, // Include today's value in projected for smooth connection
+          isActual: true,
+          isToday,
+          isProjected: false
+        });
+        lastActualIndex = chartData.length - 1;
+        if (isToday) {
+          todayIndex = chartData.length - 1;
+        }
+      } else if (!isFuture) {
+        // Past date with no data (before user started or gap)
+        chartData.push({
+          date: dateDisplay,
+          dateKey,
+          actual: null,
+          projected: null,
+          isActual: false,
+          isToday,
+          isProjected: false
+        });
+        if (isToday) {
+          todayIndex = chartData.length - 1;
+        }
+      } else {
+        // Future date - add projected data
+        if (isTomorrow) {
+          tomorrowIndex = chartData.length;
+        }
+        
+        // Calculate projected accuracy based on growth rate
+        // Days from today (1 = tomorrow, 2 = day after, etc.)
+        const daysFromToday = i - (todayIndex >= 0 ? todayIndex : lastActualIndex);
+        
+        // Project accuracy using curved growth (smooth upward curve that accelerates at the end)
+        const progress = daysFromToday / 6; // Normalize to 0-1 over 7 days
+        
+        // Calculate target accuracy - always optimistic/high expectations
+        // Use the growth rate but scale it up for motivation (1.5x to 2x)
+        const optimisticGrowthRate = Math.max(dailyGrowthRate * 1.5, 2.5); // At least 2.5% per day for motivation
+        const linearGrowth = optimisticGrowthRate * daysFromToday;
+        const targetAccuracy = Math.min(100, lastActualAccuracy + Math.min(linearGrowth, 40)); // Cap at 40% growth (high expectations)
+        
+        // Scale down by half (reduce size so it doesn't look straight)
+        const baseProjection = lastActualAccuracy + (targetAccuracy - lastActualAccuracy) * 0.5;
+        
+        // Add curved upward acceleration at the end (cubic curve - x^3)
+        const curveFactor = progress * progress * progress; // Cubic curve for strong upward curve at end
+        const endBoost = (targetAccuracy - lastActualAccuracy) * curveFactor * 0.4; // Extra height at the end
+        const finalProjection = baseProjection + endBoost;
+        
+        chartData.push({
+          date: dateDisplay,
+          dateKey,
+          actual: isToday ? lastActualAccuracy : null, // Include today's value to connect
+          projected: Math.max(lastActualAccuracy, Math.min(100, finalProjection)),
+          isActual: isToday,
+          isToday: false,
+          isProjected: true
+        });
+      }
+    }
+    
+    // Set tomorrow index if not found yet
+    if (tomorrowIndex < 0) {
+      tomorrowIndex = chartData.findIndex(item => {
+        const itemDate = new Date(item.dateKey + 'T00:00:00');
+        return format(itemDate, 'yyyy-MM-dd') === format(tomorrow, 'yyyy-MM-dd');
+      });
+    }
+    
+    return {
+      chartData,
+      tomorrowIndex: tomorrowIndex >= 0 ? tomorrowIndex : (todayIndex >= 0 ? todayIndex + 1 : chartData.length),
+      lastActualAccuracy
+    };
+  };
+  
+  const { chartData, tomorrowIndex } = prepareTrendData();
 
   const formatDate = (timestamp) => {
     if (!timestamp) return 'Unknown';
@@ -187,41 +339,12 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Enhanced Quick Stats */}
-        <QuickStats subjectStats={subjectStats} />
-
-        {/* Performance Trend Card */}
-        {recentTrendData.length > 0 && (
-          <div className="bg-gradient-to-br from-card to-surface rounded-xl p-6 border border-border">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <ArrowTrendingUpIcon className="w-5 h-5 text-primary-500" />
-                <h3 className="text-lg font-bold text-text">Performance Trend</h3>
-              </div>
-              <button
-                className="text-sm text-primary-500 hover:text-primary-400 flex items-center gap-1"
-                onClick={() => navigate('/analytics')}
-              >
-                View Full <ArrowRightIcon className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="grid grid-cols-7 gap-2 h-24">
-              {recentTrendData.map((item, index) => {
-                const height = Math.max(10, (item.accuracy / 100) * 100);
-                return (
-                  <div key={index} className="flex flex-col items-center justify-end gap-1">
-                    <div
-                      className="w-full rounded-t transition-all duration-300 bg-gradient-to-t from-primary-500 to-primary-400 hover:from-primary-400 hover:to-primary-300"
-                      style={{ height: `${height}%` }}
-                      title={`${item.dateDisplay}: ${Math.round(item.accuracy)}%`}
-                    />
-                    <span className="text-xs text-muted">{item.dateDisplay}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Enhanced Quick Stats */}
+            <QuickStats subjectStats={subjectStats} />
 
         {/* Exam Modes - Enhanced */}
         <div className="mb-8">
@@ -312,7 +435,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Recent Exams Section - Enhanced */}
+          {/* Recent Exams Section - Enhanced */}
         {recentExams.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -379,78 +502,198 @@ const Dashboard = () => {
                   )}
                 </div>
               ))}
+              </div>
+            </div>
+            )}
+
+            {/* Subjects Overview - Enhanced */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl md:text-2xl font-bold text-text flex items-center gap-2">
+                <ChartBarIcon className="w-6 h-6 text-primary-500" />
+                Subject Overview
+              </h2>
+              <button 
+                className="text-primary-500 text-sm font-medium hover:text-primary-400 flex items-center gap-1"
+                onClick={() => navigate('/analytics')}
+              >
+                View All <ArrowRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+            
+            {isLoading ? (
+              <div className="text-center py-8 text-muted">Loading subjects...</div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                {OFFICIAL_SUBJECTS.slice(0, 6).map((subject) => {
+                  const stats = subjectStats[subject] || {
+                    subject,
+                    totalAttempted: 0,
+                    accuracy: 0,
+                    status: 'N/A'
+                  };
+                  return (
+                    <SubjectCard
+                      key={subject}
+                      stats={stats}
+                      onClick={() => navigate('/analytics')}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Quick Insights */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gradient-to-br from-green-500/10 to-surface rounded-xl p-4 border border-green-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrophyIcon className="w-5 h-5 text-green-500" />
+                  <h4 className="text-sm font-semibold text-text">Strong Areas</h4>
+                </div>
+                <div className="text-2xl font-bold text-green-500">{strongCount}</div>
+                <div className="text-xs text-muted mt-1">Subjects mastered</div>
+              </div>
+
+              <div className="bg-gradient-to-br from-red-500/10 to-card rounded-xl p-4 border border-red-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <FireIcon className="w-5 h-5 text-red-500" />
+                  <h4 className="text-sm font-semibold text-text">Need Improvement</h4>
+                </div>
+                <div className="text-2xl font-bold text-red-500">{weakCount}</div>
+                <div className="text-xs text-muted mt-1">Focus areas</div>
+              </div>
+
+              <div className="bg-gradient-to-br from-primary-500/10 to-card rounded-xl p-4 border border-primary-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <ChartBarIcon className="w-5 h-5 text-primary-500" />
+                  <h4 className="text-sm font-semibold text-text">Overall Accuracy</h4>
+                </div>
+                <div className="text-2xl font-bold text-primary-500">{overallAccuracy}%</div>
+                <div className="text-xs text-muted mt-1">
+                  {overallStats.totalAttempted} questions attempted
+                </div>
+              </div>
             </div>
           </div>
-        )}
-
-        {/* Subjects Overview - Enhanced */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl md:text-2xl font-bold text-text flex items-center gap-2">
-              <ChartBarIcon className="w-6 h-6 text-primary-500" />
-              Subject Overview
-            </h2>
-            <button 
-              className="text-primary-500 text-sm font-medium hover:text-primary-400 flex items-center gap-1"
-              onClick={() => navigate('/analytics')}
-            >
-              View All <ArrowRightIcon className="w-4 h-4" />
-            </button>
           </div>
-          
-          {isLoading ? (
-            <div className="text-center py-8 text-muted">Loading subjects...</div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {OFFICIAL_SUBJECTS.slice(0, 6).map((subject) => {
-                const stats = subjectStats[subject] || {
-                  subject,
-                  totalAttempted: 0,
-                  accuracy: 0,
-                  status: 'N/A'
-                };
-                return (
-                  <SubjectCard
-                    key={subject}
-                    stats={stats}
+
+          {/* Right Column - Performance Trend Widget */}
+          {chartData.length > 0 && (
+            <div className="lg:col-span-1">
+              <div className="bg-gradient-to-br from-card to-surface rounded-xl p-4 border border-border sticky top-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <ArrowTrendingUpIcon className="w-4 h-4 text-primary-500" />
+                    <div>
+                      <h3 className="text-sm font-bold text-text">Performance Trend</h3>
+                      <p className="text-xs text-muted">1-week projection</p>
+                    </div>
+                  </div>
+                  <button
+                    className="text-xs text-primary-500 hover:text-primary-400 flex items-center gap-1"
                     onClick={() => navigate('/analytics')}
-                  />
-                );
-              })}
+                  >
+                    Full <ArrowRightIcon className="w-3 h-3" />
+                  </button>
+                </div>
+                <div className="w-full" style={{ height: '200px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart 
+                      data={chartData}
+                      margin={{ top: 10, right: 10, left: -10, bottom: 30 }}
+                    >
+                      <defs>
+                        <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#f97316" stopOpacity={0.4}/>
+                          <stop offset="95%" stopColor="#f97316" stopOpacity={0.05}/>
+                        </linearGradient>
+                        <linearGradient id="colorProjected" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#fbbf24" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#fbbf24" stopOpacity={0.02}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="#a3a3a3"
+                        style={{ fontSize: '11px' }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={70}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis 
+                        domain={[0, 100]}
+                        stroke="#a3a3a3"
+                        style={{ fontSize: '11px' }}
+                        tickFormatter={(value) => `${value}%`}
+                        width={40}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1a1a1a', 
+                          border: '1px solid #333', 
+                          borderRadius: '8px',
+                          color: '#f5f5f5',
+                          fontSize: '12px'
+                        }}
+                        formatter={(value, name, props) => {
+                          if (props.payload.isProjected) {
+                            return [`${Math.round(value)}% (Projected)`, 'Potential Accuracy'];
+                          }
+                          return [`${Math.round(value)}%`, 'Accuracy'];
+                        }}
+                        labelFormatter={(label) => `Date: ${label}`}
+                      />
+                      {/* Reference line at tomorrow */}
+                      <ReferenceLine 
+                        x={chartData[tomorrowIndex]?.date} 
+                        stroke="#a3a3a3" 
+                        strokeDasharray="5 5" 
+                        strokeWidth={2}
+                        label={{ value: "Tomorrow", position: "top", style: { fill: '#a3a3a3', fontSize: '11px' } }}
+                      />
+                      {/* Actual data area */}
+                      <Area 
+                        type="monotone" 
+                        dataKey="actual" 
+                        stroke="#f97316" 
+                        strokeWidth={3}
+                        fillOpacity={1}
+                        fill="url(#colorActual)"
+                        dot={{ r: 4, fill: '#f97316', strokeWidth: 1, stroke: '#fff' }}
+                        activeDot={{ r: 6, fill: '#ea580c', strokeWidth: 2, stroke: '#fff' }}
+                        connectNulls={false}
+                      />
+                      {/* Projected data area (smooth curve with dashed line) */}
+                      <Area 
+                        type="basis" 
+                        dataKey="projected" 
+                        stroke="#fbbf24" 
+                        strokeWidth={2}
+                        strokeDasharray="8 4"
+                        fillOpacity={1}
+                        fill="url(#colorProjected)"
+                        dot={{ r: 3, fill: '#fbbf24', strokeWidth: 1, stroke: '#fff', strokeDasharray: '0' }}
+                        activeDot={{ r: 5, fill: '#f59e0b', strokeWidth: 2, stroke: '#fff' }}
+                        connectNulls={true}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-3 flex flex-col gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-0.5 bg-primary-500"></div>
+                    <span className="text-muted">Actual</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-0.5 bg-yellow-500" style={{ borderTop: '2px dashed #fbbf24' }}></div>
+                    <span className="text-muted">Projected</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
-
-          {/* Quick Insights */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-green-500/10 to-surface rounded-xl p-4 border border-green-500/30">
-              <div className="flex items-center gap-2 mb-2">
-                <TrophyIcon className="w-5 h-5 text-green-500" />
-                <h4 className="text-sm font-semibold text-text">Strong Areas</h4>
-              </div>
-              <div className="text-2xl font-bold text-green-500">{strongCount}</div>
-              <div className="text-xs text-muted mt-1">Subjects mastered</div>
-            </div>
-
-            <div className="bg-gradient-to-br from-red-500/10 to-card rounded-xl p-4 border border-red-500/30">
-              <div className="flex items-center gap-2 mb-2">
-                <FireIcon className="w-5 h-5 text-red-500" />
-                <h4 className="text-sm font-semibold text-text">Need Improvement</h4>
-              </div>
-              <div className="text-2xl font-bold text-red-500">{weakCount}</div>
-              <div className="text-xs text-muted mt-1">Focus areas</div>
-            </div>
-
-            <div className="bg-gradient-to-br from-primary-500/10 to-card rounded-xl p-4 border border-primary-500/30">
-              <div className="flex items-center gap-2 mb-2">
-                <ChartBarIcon className="w-5 h-5 text-primary-500" />
-                <h4 className="text-sm font-semibold text-text">Overall Accuracy</h4>
-              </div>
-              <div className="text-2xl font-bold text-primary-500">{overallAccuracy}%</div>
-              <div className="text-xs text-muted mt-1">
-                {overallStats.totalAttempted} questions attempted
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -14,6 +14,7 @@ import { db } from './firebase';
 import { getQuestionsBySubject } from './questionService';
 import { getAllAttempts } from './attemptService';
 import { calculateSubjectStats } from './analyticsService';
+import { getRandomQuote } from '../utils/motivationalQuotes';
 
 const DAILY_PLANS_COLLECTION = 'dailyPlans';
 const MAX_PLANNED_QUESTIONS = 35;
@@ -77,6 +78,13 @@ export const getOrCreateDailyPlan = async (dateKey, focusSubject) => {
     const selectedQuestions = shuffled.slice(0, Math.min(MAX_PLANNED_QUESTIONS, totalAvailable));
     const questionIds = selectedQuestions.map(q => q.questionId);
 
+    // Get a random motivational quote (avoiding recent quotes if possible)
+    const recentPlans = await listRecentDailyPlans(14); // Get last 14 days
+    const recentQuotes = recentPlans
+      .map(plan => plan.motivationalQuote)
+      .filter(quote => quote && quote.trim().length > 0);
+    const motivationalQuote = getRandomQuote(recentQuotes);
+
     const planData = {
       dateKey,
       createdAt: Timestamp.now(),
@@ -88,7 +96,8 @@ export const getOrCreateDailyPlan = async (dateKey, focusSubject) => {
       correctCount: 0,
       wrongCount: 0,
       accuracy: 0,
-      isComplete: false
+      isComplete: false,
+      motivationalQuote
     };
 
     await setDoc(planRef, planData);

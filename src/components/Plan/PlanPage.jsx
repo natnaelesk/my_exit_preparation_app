@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import { calculateSubjectStats, calculateTopicStats } from '../../services/analyticsService';
 import { getQuestionsBySubject } from '../../services/questionService';
-import { getDailyPlanMotivation } from '../../services/grokService';
 import { 
   getOrCreateDailyPlan, 
   getDailyPlan, 
@@ -28,8 +27,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { format, startOfWeek, addDays, isToday } from 'date-fns';
 
-const PLAN_MOTIVATION_KEY_PREFIX = 'dailyPlanMotivation_v1_';
-
 const getDateKey = (date = new Date()) => {
   try {
     return date.toISOString().slice(0, 10); // YYYY-MM-DD
@@ -51,7 +48,6 @@ const getWeekDates = () => {
 const PlanPage = () => {
   const navigate = useNavigate();
   const { startExam } = useExam();
-  const grokApiKey = import.meta.env.VITE_GROK_API_KEY;
   
   const [subjectStats, setSubjectStats] = useState({});
   const [currentDailyPlan, setCurrentDailyPlan] = useState(null);
@@ -63,10 +59,6 @@ const PlanPage = () => {
   const [allTopics, setAllTopics] = useState([]);
   const [topicStats, setTopicStats] = useState({});
   const [showMotivation, setShowMotivation] = useState(true);
-
-  const [aiMotivation, setAiMotivation] = useState('');
-  const [isMotivationLoading, setIsMotivationLoading] = useState(false);
-  const [motivationError, setMotivationError] = useState('');
 
   const todayKeyRef = useRef(getDateKey());
   const calendarScrollRef = useRef(null);
@@ -250,67 +242,9 @@ const PlanPage = () => {
 
   const focusSubject = currentDailyPlan?.focusSubject || null;
   const subjectStat = focusSubject ? subjectStats[focusSubject] : null;
-
-  useEffect(() => {
-    const loadMotivation = async () => {
-      if (!todayKey || !focusSubject || !currentDailyPlan || !grokApiKey) {
-        setAiMotivation('');
-        return;
-      }
-
-      const storageKey = `${PLAN_MOTIVATION_KEY_PREFIX}${todayKey}`;
-      try {
-        const cached = localStorage.getItem(storageKey);
-        if (cached && cached.trim()) {
-          setAiMotivation(cached);
-          setMotivationError('');
-          return;
-        }
-      } catch {
-        // ignore
-      }
-
-      try {
-        setIsMotivationLoading(true);
-        setMotivationError('');
-        const msg = await getDailyPlanMotivation(
-          {
-            dateKey: todayKey,
-            focusSubject,
-            subjectAccuracy: subjectStat?.accuracy || 0,
-            weakestTopics: Object.values(topicStats || {})
-              .filter(t => t && (t.totalAttempted || 0) > 0)
-              .map(t => ({
-                topic: t.topic,
-                accuracy: t.accuracy || 0
-              }))
-              .sort((a, b) => a.accuracy - b.accuracy)
-              .slice(0, 3)
-          },
-          grokApiKey
-        );
-        const trimmedMsg = msg?.trim();
-        if (trimmedMsg && trimmedMsg.length > 10) {
-          setAiMotivation(trimmedMsg);
-          try {
-            localStorage.setItem(storageKey, trimmedMsg);
-          } catch {
-            // ignore
-          }
-        } else {
-          setAiMotivation('');
-        }
-      } catch (err) {
-        console.error('Failed to load AI motivation:', err);
-        setAiMotivation('');
-        setMotivationError('');
-      } finally {
-        setIsMotivationLoading(false);
-      }
-    };
-
-    loadMotivation();
-  }, [todayKey, focusSubject, currentDailyPlan, subjectStat?.accuracy, topicStats, grokApiKey]);
+  
+  // Get the motivational quote from the current plan
+  const motivationalQuote = currentDailyPlan?.motivationalQuote || null;
 
   if (isLoading) {
     return (
@@ -332,7 +266,7 @@ const PlanPage = () => {
   const viewingPlan = isViewingToday ? currentDailyPlan : getPlanForDate(selectedDateKey);
   const isPastDay = selectedDateKey < todayKey;
   const progressPercentage = viewingPlan && viewingPlan.questionIds?.length > 0
-    ? Math.round((viewingPlan.answeredCount || 0) / viewingPlan.questionIds.length * 100)
+    ? Math.min(100, Math.round((viewingPlan.answeredCount || 0) / viewingPlan.questionIds.length * 100))
     : 0;
 
   return (
@@ -391,19 +325,15 @@ const PlanPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* AI Tip */}
-            {isViewingToday && showMotivation && grokApiKey && (aiMotivation || isMotivationLoading) && (
+            {/* Daily Motivation Quote */}
+            {isViewingToday && showMotivation && motivationalQuote && (
               <div className="bg-gradient-to-r from-primary-500/10 to-primary-500/5 border-l-4 border-primary-500 rounded-lg p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 flex-1">
                     <SparklesIcon className="w-5 h-5 text-primary-500 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <div className="text-xs font-semibold text-primary-500 uppercase tracking-wide mb-1">Daily Tip</div>
-                      {isMotivationLoading ? (
-                        <div className="text-sm text-muted">Loading...</div>
-                      ) : aiMotivation ? (
-                        <p className="text-sm text-text leading-relaxed">{aiMotivation}</p>
-                      ) : null}
+                      <div className="text-xs font-semibold text-primary-500 uppercase tracking-wide mb-1">Daily Motivation</div>
+                      <p className="text-sm text-text leading-relaxed italic">{motivationalQuote}</p>
                     </div>
                   </div>
                   <button

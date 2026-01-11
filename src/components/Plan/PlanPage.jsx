@@ -29,9 +29,16 @@ import { format, startOfWeek, addDays, isToday } from 'date-fns';
 
 const getDateKey = (date = new Date()) => {
   try {
-    return date.toISOString().slice(0, 10); // YYYY-MM-DD
+    // Use local time instead of UTC to handle timezone correctly
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`; // YYYY-MM-DD in local time
   } catch {
-    return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 };
 
@@ -242,9 +249,6 @@ const PlanPage = () => {
 
   const focusSubject = currentDailyPlan?.focusSubject || null;
   const subjectStat = focusSubject ? subjectStats[focusSubject] : null;
-  
-  // Get the motivational quote from the current plan
-  const motivationalQuote = currentDailyPlan?.motivationalQuote || null;
 
   if (isLoading) {
     return (
@@ -264,6 +268,10 @@ const PlanPage = () => {
 
   const isViewingToday = selectedDateKey === todayKey;
   const viewingPlan = isViewingToday ? currentDailyPlan : getPlanForDate(selectedDateKey);
+  
+  // Get the motivational quote from the viewing plan (today or selected date)
+  // Also check currentDailyPlan if viewingPlan doesn't have it
+  const motivationalQuote = viewingPlan?.motivationalQuote || currentDailyPlan?.motivationalQuote || null;
   const isPastDay = selectedDateKey < todayKey;
   const progressPercentage = viewingPlan && viewingPlan.questionIds?.length > 0
     ? Math.min(100, Math.round((viewingPlan.answeredCount || 0) / viewingPlan.questionIds.length * 100))
@@ -325,23 +333,41 @@ const PlanPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Daily Motivation Quote */}
-            {isViewingToday && showMotivation && motivationalQuote && (
-              <div className="bg-gradient-to-r from-primary-500/10 to-primary-500/5 border-l-4 border-primary-500 rounded-lg p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1">
-                    <SparklesIcon className="w-5 h-5 text-primary-500 flex-shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <div className="text-xs font-semibold text-primary-500 uppercase tracking-wide mb-1">Daily Motivation</div>
-                      <p className="text-sm text-text leading-relaxed italic">{motivationalQuote}</p>
+            {/* Daily Motivation Quote - Attractive Card */}
+            {motivationalQuote && (
+              <div className="relative overflow-hidden bg-gradient-to-br from-primary-500/20 via-primary-500/10 to-yellow-500/10 border-2 border-primary-500/30 rounded-2xl p-6 shadow-lg">
+                {/* Decorative background elements */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full -mr-16 -mt-16"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-yellow-500/5 rounded-full -ml-12 -mb-12"></div>
+                
+                <div className="relative flex items-start gap-4">
+                  {/* Icon */}
+                  <div className="flex-shrink-0 mt-1">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-yellow-500 flex items-center justify-center shadow-md">
+                      <SparklesIcon className="w-6 h-6 text-white" />
                     </div>
                   </div>
-                  <button
-                    onClick={() => setShowMotivation(false)}
-                    className="text-muted hover:text-text transition-colors"
-                  >
-                    <XMarkIcon className="w-4 h-4" />
-                  </button>
+                  
+                  {/* Quote Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold text-primary-500 uppercase tracking-wider">
+                        {isViewingToday ? '✨ Daily Inspiration' : '✨ Motivation'}
+                      </span>
+                      {isViewingToday && (
+                        <button
+                          onClick={() => setShowMotivation(false)}
+                          className="ml-auto text-muted hover:text-text transition-colors p-1 hover:bg-white/10 rounded"
+                          aria-label="Dismiss"
+                        >
+                          <XMarkIcon className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <blockquote className="text-base md:text-lg font-medium text-text leading-relaxed italic">
+                      "{motivationalQuote}"
+                    </blockquote>
+                  </div>
                 </div>
               </div>
             )}

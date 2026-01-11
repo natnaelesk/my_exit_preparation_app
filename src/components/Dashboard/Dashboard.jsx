@@ -176,12 +176,13 @@ const Dashboard = () => {
     
     // Get last actual accuracy
     const lastActualPoint = actualTrend[actualTrend.length - 1];
-    const lastActualAccuracy = lastActualPoint?.accuracy || overallAccuracy;
+    let lastActualAccuracy = lastActualPoint?.accuracy || overallAccuracy;
     
     const chartData = [];
     let tomorrowIndex = -1;
     let todayIndex = -1;
     let lastActualIndex = -1;
+    let todayActualValue = null; // Store today's actual value for projection
     
     // Fill in 7 days of data starting from first usage date
     for (let i = 0; i < 7; i++) {
@@ -205,11 +206,18 @@ const Dashboard = () => {
       
       if (actualPoint) {
         // Has actual data
+        // Update lastActualAccuracy to use today's value if it's today
+        const currentActualAccuracy = actualPoint.accuracy;
+        if (isToday) {
+          lastActualAccuracy = currentActualAccuracy;
+          todayActualValue = currentActualAccuracy; // Store today's value for projection
+        }
+        
         chartData.push({
           date: dateDisplay,
           dateKey,
-          actual: actualPoint.accuracy,
-          projected: isToday ? actualPoint.accuracy : null, // Include today's value in projected for smooth connection
+          actual: currentActualAccuracy,
+          projected: isToday ? currentActualAccuracy : null, // Include today's value in projected for smooth connection
           isActual: true,
           isToday,
           isProjected: false
@@ -217,17 +225,24 @@ const Dashboard = () => {
         lastActualIndex = chartData.length - 1;
         if (isToday) {
           todayIndex = chartData.length - 1;
+          // Also set projected value for today to ensure smooth connection
+          chartData[chartData.length - 1].projected = currentActualAccuracy;
         }
       } else if (!isFuture) {
         // Past date with no data (before user started or gap)
+        // If it's today with no actual data, set projected to last actual for smooth connection
+        const projectedValue = isToday ? lastActualAccuracy : null;
+        if (isToday) {
+          todayActualValue = lastActualAccuracy; // Store for projection even if no actual data
+        }
         chartData.push({
           date: dateDisplay,
           dateKey,
           actual: null,
-          projected: null,
+          projected: projectedValue,
           isActual: false,
           isToday,
-          isProjected: false
+          isProjected: isToday
         });
         if (isToday) {
           todayIndex = chartData.length - 1;
@@ -236,6 +251,20 @@ const Dashboard = () => {
         // Future date - add projected data
         if (isTomorrow) {
           tomorrowIndex = chartData.length;
+        }
+        
+        // Get the base accuracy to project from (prioritize today's actual value, then today's projected, then last actual)
+        let baseAccuracy = lastActualAccuracy;
+        if (todayActualValue !== null) {
+          baseAccuracy = todayActualValue;
+        } else if (todayIndex >= 0) {
+          // Try to get from today's data point
+          const todayData = chartData[todayIndex];
+          if (todayData?.actual !== null && todayData.actual !== undefined) {
+            baseAccuracy = todayData.actual;
+          } else if (todayData?.projected !== null && todayData.projected !== undefined) {
+            baseAccuracy = todayData.projected;
+          }
         }
         
         // Calculate projected accuracy based on growth rate
@@ -249,22 +278,27 @@ const Dashboard = () => {
         // Use the growth rate but scale it up for motivation (1.5x to 2x)
         const optimisticGrowthRate = Math.max(dailyGrowthRate * 1.5, 2.5); // At least 2.5% per day for motivation
         const linearGrowth = optimisticGrowthRate * daysFromToday;
-        const targetAccuracy = Math.min(100, lastActualAccuracy + Math.min(linearGrowth, 40)); // Cap at 40% growth (high expectations)
+        const targetAccuracy = Math.min(100, baseAccuracy + Math.min(linearGrowth, 40)); // Cap at 40% growth (high expectations)
         
         // Scale down by half (reduce size so it doesn't look straight)
-        const baseProjection = lastActualAccuracy + (targetAccuracy - lastActualAccuracy) * 0.5;
+        const baseProjection = baseAccuracy + (targetAccuracy - baseAccuracy) * 0.5;
         
         // Add curved upward acceleration at the end (cubic curve - x^3)
         const curveFactor = progress * progress * progress; // Cubic curve for strong upward curve at end
-        const endBoost = (targetAccuracy - lastActualAccuracy) * curveFactor * 0.4; // Extra height at the end
+        const endBoost = (targetAccuracy - baseAccuracy) * curveFactor * 0.4; // Extra height at the end
         const finalProjection = baseProjection + endBoost;
+        
+        // For tomorrow, ensure it starts exactly from today's value for seamless connection
+        const projectedValue = isTomorrow && todayActualValue !== null
+          ? Math.max(todayActualValue, Math.min(100, finalProjection))
+          : Math.max(baseAccuracy, Math.min(100, finalProjection));
         
         chartData.push({
           date: dateDisplay,
           dateKey,
-          actual: isToday ? lastActualAccuracy : null, // Include today's value to connect
-          projected: Math.max(lastActualAccuracy, Math.min(100, finalProjection)),
-          isActual: isToday,
+          actual: null, // Future dates have no actual data
+          projected: projectedValue, // Start from baseAccuracy for smooth connection
+          isActual: false,
           isToday: false,
           isProjected: true
         });
@@ -277,6 +311,50 @@ const Dashboard = () => {
         const itemDate = new Date(item.dateKey + 'T00:00:00');
         return format(itemDate, 'yyyy-MM-dd') === format(tomorrow, 'yyyy-MM-dd');
       });
+    }
+    
+    // Post-process: Ensure today always has a projected value that matches actual for seamless connection
+    if (todayIndex >= 0) {
+      const todayData = chartData[todayIndex];
+      if (todayData) {
+        // If today has actual data, projected must match it
+        if (todayData.actual !== null && todayData.actual !== undefined) {
+          todayData.projected = todayData.actual;
+          todayActualValue = todayData.actual;
+        } else if (todayData.projected === null || todayData.projected === undefined) {
+          // If today has no actual or projected, use last actual
+          todayData.projected = lastActualAccuracy;
+          todayActualValue = lastActualAccuracy;
+        } else {
+          todayActualValue = todayData.projected;
+        }
+      }
+    }
+    
+    // Ensure tomorrow (if exists) starts from today's value
+    if (tomorrowIndex >= 0 && tomorrowIndex < chartData.length && todayActualValue !== null) {
+      const tomorrowData = chartData[tomorrowIndex];
+      if (tomorrowData && tomorrowData.projected !== null && tomorrowData.projected !== undefined) {
+        // Only adjust if it's significantly different (more than 0.1% gap)
+        if (Math.abs(tomorrowData.projected - todayActualValue) > 0.1) {
+          // Recalculate tomorrow's projection starting from today's value
+          const daysFromToday = tomorrowIndex - (todayIndex >= 0 ? todayIndex : lastActualIndex);
+          if (daysFromToday > 0) {
+            const progress = daysFromToday / 6;
+            const optimisticGrowthRate = Math.max(dailyGrowthRate * 1.5, 2.5);
+            const linearGrowth = optimisticGrowthRate * daysFromToday;
+            const targetAccuracy = Math.min(100, todayActualValue + Math.min(linearGrowth, 40));
+            const baseProjection = todayActualValue + (targetAccuracy - todayActualValue) * 0.5;
+            const curveFactor = progress * progress * progress;
+            const endBoost = (targetAccuracy - todayActualValue) * curveFactor * 0.4;
+            const finalProjection = baseProjection + endBoost;
+            tomorrowData.projected = Math.max(todayActualValue, Math.min(100, finalProjection));
+          } else {
+            // If same day or before, just use today's value
+            tomorrowData.projected = todayActualValue;
+          }
+        }
+      }
     }
     
     return {
@@ -665,9 +743,9 @@ const Dashboard = () => {
                         activeDot={{ r: 6, fill: '#ea580c', strokeWidth: 2, stroke: '#fff' }}
                         connectNulls={false}
                       />
-                      {/* Projected data area (smooth curve with dashed line) */}
+                      {/* Projected data area (smooth curve with dashed line) - starts from today for seamless connection */}
                       <Area 
-                        type="basis" 
+                        type="monotone" 
                         dataKey="projected" 
                         stroke="#fbbf24" 
                         strokeWidth={2}

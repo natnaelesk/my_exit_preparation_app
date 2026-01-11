@@ -12,10 +12,12 @@ export const useTheme = () => {
   return context;
 };
 
-// Check if current time is after 7 PM
+// Check if current time is night (Ethiopia time: morning is after 6 AM, night is after 6 PM)
+// Dark mode: 6 PM (18:00) to 6 AM (06:00)
+// Light mode: 6 AM (06:00) to 6 PM (18:00)
 const shouldUseDarkMode = () => {
   const hour = new Date().getHours();
-  return hour >= 19; // 7 PM = 19:00
+  return hour >= 18 || hour < 6; // Dark mode from 6 PM to 6 AM
 };
 
 // Get initial mode based on time or saved preference

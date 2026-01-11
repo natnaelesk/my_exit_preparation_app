@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { VS_CODE_THEMES, getThemeById, getDefaultThemeForMode } from '../utils/vscodeThemes';
+import { getThemePreferences, saveThemePreferences } from '../services/themeService';
 
 const ThemeContext = createContext();
 
@@ -47,11 +48,14 @@ export const ThemeProvider = ({ children }) => {
   
   const [autoMode, setAutoMode] = useState(() => {
     const saved = localStorage.getItem('themeAutoMode');
-    return saved === 'true' || saved === null; // Default to auto
+    return saved === 'true'; // Default to manual (false)
   });
 
   const [mode, setMode] = useState(initialMode);
   const [themeId, setThemeId] = useState(initialThemeId);
+  const [favoriteLightTheme, setFavoriteLightTheme] = useState('light');
+  const [favoriteDarkTheme, setFavoriteDarkTheme] = useState('dark');
+  const [loadingPreferences, setLoadingPreferences] = useState(true);
 
   // Apply theme colors to CSS variables
   const applyTheme = useCallback((theme) => {
@@ -79,8 +83,43 @@ export const ThemeProvider = ({ children }) => {
     }
   }, []);
 
-  // Initialize theme on mount
+  // Load theme preferences from Firebase on mount
   useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const preferences = await getThemePreferences();
+        setFavoriteLightTheme(preferences.favoriteLightTheme || 'light');
+        setFavoriteDarkTheme(preferences.favoriteDarkTheme || 'dark');
+        
+        // If auto mode is enabled in Firebase, use it
+        if (preferences.autoMode !== undefined) {
+          setAutoMode(preferences.autoMode);
+          localStorage.setItem('themeAutoMode', String(preferences.autoMode));
+        }
+        
+        // If in auto mode, use favorite themes
+        if (preferences.autoMode && preferences.autoMode !== false) {
+          const currentMode = shouldUseDarkMode() ? 'dark' : 'light';
+          const favoriteTheme = currentMode === 'dark' 
+            ? (preferences.favoriteDarkTheme || 'dark')
+            : (preferences.favoriteLightTheme || 'light');
+          setMode(currentMode);
+          setThemeId(favoriteTheme);
+        }
+      } catch (error) {
+        console.error('Error loading theme preferences:', error);
+      } finally {
+        setLoadingPreferences(false);
+      }
+    };
+    
+    loadPreferences();
+  }, []);
+
+  // Initialize theme on mount (after preferences load)
+  useEffect(() => {
+    if (loadingPreferences) return;
+    
     const theme = getThemeById(themeId);
     applyTheme(theme);
     
@@ -89,24 +128,21 @@ export const ThemeProvider = ({ children }) => {
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, []); // Only run on mount
+  }, [loadingPreferences, themeId, mode, applyTheme]);
 
   // Update mode based on auto mode or manual selection
   useEffect(() => {
-    if (autoMode) {
+    if (!loadingPreferences && autoMode) {
       const newMode = shouldUseDarkMode() ? 'dark' : 'light';
       setMode(newMode);
       localStorage.setItem('themeMode', newMode);
       
-      // Update theme ID if current theme doesn't match mode
-      const currentTheme = getThemeById(themeId);
-      if (currentTheme.mode !== newMode) {
-        const defaultThemeId = getDefaultThemeForMode(newMode);
-        setThemeId(defaultThemeId);
-        localStorage.setItem('themeId', defaultThemeId);
-      }
+      // Use favorite theme for the mode
+      const favoriteTheme = newMode === 'dark' ? favoriteDarkTheme : favoriteLightTheme;
+      setThemeId(favoriteTheme);
+      localStorage.setItem('themeId', favoriteTheme);
     }
-  }, [autoMode, themeId]);
+  }, [autoMode, favoriteLightTheme, favoriteDarkTheme, loadingPreferences]);
 
   // Apply theme when themeId or mode changes
   useEffect(() => {
@@ -126,20 +162,20 @@ export const ThemeProvider = ({ children }) => {
 
   // Check for time changes every minute (for auto mode)
   useEffect(() => {
-    if (!autoMode) return;
+    if (!autoMode || loadingPreferences) return;
 
     const checkTime = () => {
       const newMode = shouldUseDarkMode() ? 'dark' : 'light';
       if (newMode !== mode) {
         setMode(newMode);
-        const defaultThemeId = getDefaultThemeForMode(newMode);
-        setThemeId(defaultThemeId);
+        const favoriteTheme = newMode === 'dark' ? favoriteDarkTheme : favoriteLightTheme;
+        setThemeId(favoriteTheme);
       }
     };
 
     const interval = setInterval(checkTime, 60000); // Check every minute
     return () => clearInterval(interval);
-  }, [autoMode, mode]);
+  }, [autoMode, mode, favoriteLightTheme, favoriteDarkTheme, loadingPreferences]);
 
   const setTheme = (newThemeId) => {
     const theme = getThemeById(newThemeId);
@@ -163,16 +199,55 @@ export const ThemeProvider = ({ children }) => {
     }
   };
 
-  const toggleAutoMode = () => {
+  const toggleAutoMode = async () => {
     const newAutoMode = !autoMode;
     setAutoMode(newAutoMode);
     localStorage.setItem('themeAutoMode', String(newAutoMode));
     
+    // Save to Firebase
+    try {
+      await saveThemePreferences({
+        autoMode: newAutoMode,
+        favoriteLightTheme,
+        favoriteDarkTheme
+      });
+    } catch (error) {
+      console.error('Error saving auto mode preference:', error);
+    }
+    
     if (newAutoMode) {
       const newMode = shouldUseDarkMode() ? 'dark' : 'light';
       setMode(newMode);
-      const defaultThemeId = getDefaultThemeForMode(newMode);
-      setThemeId(defaultThemeId);
+      const favoriteTheme = newMode === 'dark' ? favoriteDarkTheme : favoriteLightTheme;
+      setThemeId(favoriteTheme);
+    }
+  };
+
+  const setFavoriteTheme = async (mode, themeId) => {
+    const newFavoriteLightTheme = mode === 'light' ? themeId : favoriteLightTheme;
+    const newFavoriteDarkTheme = mode === 'dark' ? themeId : favoriteDarkTheme;
+    
+    // Update state
+    if (mode === 'light') {
+      setFavoriteLightTheme(themeId);
+    } else {
+      setFavoriteDarkTheme(themeId);
+    }
+    
+    // Save to Firebase
+    try {
+      await saveThemePreferences({
+        autoMode,
+        favoriteLightTheme: newFavoriteLightTheme,
+        favoriteDarkTheme: newFavoriteDarkTheme
+      });
+    } catch (error) {
+      console.error('Error saving favorite theme:', error);
+    }
+    
+    // If in auto mode and the mode matches, update current theme
+    if (autoMode && mode === (shouldUseDarkMode() ? 'dark' : 'light')) {
+      setThemeId(themeId);
     }
   };
 
@@ -184,10 +259,13 @@ export const ThemeProvider = ({ children }) => {
       themeId,
       theme: currentTheme,
       autoMode,
+      favoriteLightTheme,
+      favoriteDarkTheme,
       setTheme,
       toggleMode,
       toggleAutoMode,
       setAutoMode,
+      setFavoriteTheme,
     }}>
       {children}
     </ThemeContext.Provider>

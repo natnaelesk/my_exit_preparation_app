@@ -7,11 +7,22 @@ import {
   SunIcon,
   CheckIcon,
   ChevronDownIcon,
-  ClockIcon
+  ClockIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
 
 const ThemeSelector = () => {
-  const { mode, themeId, autoMode, setTheme, toggleMode, toggleAutoMode } = useTheme();
+  const { 
+    mode, 
+    themeId, 
+    autoMode, 
+    favoriteLightTheme, 
+    favoriteDarkTheme,
+    setTheme, 
+    toggleMode, 
+    toggleAutoMode,
+    setFavoriteTheme 
+  } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -34,8 +45,12 @@ const ThemeSelector = () => {
   }, [isOpen]);
 
   const handleThemeSelect = (newThemeId) => {
+    // In manual mode, set theme directly
     setTheme(newThemeId);
-    // Don't close dropdown - let user select multiple themes
+  };
+
+  const handleFavoriteThemeSelect = (mode, themeId) => {
+    setFavoriteTheme(mode, themeId);
   };
 
   return (
@@ -68,11 +83,16 @@ const ThemeSelector = () => {
               </button>
             </div>
             
-            {/* Mode Toggle */}
+            {/* Mode Toggle - Disabled in auto mode */}
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleMode}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                disabled={autoMode}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  autoMode 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'cursor-pointer'
+                } ${
                   mode === 'light'
                     ? 'bg-primary-500/20 text-primary-500'
                     : 'bg-surface text-muted hover:text-text'
@@ -83,7 +103,12 @@ const ThemeSelector = () => {
               </button>
               <button
                 onClick={toggleMode}
-                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                disabled={autoMode}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  autoMode 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'cursor-pointer'
+                } ${
                   mode === 'dark'
                     ? 'bg-primary-500/20 text-primary-500'
                     : 'bg-surface text-muted hover:text-text'
@@ -97,58 +122,139 @@ const ThemeSelector = () => {
 
           {/* Theme List */}
           <div className="max-h-[400px] overflow-y-auto scrollbar-thin">
-            {/* Dark Themes */}
-            {mode === 'dark' && (
-              <div className="p-2">
-                <div className="px-3 py-2 text-xs font-semibold text-muted uppercase tracking-wide">
-                  Dark Themes
+            {autoMode ? (
+              /* Auto Mode - Show Favorite Theme Selection */
+              <>
+                {/* Favorite Light Theme */}
+                <div className="p-2">
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <SunIcon className="w-4 h-4 text-muted" />
+                      <span className="text-xs font-semibold text-muted uppercase tracking-wide">
+                        Favorite Light Theme
+                      </span>
+                    </div>
+                    {favoriteLightTheme && (
+                      <StarIcon className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {lightThemes.map((theme) => (
+                      <button
+                        key={theme.id}
+                        onClick={() => handleFavoriteThemeSelect('light', theme.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all text-left cursor-pointer ${
+                          favoriteLightTheme === theme.id
+                            ? 'bg-primary-500/20 text-primary-500'
+                            : 'hover:bg-surface text-text'
+                        }`}
+                      >
+                        <span className="font-medium pointer-events-none">{theme.name}</span>
+                        {favoriteLightTheme === theme.id && (
+                          <CheckIcon className="w-4 h-4 pointer-events-none" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  {darkThemes.map((theme) => (
-                    <button
-                      key={theme.id}
-                      onClick={() => handleThemeSelect(theme.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all text-left cursor-pointer ${
-                        themeId === theme.id
-                          ? 'bg-primary-500/20 text-primary-500'
-                          : 'hover:bg-surface text-text'
-                      }`}
-                    >
-                      <span className="font-medium pointer-events-none">{theme.name}</span>
-                      {themeId === theme.id && (
-                        <CheckIcon className="w-4 h-4 pointer-events-none" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Light Themes */}
-            {mode === 'light' && (
-              <div className="p-2">
-                <div className="px-3 py-2 text-xs font-semibold text-muted uppercase tracking-wide">
-                  Light Themes
+                {/* Favorite Dark Theme */}
+                <div className="p-2 border-t border-border">
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MoonIcon className="w-4 h-4 text-muted" />
+                      <span className="text-xs font-semibold text-muted uppercase tracking-wide">
+                        Favorite Dark Theme
+                      </span>
+                    </div>
+                    {favoriteDarkTheme && (
+                      <StarIcon className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {darkThemes.map((theme) => (
+                      <button
+                        key={theme.id}
+                        onClick={() => handleFavoriteThemeSelect('dark', theme.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all text-left cursor-pointer ${
+                          favoriteDarkTheme === theme.id
+                            ? 'bg-primary-500/20 text-primary-500'
+                            : 'hover:bg-surface text-text'
+                        }`}
+                      >
+                        <span className="font-medium pointer-events-none">{theme.name}</span>
+                        {favoriteDarkTheme === theme.id && (
+                          <CheckIcon className="w-4 h-4 pointer-events-none" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  {lightThemes.map((theme) => (
-                    <button
-                      key={theme.id}
-                      onClick={() => handleThemeSelect(theme.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all text-left cursor-pointer ${
-                        themeId === theme.id
-                          ? 'bg-primary-500/20 text-primary-500'
-                          : 'hover:bg-surface text-text'
-                      }`}
-                    >
-                      <span className="font-medium pointer-events-none">{theme.name}</span>
-                      {themeId === theme.id && (
-                        <CheckIcon className="w-4 h-4 pointer-events-none" />
-                      )}
-                    </button>
-                  ))}
+
+                {/* Current Mode Info */}
+                <div className="p-3 border-t border-border bg-surface/30">
+                  <p className="text-xs text-muted text-center">
+                    Current: {mode === 'dark' ? 'Dark' : 'Light'} mode ({VS_CODE_THEMES[themeId]?.name})
+                  </p>
                 </div>
-              </div>
+              </>
+            ) : (
+              /* Manual Mode - Show Regular Theme Selection */
+              <>
+                {/* Dark Themes */}
+                {mode === 'dark' && (
+                  <div className="p-2">
+                    <div className="px-3 py-2 text-xs font-semibold text-muted uppercase tracking-wide">
+                      Dark Themes
+                    </div>
+                    <div className="space-y-1">
+                      {darkThemes.map((theme) => (
+                        <button
+                          key={theme.id}
+                          onClick={() => handleThemeSelect(theme.id)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all text-left cursor-pointer ${
+                            themeId === theme.id
+                              ? 'bg-primary-500/20 text-primary-500'
+                              : 'hover:bg-surface text-text'
+                          }`}
+                        >
+                          <span className="font-medium pointer-events-none">{theme.name}</span>
+                          {themeId === theme.id && (
+                            <CheckIcon className="w-4 h-4 pointer-events-none" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Light Themes */}
+                {mode === 'light' && (
+                  <div className="p-2">
+                    <div className="px-3 py-2 text-xs font-semibold text-muted uppercase tracking-wide">
+                      Light Themes
+                    </div>
+                    <div className="space-y-1">
+                      {lightThemes.map((theme) => (
+                        <button
+                          key={theme.id}
+                          onClick={() => handleThemeSelect(theme.id)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all text-left cursor-pointer ${
+                            themeId === theme.id
+                              ? 'bg-primary-500/20 text-primary-500'
+                              : 'hover:bg-surface text-text'
+                          }`}
+                        >
+                          <span className="font-medium pointer-events-none">{theme.name}</span>
+                          {themeId === theme.id && (
+                            <CheckIcon className="w-4 h-4 pointer-events-none" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -156,7 +262,7 @@ const ThemeSelector = () => {
           {autoMode && (
             <div className="p-3 border-t border-border bg-surface/30">
               <p className="text-xs text-muted text-center">
-                Auto mode: switches to dark after 7 PM
+                Auto mode: switches to dark after 7 PM using your favorite themes
               </p>
             </div>
           )}

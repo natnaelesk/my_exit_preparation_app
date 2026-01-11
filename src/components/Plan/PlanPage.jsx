@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import { calculateSubjectStats, calculateTopicStats } from '../../services/analyticsService';
@@ -40,10 +40,10 @@ const getDateKey = (date = new Date()) => {
 
 const getWeekDates = () => {
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+  // Get the last 7 days ending with today (today is always last)
   const dates = [];
-  for (let i = 0; i < 7; i++) {
-    dates.push(addDays(weekStart, i));
+  for (let i = 6; i >= 0; i--) {
+    dates.push(addDays(today, -i));
   }
   return dates;
 };
@@ -68,18 +68,61 @@ const PlanPage = () => {
   const [isMotivationLoading, setIsMotivationLoading] = useState(false);
   const [motivationError, setMotivationError] = useState('');
 
+  const todayKeyRef = useRef(getDateKey());
+  const calendarScrollRef = useRef(null);
   const todayKey = getDateKey();
-  const weekDates = useMemo(() => getWeekDates(), []);
+  const weekDates = useMemo(() => getWeekDates(), [todayKey]); // Recompute when today changes
 
   useEffect(() => {
     loadPlanData();
+    todayKeyRef.current = getDateKey();
+    
+    // Check for new day every minute
+    const interval = setInterval(() => {
+      const newTodayKey = getDateKey();
+      if (newTodayKey !== todayKeyRef.current) {
+        // New day - reload everything
+        todayKeyRef.current = newTodayKey;
+        loadPlanData();
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
     if (selectedDateKey) {
       loadDailyPlan(selectedDateKey);
+      // Refresh recent plans to ensure we have latest data
+      listRecentDailyPlans(14).then(plans => {
+        setRecentPlans(plans);
+      }).catch(err => {
+        console.error('Error refreshing recent plans:', err);
+      });
     }
   }, [selectedDateKey]);
+
+  // Auto-scroll calendar to bottom (today) when it loads or updates
+  useEffect(() => {
+    if (!isLoading && weekDates.length > 0) {
+      const scrollToBottom = () => {
+        if (calendarScrollRef.current) {
+          const element = calendarScrollRef.current;
+          // Force scroll all the way to the bottom
+          element.scrollTop = element.scrollHeight;
+        }
+      };
+
+      // Multiple attempts to ensure it scrolls (DOM might not be ready immediately)
+      requestAnimationFrame(() => {
+        scrollToBottom();
+        setTimeout(scrollToBottom, 50);
+        setTimeout(scrollToBottom, 200);
+        setTimeout(scrollToBottom, 500);
+        setTimeout(scrollToBottom, 1000);
+      });
+    }
+  }, [weekDates, recentPlans, isLoading]);
 
   useEffect(() => {
     if (currentDailyPlan?.focusSubject) {
@@ -124,15 +167,17 @@ const PlanPage = () => {
         focusSubject = weaknessScores[0].subject;
       }
 
-      const todayPlan = await getOrCreateDailyPlan(todayKey, focusSubject);
+      const currentTodayKey = getDateKey();
+      const todayPlan = await getOrCreateDailyPlan(currentTodayKey, focusSubject);
       setCurrentDailyPlan(todayPlan);
-      setSelectedDateKey(todayKey);
+      setSelectedDateKey(currentTodayKey);
 
-      const recent = await listRecentDailyPlans(7);
+      // Load plans for the last 7 days (including today)
+      const recent = await listRecentDailyPlans(14); // Get more to ensure we have all 7 days
       setRecentPlans(recent);
 
-      await recomputeDailyPlanStats(todayKey);
-      const updatedPlan = await getDailyPlan(todayKey);
+      await recomputeDailyPlanStats(currentTodayKey);
+      const updatedPlan = await getDailyPlan(currentTodayKey);
       if (updatedPlan) {
         setCurrentDailyPlan(updatedPlan);
       }
@@ -198,7 +243,9 @@ const PlanPage = () => {
   };
 
   const getPlanForDate = (dateKey) => {
-    return recentPlans.find(p => p.dateKey === dateKey) || null;
+    // Match by exact dateKey from Firebase
+    const plan = recentPlans.find(p => p.dateKey === dateKey);
+    return plan || null;
   };
 
   const focusSubject = currentDailyPlan?.focusSubject || null;
@@ -501,21 +548,40 @@ const PlanPage = () => {
             <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
               <h2 className="text-lg font-bold text-text mb-4 flex items-center gap-2">
                 <CalendarDaysIcon className="w-5 h-5 text-primary-500" />
-                This Week
+                Recent Days
               </h2>
-              <div className="space-y-2">
-                {weekDates.map((date) => {
+              <div 
+                ref={calendarScrollRef}
+                className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-hide"
+              >
+                {weekDates.map((date, index) => {
                   const dateKey = getDateKey(date);
-                  const plan = getPlanForDate(dateKey);
+                  // Get plan from Firebase by exact dateKey match
+                  const plan = recentPlans.find(p => p.dateKey === dateKey) || null;
                   const isSelected = selectedDateKey === dateKey;
                   const isTodayDate = isToday(date);
                   const dayName = format(date, 'EEE');
                   const dayNum = format(date, 'd');
                   const isPast = dateKey < todayKey;
+                  const isLastItem = index === weekDates.length - 1;
 
                   return (
                     <button
                       key={dateKey}
+                      ref={isLastItem ? (el) => {
+                        // Scroll last item (today) into view when it renders
+                        if (el && calendarScrollRef.current && !isLoading) {
+                          requestAnimationFrame(() => {
+                            setTimeout(() => {
+                              el?.scrollIntoView({ behavior: 'auto', block: 'end' });
+                              // Also ensure parent scrolls to bottom
+                              if (calendarScrollRef.current) {
+                                calendarScrollRef.current.scrollTop = calendarScrollRef.current.scrollHeight;
+                              }
+                            }, 100);
+                          });
+                        }
+                      } : null}
                       onClick={() => setSelectedDateKey(dateKey)}
                       className={`w-full p-3 rounded-xl border-2 transition-all text-left ${
                         isSelected
@@ -534,7 +600,7 @@ const PlanPage = () => {
                             <div className="font-semibold text-text">{dayName}</div>
                             {plan && (
                               <div className="text-xs text-muted">
-                                {plan.answeredCount}/{plan.questionIds?.length || 0} questions
+                                {plan.answeredCount || 0}/{plan.questionIds?.length || 0} questions
                               </div>
                             )}
                           </div>
@@ -543,7 +609,7 @@ const PlanPage = () => {
                           <div className="flex items-center gap-2">
                             {plan.isComplete ? (
                               <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                            ) : plan.answeredCount > 0 ? (
+                            ) : (plan.answeredCount || 0) > 0 ? (
                               <div className="w-2 h-2 rounded-full bg-yellow-500" />
                             ) : null}
                             {plan.accuracy > 0 && (

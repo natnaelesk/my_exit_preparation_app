@@ -85,7 +85,7 @@ export const ThemeProvider = ({ children }) => {
     }
   }, []);
 
-  // Load theme preferences from Firebase on mount
+  // Load theme preferences from API on mount
   useEffect(() => {
     const loadPreferences = async () => {
       try {
@@ -93,7 +93,7 @@ export const ThemeProvider = ({ children }) => {
         setFavoriteLightTheme(preferences.favoriteLightTheme || 'light');
         setFavoriteDarkTheme(preferences.favoriteDarkTheme || 'dark');
         
-        // If auto mode is enabled in Firebase, use it
+        // If auto mode is enabled in preferences, use it
         if (preferences.autoMode !== undefined) {
           setAutoMode(preferences.autoMode);
           localStorage.setItem('themeAutoMode', String(preferences.autoMode));
@@ -206,7 +206,7 @@ export const ThemeProvider = ({ children }) => {
     setAutoMode(newAutoMode);
     localStorage.setItem('themeAutoMode', String(newAutoMode));
     
-    // Save to Firebase
+    // Save to API
     try {
       await saveThemePreferences({
         autoMode: newAutoMode,
@@ -236,7 +236,7 @@ export const ThemeProvider = ({ children }) => {
       setFavoriteDarkTheme(themeId);
     }
     
-    // Save to Firebase
+    // Save to API
     try {
       await saveThemePreferences({
         autoMode,

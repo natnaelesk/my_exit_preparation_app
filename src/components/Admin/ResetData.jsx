@@ -57,7 +57,7 @@ const ResetData = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-text mb-2">Reset All Data</h1>
-          <p className="text-muted">Permanently delete all data from Firebase</p>
+          <p className="text-muted">Permanently delete all data from the database</p>
         </div>
 
         {/* Current Data Counts */}
@@ -112,7 +112,7 @@ const ResetData = () => {
             <div>
               <h3 className="font-bold text-red-500 mb-2">Warning: This action cannot be undone!</h3>
               <p className="text-sm text-text">
-                This will permanently delete ALL data from Firebase including:
+                This will permanently delete ALL data from the database including:
               </p>
               <ul className="text-sm text-muted mt-2 list-disc list-inside space-y-1">
                 <li>All questions</li>
@@ -218,7 +218,7 @@ const ResetData = () => {
           <div className="card text-center">
             <CheckCircleIcon className="w-12 h-12 text-green-500 mx-auto mb-2" />
             <p className="text-text font-semibold">No data found</p>
-            <p className="text-muted text-sm mt-1">Firebase is already empty</p>
+            <p className="text-muted text-sm mt-1">Database is already empty</p>
           </div>
         )}
       </div>

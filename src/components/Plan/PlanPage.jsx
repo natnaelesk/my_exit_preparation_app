@@ -242,7 +242,7 @@ const PlanPage = () => {
   };
 
   const getPlanForDate = (dateKey) => {
-    // Match by exact dateKey from Firebase
+    // Match by exact dateKey
     const plan = recentPlans.find(p => p.dateKey === dateKey);
     return plan || null;
   };
@@ -512,7 +512,7 @@ const PlanPage = () => {
               >
                 {weekDates.map((date, index) => {
                   const dateKey = getDateKey(date);
-                  // Get plan from Firebase by exact dateKey match
+                  // Get plan by exact dateKey match
                   const plan = recentPlans.find(p => p.dateKey === dateKey) || null;
                   const isSelected = selectedDateKey === dateKey;
                   const isTodayDate = isToday(date);

@@ -36,37 +36,27 @@ A single-user personal exam preparation and analysis platform for the Ethiopian 
 
 ## Tech Stack
 
-- React (JavaScript)
-- Firebase Firestore
-- Vite
+- React (JavaScript) - Frontend
+- Django REST Framework - Backend API
+- SQLite - Database
+- Vite - Build tool
 - Recharts (for analytics visualization)
 
 ## Setup
+
+### Frontend Setup
 
 1. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Configure Firebase:
+2. Configure environment variables:
    - Create a `.env` file in the root directory (copy from `.env.example` if it exists)
-   - Add your Firebase configuration:
+   - Add Django API URL:
    ```
-   VITE_FIREBASE_API_KEY=your-api-key
-   VITE_FIREBASE_AUTH_DOMAIN=your-auth-domain
-   VITE_FIREBASE_PROJECT_ID=your-project-id
-   VITE_FIREBASE_STORAGE_BUCKET=your-storage-bucket
-   VITE_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-   VITE_FIREBASE_APP_ID=your-app-id
+   VITE_API_BASE_URL=http://localhost:8000/api
    ```
-   
-   **To get your Firebase config:**
-   1. Go to [Firebase Console](https://console.firebase.google.com/)
-   2. Create a new project or select an existing one
-   3. Go to Project Settings (gear icon)
-   4. Scroll down to "Your apps" section
-   5. Click on the web app icon (</>) or add a web app
-   6. Copy the config values from the `firebaseConfig` object
 
 3. Configure AI Assistant (Optional - for AI assistant feature):
    - **Recommended: Use OpenAI** (works immediately, free tier available)
@@ -88,14 +78,22 @@ npm install
    - **Note**: The AI assistant feature is optional. If you don't add the API key, the AI button will show an error message when clicked.
    - **Troubleshooting**: If you get a 400 error, check the browser console (F12) for detailed error messages. The service supports OpenAI-compatible APIs.
 
-4. Set up Firestore:
-   - Create the following collections:
-     - `questions` - Store question data
-     - `exams` - Store exam metadata
-     - `attempts` - Store user attempts
-     - `examSessions` - Store exam session state
+### Backend Setup
 
-5. Run the development server:
+4. Set up Django backend:
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   python manage.py makemigrations
+   python manage.py migrate
+   python manage.py runserver
+   ```
+   
+   The API will be available at `http://localhost:8000/api/`
+
+5. Run the React development server (in a new terminal):
 ```bash
 npm run dev
 ```
@@ -111,48 +109,42 @@ During exam mode, you can click the Grok AI button (✨) on any question to:
 - **Note**: Using Grok marks the question as incorrect for learning purposes (this is intentional for study mode)
 - **Privacy**: No chat data is saved - all AI interactions are temporary and not stored
 
-## Firestore Security Rules
+### Migrating Data from Firebase (Optional)
 
-Since this is a single-user application with no authentication, you need to configure Firestore security rules to allow read/write access.
+If you have existing Firebase data and want to migrate it to Django:
 
-### Setting Up Firestore Security Rules
+1. Export your Firebase service account key:
+   - Go to Firebase Console → Project Settings → Service Accounts
+   - Click "Generate New Private Key"
+   - Save the JSON file
 
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Select your project
-3. Click on **Firestore Database** in the left sidebar
-4. Click on the **Rules** tab
-5. Replace the default rules with the following:
+2. Set environment variable:
+   ```bash
+   export FIREBASE_CREDENTIALS_PATH=/path/to/service-account-key.json
+   # On Windows PowerShell:
+   $env:FIREBASE_CREDENTIALS_PATH="C:\path\to\service-account-key.json"
+   ```
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Allow read/write access to all collections for single-user app
-    match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}
-```
+3. Run migration script:
+   ```bash
+   python scripts/migrate_firebase_to_django.py
+   ```
 
-6. Click **Publish** to save the rules
+See `MIGRATION_GUIDE.md` for detailed migration instructions.
 
-**Important Notes:**
-- These rules allow full read/write access to anyone. This is acceptable for a single-user personal app.
-- If you plan to deploy this publicly, consider adding additional security measures.
-- The rules will take effect immediately after publishing.
+## Database Schema
 
-### Creating Firestore Collections
-
-The app uses these collections (they will be created automatically when you upload questions):
-- `questions` - Stores all question data
-- `exams` - Stores exam metadata
-- `attempts` - Stores user answer attempts
-- `examSessions` - Stores exam session state
+The app uses the following Django models:
+- `Question` - Stores all question data
+- `Exam` - Stores exam metadata
+- `Attempt` - Stores user answer attempts
+- `ExamSession` - Stores exam session state
+- `DailyPlan` - Stores daily study plans
+- `ThemePreferences` - Stores theme settings
 
 ## Question Data Structure
 
-Each question in Firestore should have:
+Each question in the database should have:
 ```javascript
 {
   question: string,
@@ -184,55 +176,30 @@ The system uses these 15 fixed subjects:
 14. Automata and Complexity Theory
 15. Compiler Design
 
-## Deployment to Vercel
+## Deployment
 
-This app is configured for easy deployment to Vercel.
+### Frontend Deployment (Vercel)
 
-### Prerequisites
+1. Push your code to GitHub
+2. Import project to Vercel
+3. Add environment variable: `VITE_API_BASE_URL` pointing to your Django API
+4. Deploy
 
-1. A Vercel account (sign up at [vercel.com](https://vercel.com))
-2. A Firebase project with Firestore enabled
-3. Your Firebase configuration credentials
+### Backend Deployment
 
-### Deployment Steps
+The Django backend can be deployed to:
+- **Heroku** - See Django deployment guides
+- **Railway** - Easy Django deployment
+- **DigitalOcean App Platform** - Managed Django hosting
+- **AWS/GCP/Azure** - Enterprise solutions
 
-1. **Push your code to GitHub** (already done if you're reading this)
+For production:
+- Use PostgreSQL instead of SQLite
+- Set `DEBUG=False` in Django settings
+- Configure CORS for your frontend domain
+- Set up proper secret key and environment variables
 
-2. **Import your project to Vercel:**
-   - Go to [vercel.com](https://vercel.com)
-   - Click "Add New Project"
-   - Import your GitHub repository: `natnaelesk/my_exit_preparation_app`
-   - Vercel will auto-detect Vite configuration
-
-3. **Add Environment Variables:**
-   - In Vercel project settings, go to "Environment Variables"
-   - Add the following variables (use the same names as in `.env.example`):
-     - `VITE_FIREBASE_API_KEY`
-     - `VITE_FIREBASE_AUTH_DOMAIN`
-     - `VITE_FIREBASE_PROJECT_ID`
-     - `VITE_FIREBASE_STORAGE_BUCKET`
-     - `VITE_FIREBASE_MESSAGING_SENDER_ID`
-     - `VITE_FIREBASE_APP_ID`
-   - Make sure to add them for all environments (Production, Preview, Development)
-
-4. **Deploy:**
-   - Click "Deploy"
-   - Vercel will build and deploy your app automatically
-   - Your app will be live at `https://your-project-name.vercel.app`
-
-### Build Configuration
-
-The app uses the following build settings (configured in `vercel.json`):
-- **Framework:** Vite
-- **Build Command:** `npm run build`
-- **Output Directory:** `dist`
-- **Install Command:** `npm install`
-
-### Important Notes
-
-- Environment variables must be prefixed with `VITE_` to be accessible in the browser
-- The app uses client-side routing, so Vercel is configured to redirect all routes to `index.html`
-- Make sure your Firestore security rules are set up correctly (see Firestore Security Rules section above)
+See `MIGRATION_GUIDE.md` for more deployment details.
 
 ## License
 

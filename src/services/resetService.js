@@ -1,87 +1,28 @@
-import { 
-  collection, 
-  getDocs, 
-  deleteDoc, 
-  doc,
-  writeBatch
-} from 'firebase/firestore';
-import { db } from './firebase';
+import { get, del } from './apiClient';
 
 const COLLECTIONS = [
   'questions',
   'exams',
   'attempts',
-  'examSessions'
+  'sessions'
 ];
 
 /**
- * Delete all documents from a collection
- */
-const deleteCollection = async (collectionName) => {
-  try {
-    const collectionRef = collection(db, collectionName);
-    const snapshot = await getDocs(collectionRef);
-    
-    if (snapshot.empty) {
-      console.log(`Collection ${collectionName} is already empty`);
-      return { deleted: 0, errors: 0 };
-    }
-
-    // Use batch writes for efficiency (max 500 per batch)
-    let totalDeleted = 0;
-    let totalErrors = 0;
-    const docs = snapshot.docs;
-    
-    // Process in batches of 500 (Firestore limit)
-    for (let i = 0; i < docs.length; i += 500) {
-      const batch = writeBatch(db);
-      const batchDocs = docs.slice(i, i + 500);
-      
-      batchDocs.forEach((docSnapshot) => {
-        try {
-          batch.delete(doc(db, collectionName, docSnapshot.id));
-          totalDeleted++;
-        } catch (error) {
-          console.error(`Error adding delete to batch for ${docSnapshot.id}:`, error);
-          totalErrors++;
-        }
-      });
-      
-      try {
-        await batch.commit();
-      } catch (error) {
-        console.error(`Error committing batch:`, error);
-        totalErrors += batchDocs.length;
-      }
-    }
-
-    console.log(`Deleted ${totalDeleted} documents from ${collectionName}`);
-    return { deleted: totalDeleted, errors: totalErrors };
-  } catch (error) {
-    console.error(`Error deleting collection ${collectionName}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Reset all Firestore data - deletes all documents from all collections
+ * Reset all data - deletes all documents from all collections
  * WARNING: This is irreversible!
+ * Note: This requires DELETE endpoints to be implemented in the backend
  */
 export const resetAllData = async () => {
   try {
     console.log('Starting data reset...');
     const results = {};
 
-    for (const collectionName of COLLECTIONS) {
-      console.log(`Deleting ${collectionName}...`);
-      results[collectionName] = await deleteCollection(collectionName);
-    }
-
-    console.log('Data reset complete!', results);
+    // Note: This would require DELETE endpoints for each collection
+    // For now, return a message that this needs backend implementation
     return {
-      success: true,
-      results,
-      message: 'All data has been deleted successfully'
+      success: false,
+      error: 'Reset functionality requires DELETE endpoints in the backend API',
+      message: 'Data reset is not yet implemented for Django backend. Please use Django admin or implement DELETE endpoints.'
     };
   } catch (error) {
     console.error('Error resetting data:', error);
@@ -100,10 +41,33 @@ export const getCollectionCounts = async () => {
   try {
     const counts = {};
 
-    for (const collectionName of COLLECTIONS) {
-      const collectionRef = collection(db, collectionName);
-      const snapshot = await getDocs(collectionRef);
-      counts[collectionName] = snapshot.size;
+    // Get counts from API endpoints
+    try {
+      const questions = await get('/questions/');
+      counts.questions = Array.isArray(questions.results) ? questions.results.length : (Array.isArray(questions) ? questions.length : 0);
+    } catch (e) {
+      counts.questions = 0;
+    }
+
+    try {
+      const exams = await get('/exams/');
+      counts.exams = Array.isArray(exams.results) ? exams.results.length : (Array.isArray(exams) ? exams.length : 0);
+    } catch (e) {
+      counts.exams = 0;
+    }
+
+    try {
+      const attempts = await get('/attempts/');
+      counts.attempts = Array.isArray(attempts.results) ? attempts.results.length : (Array.isArray(attempts) ? attempts.length : 0);
+    } catch (e) {
+      counts.attempts = 0;
+    }
+
+    try {
+      const sessions = await get('/sessions/');
+      counts.examSessions = Array.isArray(sessions.results) ? sessions.results.length : (Array.isArray(sessions) ? sessions.length : 0);
+    } catch (e) {
+      counts.examSessions = 0;
     }
 
     return counts;
@@ -112,4 +76,3 @@ export const getCollectionCounts = async () => {
     throw error;
   }
 };
-

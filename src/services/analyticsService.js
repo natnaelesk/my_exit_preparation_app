@@ -1,3 +1,4 @@
+import { get } from './apiClient';
 import { getAllAttempts, getAttemptsBySubject, getAttemptsByTopic } from './attemptService';
 import { OFFICIAL_SUBJECTS } from '../utils/constants';
 import { calculateStatus } from '../utils/statusHelpers';
@@ -65,57 +66,41 @@ export const calculateExamSubjectStats = async (examId) => {
 
 /**
  * Calculate statistics for all subjects
- * Returns stats for each of the 15 official subjects
+ * Uses API endpoint for efficiency
  */
 export const calculateSubjectStats = async () => {
   try {
+    // Use API endpoint for subject stats
+    const subjectStats = await get('/analytics/subjects/');
+    
+    // API returns object with subject keys, but we need to add trend data
+    // For now, trend will be empty - can be enhanced later
     const allAttempts = await getAllAttempts();
-    const subjectStats = {};
-
-    // Initialize stats for all 15 official subjects
+    
+    // Build trend for each subject
     OFFICIAL_SUBJECTS.forEach(subject => {
-      subjectStats[subject] = {
-        subject,
-        totalAttempted: 0,
-        correctCount: 0,
-        wrongCount: 0,
-        accuracy: 0,
-        status: 'N/A', // No attempts yet
-        trend: [] // Performance over time
-      };
-    });
-
-    // Group attempts by subject
-    const attemptsBySubject = {};
-    allAttempts.forEach(attempt => {
-      const subject = attempt.subject;
-      if (!attemptsBySubject[subject]) {
-        attemptsBySubject[subject] = [];
-      }
-      attemptsBySubject[subject].push(attempt);
-    });
-
-    // Calculate stats for each subject
-    OFFICIAL_SUBJECTS.forEach(subject => {
-      const attempts = attemptsBySubject[subject] || [];
-      if (attempts.length > 0) {
-        const correctCount = attempts.filter(a => a.isCorrect).length;
-        const wrongCount = attempts.length - correctCount;
-        const accuracy = (correctCount / attempts.length) * 100;
-
-        // Determine status
-        const status = calculateStatus(accuracy);
-
+      if (subjectStats[subject] && subjectStats[subject].totalAttempted > 0) {
+        const subjectAttempts = allAttempts.filter(a => a.subject === subject);
+        
         // Build trend (group by date, calculate accuracy per day)
         const trendMap = {};
-        attempts.forEach(attempt => {
-          const date = attempt.timestamp?.toDate?.()?.toDateString() || new Date().toDateString();
-          if (!trendMap[date]) {
-            trendMap[date] = { correct: 0, total: 0 };
+        subjectAttempts.forEach(attempt => {
+          // Handle both legacy Firestore Timestamp objects and ISO strings from Django API
+          let date;
+          if (attempt.timestamp?.toDate) {
+            date = attempt.timestamp.toDate();
+          } else if (attempt.timestamp) {
+            date = new Date(attempt.timestamp);
+          } else {
+            date = new Date();
           }
-          trendMap[date].total++;
+          const dateKey = date.toISOString().split('T')[0];
+          if (!trendMap[dateKey]) {
+            trendMap[dateKey] = { correct: 0, total: 0 };
+          }
+          trendMap[dateKey].total++;
           if (attempt.isCorrect) {
-            trendMap[date].correct++;
+            trendMap[dateKey].correct++;
           }
         });
 
@@ -125,15 +110,18 @@ export const calculateSubjectStats = async () => {
             accuracy: (data.correct / data.total) * 100
           }))
           .sort((a, b) => new Date(a.date) - new Date(b.date));
-
+        
+        subjectStats[subject].trend = trend;
+      } else if (!subjectStats[subject]) {
+        // Initialize if not present
         subjectStats[subject] = {
           subject,
-          totalAttempted: attempts.length,
-          correctCount,
-          wrongCount,
-          accuracy: Math.round(accuracy * 100) / 100,
-          status,
-          trend
+          totalAttempted: 0,
+          correctCount: 0,
+          wrongCount: 0,
+          accuracy: 0,
+          status: 'N/A',
+          trend: []
         };
       }
     });
@@ -147,45 +135,19 @@ export const calculateSubjectStats = async () => {
 
 /**
  * Calculate topic-level statistics within a subject
+ * Uses API endpoint
  */
 export const calculateTopicStats = async (subject) => {
   try {
-    const attempts = await getAttemptsBySubject(subject);
+    const response = await get('/analytics/topics/', { subject });
+    const topics = Array.isArray(response.results) ? response.results : response;
     
-    if (attempts.length === 0) {
-      return {};
-    }
-
-    // Group attempts by topic
-    const attemptsByTopic = {};
-    attempts.forEach(attempt => {
-      const topic = attempt.topic || 'Unknown';
-      if (!attemptsByTopic[topic]) {
-        attemptsByTopic[topic] = [];
-      }
-      attemptsByTopic[topic].push(attempt);
-    });
-
-    // Calculate stats for each topic
+    // Convert array to object keyed by topic
     const topicStats = {};
-    Object.entries(attemptsByTopic).forEach(([topic, topicAttempts]) => {
-      const correctCount = topicAttempts.filter(a => a.isCorrect).length;
-      const accuracy = (correctCount / topicAttempts.length) * 100;
-
-      // Determine status
-      const status = calculateStatus(accuracy);
-
-      topicStats[topic] = {
-        topic,
-        subject,
-        totalAttempted: topicAttempts.length,
-        correctCount,
-        wrongCount: topicAttempts.length - correctCount,
-        accuracy: Math.round(accuracy * 100) / 100,
-        status
-      };
+    topics.forEach(topic => {
+      topicStats[topic.topic] = topic;
     });
-
+    
     return topicStats;
   } catch (error) {
     console.error('Error calculating topic stats:', error);
@@ -195,67 +157,12 @@ export const calculateTopicStats = async (subject) => {
 
 /**
  * Calculate overall accuracy trend over time (all attempts)
- * Groups attempts by date and calculates cumulative accuracy
+ * Uses API endpoint
  */
 export const calculateOverallTrend = async () => {
   try {
-    const allAttempts = await getAllAttempts();
-    
-    if (allAttempts.length === 0) {
-      return [];
-    }
-
-    // Sort attempts by timestamp (oldest first)
-    const sortedAttempts = [...allAttempts].sort((a, b) => {
-      const dateA = a.timestamp?.toDate?.() || new Date(0);
-      const dateB = b.timestamp?.toDate?.() || new Date(0);
-      return dateA.getTime() - dateB.getTime();
-    });
-
-    // Calculate cumulative accuracy over time
-    const trend = [];
-    let cumulativeCorrect = 0;
-    let cumulativeTotal = 0;
-
-    // Group by date for smoother trend
-    const dailyStats = {};
-    sortedAttempts.forEach(attempt => {
-      const date = attempt.timestamp?.toDate?.() || new Date();
-      const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
-      
-      if (!dailyStats[dateKey]) {
-        dailyStats[dateKey] = { correct: 0, total: 0 };
-      }
-      
-      dailyStats[dateKey].total++;
-      if (attempt.isCorrect) {
-        dailyStats[dateKey].correct++;
-      }
-    });
-
-    // Build cumulative trend
-    Object.entries(dailyStats)
-      .sort((a, b) => a[0].localeCompare(b[0])) // Sort by date
-      .forEach(([dateKey, stats]) => {
-        cumulativeCorrect += stats.correct;
-        cumulativeTotal += stats.total;
-        
-        const accuracy = cumulativeTotal > 0 
-          ? (cumulativeCorrect / cumulativeTotal) * 100 
-          : 0;
-
-        // Parse date for display
-        const date = new Date(dateKey);
-        trend.push({
-          date: dateKey,
-          dateDisplay: format(date, 'MMM dd'),
-          accuracy: Math.round(accuracy * 100) / 100,
-          correct: cumulativeCorrect,
-          total: cumulativeTotal
-        });
-      });
-
-    return trend;
+    const trend = await get('/analytics/trend/');
+    return Array.isArray(trend.results) ? trend.results : trend;
   } catch (error) {
     console.error('Error calculating overall trend:', error);
     return [];

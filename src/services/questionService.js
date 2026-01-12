@@ -1,27 +1,13 @@
-import { 
-  collection, 
-  getDocs, 
-  query, 
-  where, 
-  doc, 
-  getDoc 
-} from 'firebase/firestore';
-import { db } from './firebase';
+import { get, post } from './apiClient';
 import { normalizeSubject, normalizeTopic } from '../utils/subjectNormalization';
 
-const QUESTIONS_COLLECTION = 'questions';
-
 /**
- * Get all questions from Firestore
+ * Get all questions from API
  */
 export const getAllQuestions = async () => {
   try {
-    const questionsRef = collection(db, QUESTIONS_COLLECTION);
-    const snapshot = await getDocs(questionsRef);
-    return snapshot.docs.map(doc => ({
-      questionId: doc.id,
-      ...doc.data()
-    }));
+    const response = await get('/questions/');
+    return response.results || response; // Handle pagination if present
   } catch (error) {
     console.error('Error fetching all questions:', error);
     throw error;
@@ -36,27 +22,31 @@ export const getQuestionsBySubject = async (subject) => {
     const requested = String(subject || '').trim();
     const normalizedRequested = normalizeSubject(requested) || requested;
 
-    const questionsRef = collection(db, QUESTIONS_COLLECTION);
-
-    // 1) Fast path: exact match on normalized subject.
-    const q1 = query(questionsRef, where('subject', '==', normalizedRequested));
-    const snap1 = await getDocs(q1);
-    if (snap1.docs.length > 0) {
-      return snap1.docs.map((d) => ({ questionId: d.id, ...d.data() }));
+    // Try normalized subject first
+    let questions = await get('/questions/', { subject: normalizedRequested });
+    if (Array.isArray(questions.results)) {
+      questions = questions.results;
+    }
+    
+    if (questions.length > 0) {
+      return questions;
     }
 
-    // 2) Backward-compat: exact match on raw subject string.
+    // Try raw subject string
     if (normalizedRequested !== requested && requested) {
-      const q2 = query(questionsRef, where('subject', '==', requested));
-      const snap2 = await getDocs(q2);
-      if (snap2.docs.length > 0) {
-        return snap2.docs.map((d) => ({ questionId: d.id, ...d.data() }));
+      questions = await get('/questions/', { subject: requested });
+      if (Array.isArray(questions.results)) {
+        questions = questions.results;
+      }
+      if (questions.length > 0) {
+        return questions;
       }
     }
 
-    // 3) Fallback: load all and match with normalization (handles old/bad subject strings).
+    // Fallback: load all and filter with normalization
     const all = await getAllQuestions();
-    return all.filter((qDoc) => {
+    const allQuestions = Array.isArray(all.results) ? all.results : all;
+    return allQuestions.filter((qDoc) => {
       const docSubject = normalizeSubject(qDoc.subject) || String(qDoc.subject || '').trim();
       return docSubject === normalizedRequested;
     });
@@ -75,26 +65,23 @@ export const getQuestionsByTopic = async (subject, topics) => {
     const normalizedRequestedSubject = normalizeSubject(requestedSubject) || requestedSubject;
     const normalizedTopics = (topics || []).map(normalizeTopic).filter(Boolean);
 
-    const questionsRef = collection(db, QUESTIONS_COLLECTION);
-
-    // Firestore "in" supports max 10 values. If more, fallback to in-memory filtering.
+    // If topics <= 10, try API query (Django supports 'in' queries)
     if (normalizedTopics.length > 0 && normalizedTopics.length <= 10) {
-      const q1 = query(
-        questionsRef,
-        where('subject', '==', normalizedRequestedSubject),
-        where('topic', 'in', normalizedTopics)
-      );
-      const snap1 = await getDocs(q1);
-      if (snap1.docs.length > 0) {
-        return snap1.docs.map((d) => ({ questionId: d.id, ...d.data() }));
-      }
+      // Note: Django ORM 'in' query - we'll need to handle this in the view
+      // For now, get by subject and filter client-side
+      const subjectQuestions = await getQuestionsBySubject(normalizedRequestedSubject);
+      const topicSet = new Set(normalizedTopics.map((t) => t.toLowerCase()));
+      return subjectQuestions.filter((qDoc) => {
+        const t = normalizeTopic(qDoc.topic || '').toLowerCase();
+        return topicSet.size === 0 ? true : topicSet.has(t);
+      });
     }
 
-    // Fallback: load subject questions smart, then filter topics in-memory (more robust).
+    // Fallback: load subject questions and filter topics in-memory
     const subjectQuestions = await getQuestionsBySubject(normalizedRequestedSubject);
     const topicSet = new Set(normalizedTopics.map((t) => t.toLowerCase()));
     return subjectQuestions.filter((qDoc) => {
-      const t = normalizeTopic(qDoc.topic).toLowerCase();
+      const t = normalizeTopic(qDoc.topic || '').toLowerCase();
       return topicSet.size === 0 ? true : topicSet.has(t);
     });
   } catch (error) {
@@ -108,17 +95,8 @@ export const getQuestionsByTopic = async (subject, topics) => {
  */
 export const getQuestionById = async (questionId) => {
   try {
-    const questionRef = doc(db, QUESTIONS_COLLECTION, questionId);
-    const questionSnap = await getDoc(questionRef);
-    
-    if (questionSnap.exists()) {
-      return {
-        questionId: questionSnap.id,
-        ...questionSnap.data()
-      };
-    } else {
-      throw new Error('Question not found');
-    }
+    const question = await get(`/questions/${questionId}/`);
+    return question;
   } catch (error) {
     console.error('Error fetching question by ID:', error);
     throw error;
@@ -130,13 +108,10 @@ export const getQuestionById = async (questionId) => {
  */
 export const getQuestionsByIds = async (questionIds) => {
   try {
-    const questions = await Promise.all(
-      questionIds.map(id => getQuestionById(id))
-    );
-    return questions;
+    const response = await post('/questions/bulk/', { questionIds });
+    return response;
   } catch (error) {
     console.error('Error fetching questions by IDs:', error);
     throw error;
   }
 };
-

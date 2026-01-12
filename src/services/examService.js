@@ -1,26 +1,12 @@
-import { 
-  collection, 
-  getDocs, 
-  doc, 
-  getDoc,
-  addDoc,
-  Timestamp
-} from 'firebase/firestore';
-import { db } from './firebase';
-
-const EXAMS_COLLECTION = 'exams';
+import { get, post } from './apiClient';
 
 /**
- * Get all exams from Firestore
+ * Get all exams from API
  */
 export const getAllExams = async () => {
   try {
-    const examsRef = collection(db, EXAMS_COLLECTION);
-    const snapshot = await getDocs(examsRef);
-    return snapshot.docs.map(doc => ({
-      examId: doc.id,
-      ...doc.data()
-    }));
+    const response = await get('/exams/');
+    return response.results || response; // Handle pagination if present
   } catch (error) {
     console.error('Error fetching all exams:', error);
     throw error;
@@ -32,17 +18,8 @@ export const getAllExams = async () => {
  */
 export const getExamById = async (examId) => {
   try {
-    const examRef = doc(db, EXAMS_COLLECTION, examId);
-    const examSnap = await getDoc(examRef);
-    
-    if (examSnap.exists()) {
-      return {
-        examId: examSnap.id,
-        ...examSnap.data()
-      };
-    } else {
-      throw new Error('Exam not found');
-    }
+    const exam = await get(`/exams/${examId}/`);
+    return exam;
   } catch (error) {
     console.error('Error fetching exam by ID:', error);
     throw error;
@@ -54,20 +31,14 @@ export const getExamById = async (examId) => {
  */
 export const createExam = async (title, questionIds) => {
   try {
-    const examsRef = collection(db, EXAMS_COLLECTION);
     const examData = {
       title,
-      questionIds,
-      createdAt: Timestamp.now()
+      questionIds
     };
-    const docRef = await addDoc(examsRef, examData);
-    return {
-      examId: docRef.id,
-      ...examData
-    };
+    const exam = await post('/exams/', examData);
+    return exam;
   } catch (error) {
     console.error('Error creating exam:', error);
     throw error;
   }
 };
-

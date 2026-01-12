@@ -112,7 +112,7 @@ export const ExamProvider = ({ children }) => {
     setAnswers(newAnswers);
     setTimeSpent(newTimeSpent);
 
-    // Auto-save to Firestore
+    // Auto-save to API
     try {
       await saveExamProgress(currentSession.sessionId, questionId, answer, elapsed);
     } catch (err) {
@@ -158,7 +158,7 @@ export const ExamProvider = ({ children }) => {
 
       setCurrentQuestionIndex(index);
       
-      // Update current index in Firestore
+      // Update current index in API
       if (currentSession) {
         try {
           await updateCurrentIndex(currentSession.sessionId, index);
@@ -200,7 +200,7 @@ export const ExamProvider = ({ children }) => {
         
         if (!finalTimeSpent[questionId]) {
           finalTimeSpent[questionId] = elapsed;
-          // Save to Firestore
+          // Save to API
           try {
             await saveExamProgress(
               currentSession.sessionId, 
@@ -327,7 +327,7 @@ export const ExamProvider = ({ children }) => {
         
         if (!finalTimeSpent[questionId]) {
           finalTimeSpent[questionId] = elapsed;
-          // Save to Firestore
+          // Save to API
           try {
             await saveExamProgress(
               currentSession.sessionId, 

@@ -1,22 +1,9 @@
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  getDocs,
-  query,
-  where,
-  orderBy,
-  Timestamp,
-  updateDoc
-} from 'firebase/firestore';
-import { db } from './firebase';
+import { get, post, patch } from './apiClient';
 import { getQuestionsBySubject } from './questionService';
 import { getAllAttempts } from './attemptService';
 import { calculateSubjectStats } from './analyticsService';
 import { getRandomQuote } from '../utils/motivationalQuotes';
 
-const DAILY_PLANS_COLLECTION = 'dailyPlans';
 const MAX_PLANNED_QUESTIONS = 35;
 
 /**
@@ -52,18 +39,18 @@ function getSeed(dateKey, subject) {
  */
 export const getOrCreateDailyPlan = async (dateKey, focusSubject) => {
   try {
-    const planRef = doc(db, DAILY_PLANS_COLLECTION, dateKey);
-    const planSnap = await getDoc(planRef);
-
-    // If plan exists, return it
-    if (planSnap.exists()) {
+    // Try to get existing plan first
+    try {
+      const plan = await get(`/plans/${dateKey}/`);
       return {
-        planId: planSnap.id,
-        ...planSnap.data()
+        planId: plan.dateKey,
+        ...plan
       };
+    } catch (error) {
+      // Plan doesn't exist, will create it below
     }
 
-    // Otherwise, create a new plan
+    // Create a new plan
     if (!focusSubject) {
       throw new Error('focusSubject is required to create a new daily plan');
     }
@@ -87,7 +74,6 @@ export const getOrCreateDailyPlan = async (dateKey, focusSubject) => {
 
     const planData = {
       dateKey,
-      createdAt: Timestamp.now(),
       focusSubject,
       totalAvailableInSubject: totalAvailable,
       maxPlannedQuestions: MAX_PLANNED_QUESTIONS,
@@ -100,11 +86,12 @@ export const getOrCreateDailyPlan = async (dateKey, focusSubject) => {
       motivationalQuote
     };
 
-    await setDoc(planRef, planData);
+    // Create plan - API will return existing if dateKey already exists
+    const plan = await post(`/plans/`, planData);
 
     return {
-      planId: dateKey,
-      ...planData
+      planId: plan.dateKey,
+      ...plan
     };
   } catch (error) {
     console.error('Error getting/creating daily plan:', error);
@@ -117,38 +104,27 @@ export const getOrCreateDailyPlan = async (dateKey, focusSubject) => {
  */
 export const getDailyPlan = async (dateKey) => {
   try {
-    const planRef = doc(db, DAILY_PLANS_COLLECTION, dateKey);
-    const planSnap = await getDoc(planRef);
-    
-    if (planSnap.exists()) {
-      return {
-        planId: planSnap.id,
-        ...planSnap.data()
-      };
-    }
-    return null;
+    const plan = await get(`/plans/${dateKey}/`);
+    return {
+      planId: plan.dateKey,
+      ...plan
+    };
   } catch (error) {
+    if (error.message.includes('404') || error.message.includes('not found')) {
+      return null;
+    }
     console.error('Error getting daily plan:', error);
     throw error;
   }
 };
 
 /**
- * List recent daily plans (last 7 days)
+ * List recent daily plans (last N days)
  */
 export const listRecentDailyPlans = async (days = 7) => {
   try {
-    const plansRef = collection(db, DAILY_PLANS_COLLECTION);
-    const q = query(plansRef, orderBy('dateKey', 'desc'));
-    const snapshot = await getDocs(q);
-    
-    const plans = snapshot.docs.map(doc => ({
-      planId: doc.id,
-      ...doc.data()
-    }));
-
-    // Return the most recent N days
-    return plans.slice(0, days);
+    const response = await get('/plans/recent/', { days });
+    return response.results || response;
   } catch (error) {
     console.error('Error listing recent daily plans:', error);
     return [];
@@ -160,46 +136,14 @@ export const listRecentDailyPlans = async (days = 7) => {
  */
 export const recomputeDailyPlanStats = async (dateKey) => {
   try {
-    const plan = await getDailyPlan(dateKey);
-    if (!plan) {
-      throw new Error(`Daily plan not found for ${dateKey}`);
-    }
-
-    // Get all attempts for this plan date
-    const allAttempts = await getAllAttempts();
-    const planAttempts = allAttempts.filter(a => a.planDateKey === dateKey);
-
-    // Filter to only attempts for questions in this plan
-    const planQuestionIds = new Set(plan.questionIds || []);
-    const relevantAttempts = planAttempts.filter(a => planQuestionIds.has(a.questionId));
-
-    // Calculate stats
-    const answeredCount = relevantAttempts.length;
-    const correctCount = relevantAttempts.filter(a => a.isCorrect).length;
-    const wrongCount = answeredCount - correctCount;
-    const accuracy = answeredCount > 0 ? (correctCount / answeredCount) * 100 : 0;
-
-    // Check if complete (all questions answered)
-    const isComplete = answeredCount >= planQuestionIds.size;
-
-    // Update plan
-    const planRef = doc(db, DAILY_PLANS_COLLECTION, dateKey);
-    await updateDoc(planRef, {
-      answeredCount,
-      correctCount,
-      wrongCount,
-      accuracy: Math.round(accuracy * 100) / 100,
-      isComplete,
-      lastUpdated: Timestamp.now()
-    });
-
+    const result = await post(`/plans/${dateKey}/recompute/`, {});
     return {
       planId: dateKey,
-      answeredCount,
-      correctCount,
-      wrongCount,
-      accuracy: Math.round(accuracy * 100) / 100,
-      isComplete
+      answeredCount: result.answeredCount,
+      correctCount: result.correctCount,
+      wrongCount: result.wrongCount,
+      accuracy: result.accuracy,
+      isComplete: result.isComplete
     };
   } catch (error) {
     console.error('Error recomputing daily plan stats:', error);
@@ -212,14 +156,9 @@ export const recomputeDailyPlanStats = async (dateKey) => {
  */
 export const markDailyPlanComplete = async (dateKey) => {
   try {
-    const planRef = doc(db, DAILY_PLANS_COLLECTION, dateKey);
-    await updateDoc(planRef, {
-      isComplete: true,
-      lastUpdated: Timestamp.now()
-    });
+    await patch(`/plans/${dateKey}/complete/`, {});
   } catch (error) {
     console.error('Error marking daily plan complete:', error);
     throw error;
   }
 };
-

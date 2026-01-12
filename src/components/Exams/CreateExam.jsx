@@ -162,27 +162,16 @@ const CreateExam = () => {
             <div className="bg-red-500/10 border border-red-500 rounded-lg p-4">
               <strong className="text-red-500 block mb-2">Error:</strong>
               <p className="text-red-400 text-sm">{error}</p>
-              {error.includes('Firestore permission denied') && (
+              {(error.includes('permission denied') || error.includes('API') || error.includes('connection')) && (
                 <div className="mt-4 p-3 bg-primary-500/10 border border-primary-500/50 rounded-lg">
-                  <strong className="text-primary-500 block mb-2 text-sm">Firestore Security Rules Setup Required</strong>
-                  <p className="text-text-secondary text-xs mb-2">Your questions are valid, but you need to configure Firestore security rules:</p>
+                  <strong className="text-primary-500 block mb-2 text-sm">API Connection Required</strong>
+                  <p className="text-text-secondary text-xs mb-2">Your questions are valid, but you need to ensure:</p>
                   <ol className="text-xs text-text-secondary list-decimal list-inside space-y-1 mb-2">
-                    <li>Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary-500 underline">Firebase Console</a></li>
-                    <li>Select your project</li>
-                    <li>Click <strong>Firestore Database</strong> → <strong>Rules</strong> tab</li>
-                    <li>Replace the rules with:</li>
+                    <li>Django backend is running on port 8000</li>
+                    <li>Check your API connection in browser console</li>
+                    <li>Verify <code>VITE_API_BASE_URL=http://localhost:8000/api</code> in .env file</li>
                   </ol>
-                  <pre className="text-xs bg-bg p-2 rounded overflow-auto mt-2">
-{`rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}`}
-                  </pre>
-                  <p className="text-xs text-text-secondary mt-2">Click <strong>Publish</strong> to save. Then try uploading again.</p>
+                  <p className="text-xs text-text-secondary mt-2">Once the backend is running, try uploading again.</p>
                 </div>
               )}
             </div>

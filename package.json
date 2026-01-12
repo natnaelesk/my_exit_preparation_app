@@ -8,7 +8,6 @@
     "@react-three/drei": "^9.88.13",
     "@react-three/fiber": "^8.15.11",
     "date-fns": "^2.30.0",
-    "firebase": "^10.7.1",
     "framer-motion": "^12.25.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

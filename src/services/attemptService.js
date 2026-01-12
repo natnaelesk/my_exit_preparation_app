@@ -1,32 +1,16 @@
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  query, 
-  where,
-  Timestamp
-} from 'firebase/firestore';
-import { db } from './firebase';
-
-const ATTEMPTS_COLLECTION = 'attempts';
+import { get, post } from './apiClient';
 
 /**
  * Save an attempt (answer to a question)
  * 
- * IMPORTANT: This uses addDoc which ALWAYS creates a new document.
+ * IMPORTANT: This always creates a new document.
  * Attempts are NEVER updated or deleted - this ensures analysis data
  * is preserved even when exams are restarted.
  */
 export const saveAttempt = async (attemptData) => {
   try {
-    const attemptsRef = collection(db, ATTEMPTS_COLLECTION);
-    const attempt = {
-      ...attemptData,
-      timestamp: Timestamp.now()
-    };
-    // Always creates new document - never overwrites existing attempts
-    const docRef = await addDoc(attemptsRef, attempt);
-    return docRef.id;
+    const attempt = await post('/attempts/', attemptData);
+    return attempt.attemptId || attempt.id;
   } catch (error) {
     console.error('Error saving attempt:', error);
     throw error;
@@ -38,12 +22,8 @@ export const saveAttempt = async (attemptData) => {
  */
 export const getAllAttempts = async () => {
   try {
-    const attemptsRef = collection(db, ATTEMPTS_COLLECTION);
-    const snapshot = await getDocs(attemptsRef);
-    return snapshot.docs.map(doc => ({
-      attemptId: doc.id,
-      ...doc.data()
-    }));
+    const response = await get('/attempts/');
+    return response.results || response; // Handle pagination if present
   } catch (error) {
     console.error('Error fetching all attempts:', error);
     throw error;
@@ -55,13 +35,8 @@ export const getAllAttempts = async () => {
  */
 export const getAttemptsBySubject = async (subject) => {
   try {
-    const attemptsRef = collection(db, ATTEMPTS_COLLECTION);
-    const q = query(attemptsRef, where('subject', '==', subject));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      attemptId: doc.id,
-      ...doc.data()
-    }));
+    const response = await get('/attempts/', { subject });
+    return response.results || response;
   } catch (error) {
     console.error('Error fetching attempts by subject:', error);
     throw error;
@@ -73,17 +48,8 @@ export const getAttemptsBySubject = async (subject) => {
  */
 export const getAttemptsByTopic = async (subject, topic) => {
   try {
-    const attemptsRef = collection(db, ATTEMPTS_COLLECTION);
-    const q = query(
-      attemptsRef, 
-      where('subject', '==', subject),
-      where('topic', '==', topic)
-    );
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      attemptId: doc.id,
-      ...doc.data()
-    }));
+    const response = await get('/attempts/', { subject, topic });
+    return response.results || response;
   } catch (error) {
     console.error('Error fetching attempts by topic:', error);
     throw error;
@@ -95,9 +61,8 @@ export const getAttemptsByTopic = async (subject, topic) => {
  */
 export const getAnsweredQuestionIds = async () => {
   try {
-    const attempts = await getAllAttempts();
-    const answeredIds = new Set(attempts.map(attempt => attempt.questionId));
-    return Array.from(answeredIds);
+    const answeredIds = await get('/attempts/answered_ids/');
+    return answeredIds;
   } catch (error) {
     console.error('Error fetching answered question IDs:', error);
     throw error;
@@ -109,16 +74,10 @@ export const getAnsweredQuestionIds = async () => {
  */
 export const getAttemptsByQuestionId = async (questionId) => {
   try {
-    const attemptsRef = collection(db, ATTEMPTS_COLLECTION);
-    const q = query(attemptsRef, where('questionId', '==', questionId));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      attemptId: doc.id,
-      ...doc.data()
-    }));
+    const response = await get('/attempts/', { questionId });
+    return response.results || response;
   } catch (error) {
     console.error('Error fetching attempts by question ID:', error);
     throw error;
   }
 };
-

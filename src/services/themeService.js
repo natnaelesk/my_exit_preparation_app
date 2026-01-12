@@ -1,30 +1,12 @@
-import { 
-  doc, 
-  getDoc, 
-  setDoc 
-} from 'firebase/firestore';
-import { db } from './firebase';
-
-const THEME_PREFERENCES_DOC = 'themePreferences';
-const THEME_PREFERENCES_COLLECTION = 'settings';
+import { get, put } from './apiClient';
 
 /**
- * Get theme preferences from Firestore
+ * Get theme preferences from API
  */
 export const getThemePreferences = async () => {
   try {
-    const prefRef = doc(db, THEME_PREFERENCES_COLLECTION, THEME_PREFERENCES_DOC);
-    const prefSnap = await getDoc(prefRef);
-    
-    if (prefSnap.exists()) {
-      return prefSnap.data();
-    }
-    // Return defaults if no preferences exist
-    return {
-      favoriteLightTheme: 'light',
-      favoriteDarkTheme: 'dark',
-      autoMode: false
-    };
+    const preferences = await get('/settings/theme/');
+    return preferences;
   } catch (error) {
     console.error('Error fetching theme preferences:', error);
     // Return defaults on error
@@ -37,15 +19,13 @@ export const getThemePreferences = async () => {
 };
 
 /**
- * Save theme preferences to Firestore
+ * Save theme preferences to API
  */
 export const saveThemePreferences = async (preferences) => {
   try {
-    const prefRef = doc(db, THEME_PREFERENCES_COLLECTION, THEME_PREFERENCES_DOC);
-    await setDoc(prefRef, preferences, { merge: true });
+    await put('/settings/theme/', preferences);
   } catch (error) {
     console.error('Error saving theme preferences:', error);
     throw error;
   }
 };
-

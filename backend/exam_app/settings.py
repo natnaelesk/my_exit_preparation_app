@@ -15,13 +15,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-this-in-produc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# Allow Render.com domains by default in production
-ALLOWED_HOSTS_ENV = os.environ.get('ALLOWED_HOSTS', '')
-if ALLOWED_HOSTS_ENV:
-    ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS_ENV.split(',')]
-else:
-    # Default: allow localhost and Render.com domains
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com']
+# Allow all hosts (no restrictions)
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [

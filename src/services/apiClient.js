@@ -3,7 +3,7 @@
  * Replaces Firebase SDK calls with HTTP requests
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://exit-exam-backend-qii8.onrender.com/api';
 
 /**
  * Make API request with error handling

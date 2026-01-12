@@ -14,7 +14,6 @@ import ExamDetail from './components/Exams/ExamDetail';
 import PlanPage from './components/Plan/PlanPage';
 import ResetData from './components/Admin/ResetData';
 import QuestionBank from './components/Bank/QuestionBank';
-import DebugBox from './components/Common/DebugBox';
 
 function AppContent() {
   const location = useLocation();
@@ -54,9 +53,6 @@ function AppContent() {
           <BottomNav />
         </div>
       )}
-
-      {/* Debug Box - Always visible */}
-      <DebugBox />
     </div>
   );
 }

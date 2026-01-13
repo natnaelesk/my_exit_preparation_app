@@ -7,8 +7,10 @@ import {
   getOrCreateDailyPlan, 
   getDailyPlan, 
   listRecentDailyPlans, 
-  recomputeDailyPlanStats 
+  recomputeDailyPlanStats,
+  filterQuestionsByType
 } from '../../services/dailyPlanService';
+import { getOrGenerateBonusChallenge } from '../../services/bonusChallengeService';
 import { EXAM_MODES, OFFICIAL_SUBJECTS } from '../../utils/constants';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import ButtonLoading from '../Common/ButtonLoading';
@@ -23,23 +25,15 @@ import {
   BookOpenIcon,
   XMarkIcon,
   ChartBarIcon,
-  ClockIcon
+  ClockIcon,
+  FireIcon
 } from '@heroicons/react/24/outline';
 import { format, startOfWeek, addDays, isToday } from 'date-fns';
+import { getEthiopianDateKey, isTodayEthiopian, hasDayEnded } from '../../utils/ethiopianTime';
 
 const getDateKey = (date = new Date()) => {
-  try {
-    // Use local time instead of UTC to handle timezone correctly
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`; // YYYY-MM-DD in local time
-  } catch {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
+  // Use Ethiopian timezone with 6 AM day boundary
+  return getEthiopianDateKey(date);
 };
 
 const getWeekDates = () => {
@@ -66,6 +60,11 @@ const PlanPage = () => {
   const [allTopics, setAllTopics] = useState([]);
   const [topicStats, setTopicStats] = useState({});
   const [showMotivation, setShowMotivation] = useState(true);
+  const [activeTab, setActiveTab] = useState('today'); // 'today' | 'bonus'
+  const [bonusChallenge, setBonusChallenge] = useState(null);
+  const [questionFilter, setQuestionFilter] = useState('all'); // 'all' | 'answered' | 'never-seen'
+  const [dayHasEnded, setDayHasEnded] = useState(false);
+  const [moreMoreClicked, setMoreMoreClicked] = useState(false);
 
   const todayKeyRef = useRef(getDateKey());
   const calendarScrollRef = useRef(null);
@@ -128,6 +127,33 @@ const PlanPage = () => {
       loadTopicsAndStats();
     }
   }, [currentDailyPlan?.focusSubject]);
+
+  // Check if day has ended (for hiding bonus button)
+  useEffect(() => {
+    const checkDayEnded = () => {
+      setDayHasEnded(hasDayEnded());
+    };
+    checkDayEnded();
+    const interval = setInterval(checkDayEnded, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  // Load bonus challenge when switching to bonus tab
+  useEffect(() => {
+    if (activeTab === 'bonus' && !bonusChallenge) {
+      loadBonusChallenge();
+    }
+  }, [activeTab]);
+
+  const loadBonusChallenge = async () => {
+    try {
+      const challenge = await getOrGenerateBonusChallenge();
+      setBonusChallenge(challenge);
+    } catch (error) {
+      console.error('Error loading bonus challenge:', error);
+      setError('Failed to load bonus challenge');
+    }
+  };
 
   const loadTopicsAndStats = async () => {
     if (!currentDailyPlan?.focusSubject) return;
@@ -218,18 +244,33 @@ const PlanPage = () => {
   };
 
   const handleStartPractice = async () => {
-    if (!currentDailyPlan || !currentDailyPlan.questionIds || currentDailyPlan.questionIds.length === 0) {
-      alert('No questions available for today\'s plan');
+    const plan = activeTab === 'bonus' ? bonusChallenge : currentDailyPlan;
+    
+    if (!plan || !plan.questionIds || plan.questionIds.length === 0) {
+      alert(`No questions available for ${activeTab === 'bonus' ? 'bonus challenge' : 'today\'s plan'}`);
       return;
     }
 
     try {
       setIsStarting(true);
+      
+      // Filter questions based on selected filter
+      let filteredQuestionIds = plan.questionIds;
+      if (questionFilter !== 'all') {
+        filteredQuestionIds = await filterQuestionsByType(plan.questionIds, questionFilter);
+        
+        if (filteredQuestionIds.length === 0) {
+          alert(`No ${questionFilter === 'answered' ? 'answered' : 'unanswered'} questions available. Please select a different filter.`);
+          setIsStarting(false);
+          return;
+        }
+      }
+
       const config = {
-        questionCount: currentDailyPlan.questionIds.length,
-        planDateKey: currentDailyPlan.dateKey,
-        planQuestionIds: currentDailyPlan.questionIds,
-        allowReattempts: true
+        questionCount: filteredQuestionIds.length,
+        planDateKey: activeTab === 'bonus' ? null : currentDailyPlan?.dateKey,
+        planQuestionIds: filteredQuestionIds,
+        allowReattempts: questionFilter !== 'never-seen'
       };
 
       await startExam(EXAM_MODES.WEAK_AREA, config);
@@ -238,6 +279,18 @@ const PlanPage = () => {
       console.error('Error starting practice:', error);
       alert('Error starting practice: ' + error.message);
       setIsStarting(false);
+    }
+  };
+
+  const handleMoreMoreClick = async () => {
+    try {
+      setMoreMoreClicked(true);
+      await loadBonusChallenge();
+      setActiveTab('bonus');
+    } catch (error) {
+      console.error('Error loading bonus challenge:', error);
+      alert('Failed to load bonus challenge: ' + error.message);
+      setMoreMoreClicked(false); // Reset on error
     }
   };
 
@@ -271,11 +324,24 @@ const PlanPage = () => {
   
   // Get the motivational quote from the viewing plan (today or selected date)
   // Also check currentDailyPlan if viewingPlan doesn't have it
-  const motivationalQuote = viewingPlan?.motivationalQuote || currentDailyPlan?.motivationalQuote || null;
+  // For bonus tab, use bonus challenge quote
+  const motivationalQuote = activeTab === 'bonus' 
+    ? (bonusChallenge?.motivationalQuote || null)
+    : (viewingPlan?.motivationalQuote || currentDailyPlan?.motivationalQuote || null);
   const isPastDay = selectedDateKey < todayKey;
   const progressPercentage = viewingPlan && viewingPlan.questionIds?.length > 0
     ? Math.min(100, Math.round((viewingPlan.answeredCount || 0) / viewingPlan.questionIds.length * 100))
     : 0;
+  
+  // Show More More button only when: progress 100%, viewing today, day hasn't ended, on today tab, and not clicked yet
+  const showMoreMoreButton = isViewingToday && 
+                             progressPercentage === 100 && 
+                             !dayHasEnded && 
+                             activeTab === 'today' &&
+                             !moreMoreClicked;
+  
+  // Show bonus tab only if More More button has been clicked
+  const showBonusTab = moreMoreClicked;
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -323,6 +389,24 @@ const PlanPage = () => {
                     <CheckCircleIcon className={`w-6 h-6 ${viewingPlan.isComplete ? 'text-green-500' : 'text-primary-500'}`} />
                   </div>
                 </div>
+                {/* More More Button - Next to completion indicator */}
+                {showMoreMoreButton && (
+                  <button
+                    onClick={handleMoreMoreClick}
+                    className="relative group px-4 py-2 rounded-lg font-semibold text-sm uppercase tracking-wide text-white bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 shadow-lg transform transition-all duration-300 hover:scale-105 animate-pulse"
+                    style={{
+                      animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                      boxShadow: '0 0 15px rgba(255, 69, 0, 0.5), 0 0 30px rgba(255, 0, 0, 0.3)'
+                    }}
+                  >
+                    <span className="relative z-10 flex items-center gap-2">
+                      <FireIcon className="w-4 h-4 animate-bounce" />
+                      Bonus Challenge
+                      <FireIcon className="w-4 h-4 animate-bounce" style={{ animationDelay: '0.1s' }} />
+                    </span>
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 opacity-75 blur-md group-hover:opacity-100 transition-opacity"></div>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -330,11 +414,38 @@ const PlanPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32 md:pb-8">
+        {/* Tab Navigation - Only show if bonus tab is available */}
+        {isViewingToday && showBonusTab && (
+          <div className="mb-6 flex items-center gap-4">
+            <button
+              onClick={() => setActiveTab('today')}
+              className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                activeTab === 'today'
+                  ? 'bg-primary-500 text-white shadow-lg'
+                  : 'bg-surface text-muted hover:bg-surface/80'
+              }`}
+            >
+              Today
+            </button>
+            <button
+              onClick={() => setActiveTab('bonus')}
+              className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                activeTab === 'bonus'
+                  ? 'bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 text-white shadow-lg'
+                  : 'bg-surface text-muted hover:bg-surface/80'
+              }`}
+            >
+              Bonus Challenge
+            </button>
+          </div>
+        )}
+
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Daily Motivation Quote - Attractive Card */}
-            {motivationalQuote && (
+            {/* Daily Motivation Quote - Attractive Card - Only show for Today tab */}
+            {activeTab === 'today' && motivationalQuote && (
               <div className="relative overflow-hidden bg-gradient-to-br from-primary-500/20 via-primary-500/10 to-yellow-500/10 border-2 border-primary-500/30 rounded-2xl p-6 shadow-lg">
                 {/* Decorative background elements */}
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full -mr-16 -mt-16"></div>
@@ -372,8 +483,49 @@ const PlanPage = () => {
               </div>
             )}
 
+            {/* Question Filter Toggle - Only show for today */}
+            {isViewingToday && activeTab === 'today' && viewingPlan && (
+              <div className="bg-card border border-border rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-text">Question Filter:</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setQuestionFilter('all')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        questionFilter === 'all'
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-surface text-muted hover:bg-surface/80'
+                      }`}
+                    >
+                      All
+                    </button>
+                    <button
+                      onClick={() => setQuestionFilter('answered')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        questionFilter === 'answered'
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-surface text-muted hover:bg-surface/80'
+                      }`}
+                    >
+                      Answered
+                    </button>
+                    <button
+                      onClick={() => setQuestionFilter('never-seen')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        questionFilter === 'never-seen'
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-surface text-muted hover:bg-surface/80'
+                      }`}
+                    >
+                      Never Seen
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Today's Plan Card */}
-            {viewingPlan && (
+            {activeTab === 'today' && viewingPlan && (
               <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <div>
@@ -442,8 +594,146 @@ const PlanPage = () => {
               </div>
             )}
 
+            {/* Bonus Challenge Tab Content */}
+            {activeTab === 'bonus' && (
+              <>
+                {/* Bonus Motivation Quote - Energetic */}
+                {bonusChallenge?.motivationalQuote && (
+                  <div className="relative overflow-hidden bg-gradient-to-br from-orange-500/20 via-red-500/10 to-yellow-500/10 border-2 border-orange-500/30 rounded-2xl p-6 shadow-lg">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-yellow-500/5 rounded-full -ml-12 -mb-12"></div>
+                    
+                    <div className="relative flex items-start gap-4">
+                      <div className="flex-shrink-0 mt-1">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center shadow-md">
+                          <FireIcon className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">
+                            🔥 BONUS CHALLENGE MOTIVATION
+                          </span>
+                        </div>
+                        <blockquote className="text-base md:text-lg font-medium text-text leading-relaxed italic">
+                          "{bonusChallenge.motivationalQuote}"
+                        </blockquote>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bonus Challenge Card */}
+                {bonusChallenge && (
+                  <div className="bg-card border-2 border-orange-500/30 rounded-2xl p-6 shadow-lg">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h2 className="text-2xl font-bold text-text mb-1 flex items-center gap-2">
+                          <FireIcon className="w-6 h-6 text-orange-500" />
+                          Bonus Challenge
+                        </h2>
+                        <p className="text-muted text-sm">{bonusChallenge.subject}</p>
+                      </div>
+                      <div className="px-4 py-2 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 rounded-full">
+                        <span className="text-sm font-semibold text-orange-500">BONUS</span>
+                      </div>
+                    </div>
+
+                    {/* Question Filter Toggle for Bonus */}
+                    <div className="mb-6 bg-surface/50 rounded-xl p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-text">Question Filter:</span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setQuestionFilter('all')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                              questionFilter === 'all'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-surface text-muted hover:bg-surface/80'
+                            }`}
+                          >
+                            All
+                          </button>
+                          <button
+                            onClick={() => setQuestionFilter('answered')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                              questionFilter === 'answered'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-surface text-muted hover:bg-surface/80'
+                            }`}
+                          >
+                            Answered
+                          </button>
+                          <button
+                            onClick={() => setQuestionFilter('never-seen')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                              questionFilter === 'never-seen'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-surface text-muted hover:bg-surface/80'
+                            }`}
+                          >
+                            Never Seen
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bonus Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                      <div className="bg-surface/50 rounded-xl p-4">
+                        <div className="text-xs font-medium text-muted uppercase tracking-wide mb-1">Questions</div>
+                        <div className="text-2xl font-bold text-text">
+                          {bonusChallenge.questionIds?.length || 0}
+                        </div>
+                        <div className="text-xs text-muted mt-1">max {bonusChallenge.maxQuestions || 20}</div>
+                      </div>
+                      <div className="bg-surface/50 rounded-xl p-4">
+                        <div className="text-xs font-medium text-muted uppercase tracking-wide mb-1">Subject</div>
+                        <div className="text-lg font-bold text-orange-500 truncate">
+                          {bonusChallenge.subject}
+                        </div>
+                        <div className="text-xs text-muted mt-1">Strong area</div>
+                      </div>
+                      <div className="bg-surface/50 rounded-xl p-4">
+                        <div className="text-xs font-medium text-muted uppercase tracking-wide mb-1">Type</div>
+                        <div className="text-lg font-bold text-text">
+                          Bonus
+                        </div>
+                        <div className="text-xs text-muted mt-1">Keep sharp!</div>
+                      </div>
+                    </div>
+
+                    {/* Start Bonus Practice Button */}
+                    <button
+                      className="w-full py-4 px-6 text-base font-semibold flex items-center justify-center gap-3 disabled:opacity-50 bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 hover:from-orange-600 hover:via-red-600 hover:to-yellow-600 text-white rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl transition-all duration-200 disabled:cursor-not-allowed"
+                      onClick={handleStartPractice}
+                      disabled={isStarting || !bonusChallenge.questionIds || bonusChallenge.questionIds.length === 0}
+                    >
+                      {isStarting ? (
+                        <ButtonLoading text="Starting..." />
+                      ) : (
+                        <>
+                          <FireIcon className="w-5 h-5" />
+                          <span>Start Bonus Challenge</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {!bonusChallenge && (
+                  <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                    <div className="text-center py-8">
+                      <LoadingAnimation message="Loading bonus challenge..." size="medium" />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
             {/* Topics Section */}
-            {focusSubject && allTopics.length > 0 && (
+            {activeTab === 'today' && focusSubject && allTopics.length > 0 && (
               <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -515,7 +805,7 @@ const PlanPage = () => {
                   // Get plan by exact dateKey match
                   const plan = recentPlans.find(p => p.dateKey === dateKey) || null;
                   const isSelected = selectedDateKey === dateKey;
-                  const isTodayDate = isToday(date);
+                  const isTodayDate = isTodayEthiopian(date);
                   const dayName = format(date, 'EEE');
                   const dayNum = format(date, 'd');
                   const isPast = dateKey < todayKey;
@@ -616,8 +906,8 @@ const PlanPage = () => {
               </div>
             )}
 
-            {/* Start Button */}
-            {isViewingToday && viewingPlan && !viewingPlan.isComplete && (
+            {/* Start Button - Only show for Today tab */}
+            {isViewingToday && activeTab === 'today' && viewingPlan && !viewingPlan.isComplete && (
               <button
                 className="w-full py-4 px-6 text-base font-semibold flex items-center justify-center gap-3 disabled:opacity-50 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-xl transition-all duration-200 disabled:cursor-not-allowed"
                 onClick={handleStartPractice}

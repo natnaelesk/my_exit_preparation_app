@@ -156,6 +156,118 @@ export const MOTIVATIONAL_QUOTES = [
 ];
 
 /**
+ * Energetic bonus challenge quotes - 100% pushing and energetic
+ * Quotes from very successful people that motivate to push beyond limits
+ */
+export const BONUS_MOTIVATIONAL_QUOTES = [
+  "Excellence is not a skill, it's an attitude! Push beyond your limits!",
+  "The only way to do great work is to love what you do! Keep going! - Steve Jobs",
+  "Success is not final, failure is not fatal: it is the courage to continue that counts! - Winston Churchill",
+  "The difference between ordinary and extraordinary is that little extra! Give that extra!",
+  "You've completed today's challenge! Now push yourself even further!",
+  "Champions aren't made in comfort zones! You're building greatness!",
+  "The moment you're ready to quit is usually the moment right before a miracle happens! Don't quit!",
+  "You didn't come this far to only come this far! Keep pushing!",
+  "Success is the sum of small efforts repeated day in and day out! You're doing it!",
+  "The harder you work for something, the greater you'll feel when you achieve it!",
+  "Don't stop when you're tired. Stop when you're done! And you're not done yet!",
+  "Excellence is never an accident. It's the result of high intention and sincere effort! You're showing it!",
+  "The only impossible journey is the one you never begin! You've begun, now finish strong!",
+  "It always seems impossible until it's done! You're making it possible!",
+  "I never lose. Either I win or I learn! Every challenge makes you stronger!",
+  "The future belongs to those who believe in the beauty of their dreams! Dream bigger!",
+  "You become what you believe! Believe you can do more, and you will!",
+  "Great things never come from comfort zones! You're stepping out of yours!",
+  "The most difficult thing is the decision to act! You've acted, now act more!",
+  "Push yourself, because no one else is going to do it for you! You're doing it!",
+  "Wake up with determination. Go to bed with satisfaction! You're building that satisfaction!",
+  "The key to success is to focus on goals, not obstacles! Keep your eyes on the prize!",
+  "If you want to lift yourself up, lift up someone else! But first, lift yourself higher!",
+  "The battles that count aren't the ones for gold medals. The struggles within yourself—that's where it's at! - Jesse Owens",
+  "I would rather die of passion than of boredom! Your passion is showing!",
+  "The person who says it cannot be done should not interrupt the person who is doing it! You're doing it!",
+  "There are no traffic jams along the extra mile! You're on that extra mile!",
+  "Take up one idea. Make that one idea your life! Make excellence your idea!",
+  "The most common way people give up their power is by thinking they don't have any! You have power! Use it!",
+  "Whatever you can do, or dream you can, begin it. Boldness has genius, power and magic in it! - Goethe",
+  "You can never cross the ocean until you have the courage to lose sight of the shore! You're crossing it!",
+  "The best revenge is massive success! You're achieving it!",
+  "Winning isn't everything, but wanting to win is! You want it, now get it!",
+  "Eighty percent of success is showing up! You've shown up, now show up more!",
+  "In order to succeed, your desire for success should be greater than your fear of failure! Your desire is strong!",
+  "People who are crazy enough to think they can change the world, are the ones who do! You're changing your world!",
+  "The future belongs to those who learn more skills and combine them in creative ways! Keep learning!",
+  "Stay hungry. Stay foolish. Stay driven! - Steve Jobs",
+  "Innovation distinguishes between a leader and a follower! You're leading yourself!",
+  "Your time is limited, so don't waste it living someone else's life! Make every moment count!",
+  "The only person you are destined to become is the person you decide to be! Decide to be excellent!",
+  "What lies behind us and what lies before us are tiny matters compared to what lies within us! Your potential is huge!",
+  "The mind is everything. What you think you become! Think success, become success!",
+  "Whether you think you can or think you can't, you're right! Think you can do more!",
+  "I am not a product of my circumstances. I am a product of my decisions! Make the decision to excel!",
+  "Do something today that your future self will thank you for! You're doing it!",
+  "Little things make big things happen! Every question you answer is building something great!",
+  "The way to get started is to quit talking and begin doing! You've started, now do more!",
+  "All our dreams can come true, if we have the courage to pursue them! You have courage!",
+  "If you can dream it, you can do it! Dream bigger, do bigger!",
+  "The future depends on what you do today! You're shaping your future right now!",
+  "Start where you are. Use what you have. Do what you can! And then do more!",
+  "Challenges are what make life interesting and overcoming them is what makes life meaningful! You're making life meaningful!",
+  "To live is the rarest thing in the world. Most people just exist. You're living!",
+  "Either you run the day, or the day runs you! You're running it!",
+  "I have been impressed with the urgency of doing. Knowing is not enough; we must apply! You're applying!",
+  "Limitations live only in our minds. But if we use our imaginations, our possibilities become limitless! Imagine more!",
+  "Mediocrity is a disease. Excellence is a habit. Choose your habit wisely! You're choosing excellence!",
+  "Failure will never overtake me if my determination to succeed is strong enough! Your determination is strong!",
+  "We may encounter many defeats but we must not be defeated! You're not defeated, you're winning!",
+  "Knowing is not enough; we must apply. Wishing is not enough; we must do! You're doing it!",
+  "If you are not willing to risk the usual, you will have to settle for the ordinary! You're risking, you're extraordinary!",
+  "A person who never made a mistake never tried anything new! You're trying, you're growing!",
+  "In the middle of difficulty lies opportunity! You're finding opportunities!",
+  "It is never too late to be what you might have been! It's never too late!",
+  "You become what you believe! Believe in your greatness!",
+  "The battles that count aren't the ones for gold medals. The struggles within yourself—that's where it's at!",
+  "The most difficult thing is the decision to act, the rest is merely tenacity! You have tenacity!",
+  "It is during our darkest moments that we must focus to see the light! You're seeing the light!",
+  "Education is the most powerful weapon which you can use to change the world! You're wielding it!",
+  "The beautiful thing about learning is that no one can take it away from you! Keep learning!",
+  "Live as if you were to die tomorrow. Learn as if you were to live forever! You're learning!",
+  "The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice! You're choosing to learn!",
+  "Learning never exhausts the mind! Keep your mind active!",
+  "An investment in knowledge pays the best interest! You're investing!",
+  "You have to learn the rules of the game. And then you have to play better than anyone else! You're playing better!",
+  "People often say that motivation doesn't last. Well, neither does bathing. That's why we recommend it daily! Keep yourself motivated!",
+  "We become what we think about! Think about success!",
+  "The most common way people give up their power is by thinking they don't have any! You have power!",
+  "Life is not measured by the number of breaths we take, but by the moments that take our breath away! You're creating those moments!",
+  "When I stand before God at the end of my life, I would hope that I would not have a single bit of talent left and could say, I used everything you gave me! Use everything!",
+  "Few things can help an individual more than to place responsibility on him, and to let him know that you trust him! Trust yourself!",
+  "The best revenge is massive success! You're achieving success!",
+  "Life is what happens to you while you're busy making other plans! Make plans, then execute them!",
+  "An unexamined life is not worth living! You're examining, you're living!",
+  "Every child is an artist. The problem is how to remain an artist once we grow up! Stay creative!",
+  "What's money? A man is a success if he gets up in the morning and goes to bed at night and in between does what he wants to do! You're doing what you want!",
+  "I didn't fail the test. I just found 100 ways to do it wrong! Every attempt teaches you!",
+];
+
+/**
+ * Get a random bonus quote from the collection
+ * @param {string[]} excludeQuotes - Quotes to exclude (recently used)
+ * @returns {string} A random energetic bonus motivational quote
+ */
+export const getRandomBonusQuote = (excludeQuotes = []) => {
+  const availableQuotes = excludeQuotes.length > 0
+    ? BONUS_MOTIVATIONAL_QUOTES.filter(quote => !excludeQuotes.includes(quote))
+    : BONUS_MOTIVATIONAL_QUOTES;
+  
+  // If we've excluded all quotes, use the full list
+  const quotesToUse = availableQuotes.length > 0 ? availableQuotes : BONUS_MOTIVATIONAL_QUOTES;
+  
+  const randomIndex = Math.floor(Math.random() * quotesToUse.length);
+  return quotesToUse[randomIndex];
+};
+
+/**
  * Get a random quote from the collection
  * @param {string[]} excludeQuotes - Quotes to exclude (recently used)
  * @returns {string} A random motivational quote

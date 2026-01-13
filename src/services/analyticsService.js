@@ -3,6 +3,7 @@ import { getAllAttempts, getAttemptsBySubject, getAttemptsByTopic } from './atte
 import { OFFICIAL_SUBJECTS } from '../utils/constants';
 import { calculateStatus } from '../utils/statusHelpers';
 import { format } from 'date-fns';
+import { timestampToEthiopianDateKey } from '../utils/ethiopianTime';
 
 /**
  * Get attempts for a specific exam
@@ -86,6 +87,7 @@ export const calculateSubjectStats = async () => {
         const trendMap = {};
         subjectAttempts.forEach(attempt => {
           // Handle both legacy Firestore Timestamp objects and ISO strings from Django API
+          // Use Ethiopian timezone with 6 AM day boundary
           let date;
           if (attempt.timestamp?.toDate) {
             date = attempt.timestamp.toDate();
@@ -94,7 +96,7 @@ export const calculateSubjectStats = async () => {
           } else {
             date = new Date();
           }
-          const dateKey = date.toISOString().split('T')[0];
+          const dateKey = timestampToEthiopianDateKey(date);
           if (!trendMap[dateKey]) {
             trendMap[dateKey] = { correct: 0, total: 0 };
           }

@@ -3,6 +3,7 @@ import { getQuestionsBySubject } from './questionService';
 import { getAllAttempts } from './attemptService';
 import { calculateSubjectStats } from './analyticsService';
 import { getRandomQuote } from '../utils/motivationalQuotes';
+import { getAnsweredQuestionIds } from './attemptService';
 
 const MAX_PLANNED_QUESTIONS = 35;
 
@@ -160,5 +161,36 @@ export const markDailyPlanComplete = async (dateKey) => {
   } catch (error) {
     console.error('Error marking daily plan complete:', error);
     throw error;
+  }
+};
+
+/**
+ * Filter questions by type (all, answered, never-seen)
+ * @param {string[]} questionIds - Array of question IDs to filter
+ * @param {string} filterType - 'all' | 'answered' | 'never-seen'
+ * @returns {Promise<string[]>} Filtered question IDs
+ */
+export const filterQuestionsByType = async (questionIds, filterType = 'all') => {
+  try {
+    if (filterType === 'all') {
+      return questionIds;
+    }
+    
+    const answeredIds = await getAnsweredQuestionIds();
+    const answeredSet = new Set(answeredIds);
+    
+    if (filterType === 'answered') {
+      // Only return questions that have been answered
+      return questionIds.filter(id => answeredSet.has(id));
+    } else if (filterType === 'never-seen') {
+      // Only return questions that have never been answered
+      return questionIds.filter(id => !answeredSet.has(id));
+    }
+    
+    return questionIds;
+  } catch (error) {
+    console.error('Error filtering questions by type:', error);
+    // On error, return all questions
+    return questionIds;
   }
 };

@@ -10,6 +10,7 @@ from .serializers import (
     QuestionSerializer, ExamSerializer, AttemptSerializer, 
     ExamSessionSerializer, DailyPlanSerializer, ThemePreferencesSerializer
 )
+from .utils import get_ethiopian_date_key
 
 # Official subjects list (from constants)
 OFFICIAL_SUBJECTS = [
@@ -392,10 +393,11 @@ class AnalyticsViewSet(viewsets.ViewSet):
         """Calculate overall accuracy trend"""
         all_attempts = Attempt.objects.all().order_by('timestamp')
         
-        # Group by date
+        # Group by date (using Ethiopian timezone with 6 AM day boundary)
         attempts_by_date = {}
         for attempt in all_attempts:
-            date_key = attempt.timestamp.date().isoformat()
+            # Use Ethiopian timezone to calculate date key
+            date_key = get_ethiopian_date_key(attempt.timestamp)
             if date_key not in attempts_by_date:
                 attempts_by_date[date_key] = {'correct': 0, 'total': 0}
             

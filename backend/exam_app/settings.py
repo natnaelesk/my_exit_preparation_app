@@ -5,6 +5,7 @@ Django settings for exam_app project.
 from pathlib import Path
 import os
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -64,26 +65,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'exam_app.wsgi.application'
 
 # Database
-# Use PostgreSQL if DATABASE_URL is set, otherwise use SQLite for local development
+# Always use PostgreSQL from Supabase (remote database)
+# DATABASE_URL must be set in environment variables
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if DATABASE_URL:
-    # Production: Use PostgreSQL from Supabase
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=DATABASE_URL,
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
-else:
-    # Development: Use SQLite
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+if not DATABASE_URL:
+    raise ImproperlyConfigured(
+        "DATABASE_URL environment variable is required. "
+        "Please set it to your Supabase PostgreSQL connection string."
+    )
+
+# Use PostgreSQL from Supabase
+DATABASES = {
+    'default': dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+}
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

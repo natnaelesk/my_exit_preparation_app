@@ -64,6 +64,19 @@ const validateQuestion = (q) => {
  */
 export const uploadExamFromJSON = async (questionsJson, examTitle = 'Uploaded Exam') => {
   try {
+    // Backward-compatible argument handling:
+    // - (questionsArray, examTitle)
+    // - (examTitle, questionsArray)
+    // - ({ title, questions })
+    if (typeof questionsJson === 'string' && Array.isArray(examTitle)) {
+      const swappedTitle = questionsJson;
+      questionsJson = examTitle;
+      examTitle = swappedTitle;
+    } else if (!Array.isArray(questionsJson) && questionsJson?.questions && Array.isArray(questionsJson.questions)) {
+      examTitle = questionsJson.title || examTitle;
+      questionsJson = questionsJson.questions;
+    }
+
     if (!Array.isArray(questionsJson) || questionsJson.length === 0) {
       throw new Error('Questions must be a non-empty array');
     }

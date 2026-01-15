@@ -89,7 +89,7 @@ const CreateExam = () => {
       const questions = validateJson();
       
       setIsUploading(true);
-      const result = await uploadExamFromJSON(examTitle.trim(), questions);
+      const result = await uploadExamFromJSON(questions, examTitle.trim());
       setUploadResult(result);
       
       setTimeout(() => {

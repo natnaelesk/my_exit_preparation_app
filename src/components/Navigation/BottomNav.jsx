@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from '../Theme/ThemeToggle';
 import { HomeIcon, BookOpenIcon, ChartBarIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import './NavBar.css';
 
 const BottomNav = () => {
   const location = useLocation();
@@ -19,8 +20,10 @@ const BottomNav = () => {
     { path: '/analytics', icon: ChartBarIcon, label: 'Analysis' },
   ];
 
+  const isPlanPage = location.pathname.startsWith('/plan');
+
   return (
-    <nav className="bg-card border-t border-border shadow-2xl safe-area-bottom">
+    <nav className={`bg-card border-t border-border shadow-2xl safe-area-bottom ${isPlanPage ? 'plan-bonus-bottom-nav' : ''}`}>
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           const active = isActive(item.path);

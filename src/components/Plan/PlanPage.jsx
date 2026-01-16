@@ -46,6 +46,8 @@ const getWeekDates = () => {
   return dates;
 };
 
+const getBonusUnlockKey = (dateKey) => `bonus_unlocked_${dateKey}`;
+
 const PlanPage = () => {
   const navigate = useNavigate();
   const { startExam } = useExam();
@@ -123,10 +125,11 @@ const PlanPage = () => {
   }, [weekDates, recentPlans, isLoading]);
 
   useEffect(() => {
-    if (currentDailyPlan?.focusSubject) {
-      loadTopicsAndStats();
+    const subject = activeTab === 'bonus' ? bonusChallenge?.subject : currentDailyPlan?.focusSubject;
+    if (subject) {
+      loadTopicsAndStats(subject);
     }
-  }, [currentDailyPlan?.focusSubject]);
+  }, [activeTab, bonusChallenge?.subject, currentDailyPlan?.focusSubject]);
 
   // Check if day has ended (for hiding bonus button)
   useEffect(() => {
@@ -145,6 +148,16 @@ const PlanPage = () => {
     }
   }, [activeTab]);
 
+  const isBonusMode = activeTab === 'bonus' && moreMoreClicked;
+  useEffect(() => {
+    if (isBonusMode) {
+      document.body.classList.add('bonus-mode');
+    } else {
+      document.body.classList.remove('bonus-mode');
+    }
+    return () => document.body.classList.remove('bonus-mode');
+  }, [isBonusMode]);
+
   const loadBonusChallenge = async () => {
     try {
       const challenge = await getOrGenerateBonusChallenge();
@@ -155,10 +168,10 @@ const PlanPage = () => {
     }
   };
 
-  const loadTopicsAndStats = async () => {
-    if (!currentDailyPlan?.focusSubject) return;
+  const loadTopicsAndStats = async (subject) => {
+    if (!subject) return;
     try {
-      const questions = await getQuestionsBySubject(currentDailyPlan.focusSubject);
+      const questions = await getQuestionsBySubject(subject);
       const topicsSet = new Set();
       questions.forEach(q => {
         if (q.topic) topicsSet.add(q.topic);
@@ -166,7 +179,7 @@ const PlanPage = () => {
       const topicsList = Array.from(topicsSet).sort();
       setAllTopics(topicsList);
 
-      const stats = await calculateTopicStats(currentDailyPlan.focusSubject);
+      const stats = await calculateTopicStats(subject);
       setTopicStats(stats);
     } catch (err) {
       console.error('Error loading topics:', err);
@@ -193,6 +206,8 @@ const PlanPage = () => {
       }
 
       const currentTodayKey = getDateKey();
+      const storedBonusUnlocked = localStorage.getItem(getBonusUnlockKey(currentTodayKey));
+      setMoreMoreClicked(storedBonusUnlocked === 'true');
       const todayPlan = await getOrCreateDailyPlan(currentTodayKey, focusSubject);
       setCurrentDailyPlan(todayPlan);
       setSelectedDateKey(currentTodayKey);
@@ -216,6 +231,10 @@ const PlanPage = () => {
 
   const loadDailyPlan = async (dateKey) => {
     try {
+      if (dateKey === todayKey) {
+        const storedBonusUnlocked = localStorage.getItem(getBonusUnlockKey(dateKey));
+        setMoreMoreClicked(storedBonusUnlocked === 'true');
+      }
       const plan = await getDailyPlan(dateKey);
       if (plan) {
         await recomputeDailyPlanStats(dateKey);
@@ -285,6 +304,7 @@ const PlanPage = () => {
   const handleMoreMoreClick = async () => {
     try {
       setMoreMoreClicked(true);
+      localStorage.setItem(getBonusUnlockKey(todayKey), 'true');
       await loadBonusChallenge();
       setActiveTab('bonus');
     } catch (error) {
@@ -333,10 +353,9 @@ const PlanPage = () => {
     ? Math.min(100, Math.round((viewingPlan.answeredCount || 0) / viewingPlan.questionIds.length * 100))
     : 0;
   
-  // Show More More button only when: progress 100%, viewing today, day hasn't ended, on today tab, and not clicked yet
+  // Show More More button only when: progress 100%, viewing today, on today tab, and not clicked yet
   const showMoreMoreButton = isViewingToday && 
                              progressPercentage === 100 && 
-                             !dayHasEnded && 
                              activeTab === 'today' &&
                              !moreMoreClicked;
   
@@ -344,13 +363,32 @@ const PlanPage = () => {
   const showBonusTab = moreMoreClicked;
 
   return (
-    <div className="min-h-screen bg-bg text-text">
+    <div
+      className={`min-h-screen text-text transition-colors duration-700 ${
+        isBonusMode
+          ? 'bg-gradient-to-br from-orange-500/10 via-red-500/5 to-yellow-500/10'
+          : 'bg-bg'
+      }`}
+    >
       {/* Header Section */}
-      <div className="bg-gradient-to-r from-primary-500/10 via-primary-500/5 to-transparent border-b border-border/50">
+      <div
+        className={`border-b transition-colors duration-700 ${
+          isBonusMode
+            ? 'bg-gradient-to-r from-orange-500/20 via-red-500/10 to-yellow-500/10 border-orange-500/30'
+            : 'bg-gradient-to-r from-primary-500/10 via-primary-500/5 to-transparent border-border/50'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold text-text mb-2">Study Plan</h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-4xl font-bold text-text">Study Plan</h1>
+                {isBonusMode && (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest text-white bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 shadow-md animate-pulse">
+                    Bonus Zone
+                  </span>
+                )}
+              </div>
               <p className="text-muted">
                 {isViewingToday ? 'Your personalized plan for today' : `Viewing plan for ${selectedDateKey}`}
               </p>
@@ -626,7 +664,12 @@ const PlanPage = () => {
 
                 {/* Bonus Challenge Card */}
                 {bonusChallenge && (
-                  <div className="bg-card border-2 border-orange-500/30 rounded-2xl p-6 shadow-lg">
+                  <div className="relative overflow-hidden bg-gradient-to-br from-orange-500/10 via-red-500/10 to-yellow-500/10 border-2 border-orange-500/40 rounded-2xl p-6 shadow-xl">
+                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-orange-500/10 rounded-full blur-xl"></div>
+                    <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-yellow-500/10 rounded-full blur-xl"></div>
+                    <div className="absolute top-3 right-3 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow">
+                      Bonus Mode
+                    </div>
                     <div className="flex items-center justify-between mb-6">
                       <div>
                         <h2 className="text-2xl font-bold text-text mb-1 flex items-center gap-2">
@@ -635,8 +678,8 @@ const PlanPage = () => {
                         </h2>
                         <p className="text-muted text-sm">{bonusChallenge.subject}</p>
                       </div>
-                      <div className="px-4 py-2 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 rounded-full">
-                        <span className="text-sm font-semibold text-orange-500">BONUS</span>
+                      <div className="px-4 py-2 bg-gradient-to-r from-orange-500/30 to-yellow-500/30 rounded-full">
+                        <span className="text-sm font-semibold text-orange-500 uppercase tracking-wide">Hot Streak</span>
                       </div>
                     </div>
 
@@ -706,7 +749,7 @@ const PlanPage = () => {
 
                     {/* Start Bonus Practice Button */}
                     <button
-                      className="w-full py-4 px-6 text-base font-semibold flex items-center justify-center gap-3 disabled:opacity-50 bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 hover:from-orange-600 hover:via-red-600 hover:to-yellow-600 text-white rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-xl transition-all duration-200 disabled:cursor-not-allowed"
+                      className="w-full py-4 px-6 text-base font-semibold flex items-center justify-center gap-3 disabled:opacity-50 bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 hover:from-orange-600 hover:via-red-600 hover:to-yellow-600 text-white rounded-xl shadow-2xl shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-200 disabled:cursor-not-allowed"
                       onClick={handleStartPractice}
                       disabled={isStarting || !bonusChallenge.questionIds || bonusChallenge.questionIds.length === 0}
                     >
@@ -738,6 +781,61 @@ const PlanPage = () => {
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <BookOpenIcon className="w-6 h-6 text-primary-500" />
+                    <h2 className="text-xl font-bold text-text">Topics</h2>
+                  </div>
+                  <span className="text-sm text-muted bg-surface px-3 py-1 rounded-full">
+                    {allTopics.length} total
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {allTopics.map((topic) => {
+                    const topicStat = topicStats[topic];
+                    const accuracy = topicStat?.accuracy || 0;
+                    const attempts = topicStat?.totalAttempted || 0;
+                    const getStatusColor = () => {
+                      if (attempts === 0) return 'border-border bg-surface';
+                      if (accuracy >= 80) return 'border-green-500/30 bg-green-500/5';
+                      if (accuracy >= 60) return 'border-yellow-500/30 bg-yellow-500/5';
+                      return 'border-red-500/30 bg-red-500/5';
+                    };
+
+                    return (
+                      <div
+                        key={topic}
+                        className={`p-4 rounded-xl border transition-all hover:shadow-md ${getStatusColor()}`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="font-semibold text-sm text-text line-clamp-2 flex-1 pr-2">
+                            {topic}
+                          </div>
+                          {attempts > 0 && (
+                            <div className="text-right flex-shrink-0">
+                              <div className={`text-lg font-bold ${
+                                accuracy >= 80 ? 'text-green-500' :
+                                accuracy >= 60 ? 'text-yellow-500' : 'text-red-500'
+                              }`}>
+                                {Math.round(accuracy)}%
+                              </div>
+                              <div className="text-xs text-muted">{attempts} attempts</div>
+                            </div>
+                          )}
+                        </div>
+                        {attempts === 0 && (
+                          <div className="text-xs text-muted">Not attempted yet</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Bonus Topics Section */}
+            {activeTab === 'bonus' && bonusChallenge?.subject && allTopics.length > 0 && (
+              <div className="bg-gradient-to-br from-orange-500/5 via-red-500/5 to-yellow-500/5 border-2 border-orange-500/20 rounded-2xl p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <BookOpenIcon className="w-6 h-6 text-orange-500" />
                     <h2 className="text-xl font-bold text-text">Topics</h2>
                   </div>
                   <span className="text-sm text-muted bg-surface px-3 py-1 rounded-full">

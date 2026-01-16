@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from '../Theme/ThemeToggle';
+import './NavBar.css';
 
 const NavBar = () => {
   const location = useLocation();
@@ -8,8 +9,10 @@ const NavBar = () => {
     return location.pathname === path;
   };
 
+  const isPlanPage = location.pathname.startsWith('/plan');
+
   return (
-    <nav className="bg-card border-b border-border sticky top-0 z-40 shadow-lg">
+    <nav className={`bg-card border-b border-border sticky top-0 z-40 shadow-lg ${isPlanPage ? 'plan-bonus-nav' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="text-xl font-bold text-primary-500">

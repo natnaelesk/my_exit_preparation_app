@@ -24,6 +24,7 @@ export const ExamProvider = ({ children }) => {
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [lockedAnswers, setLockedAnswers] = useState({});
   const [timeSpent, setTimeSpent] = useState({});
   const [questionStartTime, setQuestionStartTime] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -71,6 +72,7 @@ export const ExamProvider = ({ children }) => {
       setCurrentSession(session);
       setCurrentQuestionIndex(0);
       setAnswers({});
+      setLockedAnswers({});
       setTimeSpent({});
     } catch (err) {
       setError(err.message);
@@ -88,6 +90,7 @@ export const ExamProvider = ({ children }) => {
       setCurrentSession(session);
       setCurrentQuestionIndex(session.currentIndex || 0);
       setAnswers(session.answers || {});
+      setLockedAnswers({});
       setTimeSpent(session.timeSpent || {});
     } catch (err) {
       setError(err.message);
@@ -102,6 +105,7 @@ export const ExamProvider = ({ children }) => {
 
     const question = questions[currentQuestionIndex];
     const questionId = question.questionId;
+    if (lockedAnswers[questionId]) return;
     
     // Calculate time spent
     const elapsed = questionStartTime ? Math.floor((Date.now() - questionStartTime) / 1000) : 0;
@@ -179,6 +183,12 @@ export const ExamProvider = ({ children }) => {
     if (currentQuestionIndex > 0) {
       goToQuestion(currentQuestionIndex - 1);
     }
+  };
+
+  const lockCurrentQuestion = () => {
+    if (!questions[currentQuestionIndex]) return;
+    const questionId = questions[currentQuestionIndex].questionId;
+    setLockedAnswers(prev => ({ ...prev, [questionId]: true }));
   };
 
   const finishExam = async () => {
@@ -286,6 +296,7 @@ export const ExamProvider = ({ children }) => {
       setQuestions([]);
       setCurrentQuestionIndex(0);
       setAnswers({});
+      setLockedAnswers({});
       setTimeSpent({});
       setQuestionStartTime(null);
 
@@ -419,12 +430,14 @@ export const ExamProvider = ({ children }) => {
     currentQuestionIndex,
     currentQuestion: questions[currentQuestionIndex] || null,
     answers,
+    lockedAnswers,
     timeSpent,
     isLoading,
     error,
     startExam,
     resumeExam,
     selectAnswer,
+    lockCurrentQuestion,
     goToQuestion,
     nextQuestion,
     previousQuestion,
@@ -437,12 +450,14 @@ export const ExamProvider = ({ children }) => {
     questions,
     currentQuestionIndex,
     answers,
+    lockedAnswers,
     timeSpent,
     isLoading,
     error,
     startExam,
     resumeExam,
     selectAnswer,
+    lockCurrentQuestion,
     goToQuestion,
     nextQuestion,
     previousQuestion,

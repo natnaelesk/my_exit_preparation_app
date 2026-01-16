@@ -13,8 +13,10 @@ const ExamInterface = () => {
     currentQuestionIndex,
     questions,
     answers,
+    lockedAnswers,
     currentSession,
     selectAnswer,
+    lockCurrentQuestion,
     nextQuestion,
     previousQuestion,
     finishExam,
@@ -60,6 +62,7 @@ const ExamInterface = () => {
   // Handle Grok AI button click - marks question as wrong and opens AI assistant
   const handleGrokClick = () => {
     if (!currentQuestion) return;
+    if (!lockedAnswers[currentQuestion.questionId]) return;
     
     // Mark the question as wrong by selecting an incorrect answer
     // Find the first choice that is NOT the correct answer
@@ -143,6 +146,7 @@ const ExamInterface = () => {
   };
 
   const selectedAnswer = answers[currentQuestion.questionId] || null;
+  const isLocked = !!lockedAnswers[currentQuestion.questionId];
   const isFirstQuestion = currentQuestionIndex === 0;
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
@@ -174,7 +178,9 @@ const ExamInterface = () => {
           question={currentQuestion}
           questionNumber={currentQuestionIndex + 1}
           selectedAnswer={selectedAnswer}
+          isLocked={isLocked}
           onAnswerSelect={handleAnswerSelect}
+          onShowAnswer={() => lockCurrentQuestion()}
           onGrokClick={handleGrokClick}
         />
       </div>

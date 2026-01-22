@@ -197,6 +197,62 @@ export const generateTopicFocusedExam = async (subject, topics, excludeIds = [],
 };
 
 /**
+ * Generate exam-specific subject practice - filters questions from an exam by subject
+ */
+export const generateExamSubjectPractice = async (examId, subject, excludeIds = [], questionCount = null, allowReattempts = true) => {
+  try {
+    if (!examId) {
+      throw new Error('Exam ID is required for exam-specific subject practice');
+    }
+    if (!subject) {
+      throw new Error('Subject is required for exam-specific subject practice');
+    }
+
+    // Get exam and its questions
+    const { getExamById } = await import('./examService');
+    const exam = await getExamById(examId);
+    if (!exam.questionIds || exam.questionIds.length === 0) {
+      throw new Error('Exam has no questions');
+    }
+
+    // Load all exam questions
+    const allExamQuestions = await getQuestionsByIds(exam.questionIds);
+    
+    // Filter by subject
+    const subjectQuestions = allExamQuestions.filter((q) => q.subject === subject);
+    
+    if (subjectQuestions.length === 0) {
+      throw new Error(`No questions found for subject "${subject}" in this exam.`);
+    }
+
+    const excludeSet = new Set(excludeIds);
+    let available = subjectQuestions.filter((q) => !excludeSet.has(q.questionId));
+
+    if (!allowReattempts) {
+      const answeredIds = await getAnsweredQuestionIds();
+      const answeredSet = new Set(answeredIds);
+      available = available.filter((q) => !answeredSet.has(q.questionId));
+
+      if (available.length === 0) {
+        available = subjectQuestions.filter((q) => !excludeSet.has(q.questionId));
+      }
+    }
+
+    if (available.length === 0) {
+      throw new Error(`No available questions for subject "${subject}" in this exam.`);
+    }
+
+    // If questionCount is not specified, use all available questions
+    const targetCount = questionCount || available.length;
+    const shuffled = shuffleArray(available);
+    return shuffled.slice(0, Math.min(targetCount, shuffled.length)).map((q) => q.questionId);
+  } catch (error) {
+    console.error('Error generating exam-specific subject practice:', error);
+    throw error;
+  }
+};
+
+/**
  * Create a new exam session
  */
 export const createExamSession = async (mode, config = {}) => {
@@ -234,6 +290,12 @@ export const createExamSession = async (mode, config = {}) => {
             throw new Error('Exam subject-focused mode requires examId and subject');
           }
           questionIds = await generateSubjectExam(config.subject, [], questionCount, allowReattempts);
+          break;
+        case 'exam-subject-practice':
+          if (!examId || !config.subject) {
+            throw new Error('Exam subject practice mode requires examId and subject');
+          }
+          questionIds = await generateExamSubjectPractice(examId, config.subject, [], questionCount || null, allowReattempts);
           break;
         case EXAM_MODES.TOPIC_FOCUSED:
           if (!config.subject || !config.topics) {

@@ -8,7 +8,7 @@ import { useExam } from '../../contexts/ExamContext';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import { EXAM_MODES } from '../../utils/constants';
 import { format } from 'date-fns';
-import { BookOpenIcon, ExclamationTriangleIcon, PlayIcon, ArrowPathIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, ExclamationTriangleIcon, PlayIcon, ArrowPathIcon, CheckCircleIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 
 const ExamDetail = () => {
   const { examId } = useParams();
@@ -37,6 +37,18 @@ const ExamDetail = () => {
     if (examId) {
       loadExamData();
     }
+  }, [examId]);
+
+  // Refresh data when page regains focus (e.g., returning from practice session)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (examId) {
+        loadExamData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [examId]);
 
   const loadExamData = async () => {
@@ -83,20 +95,44 @@ const ExamDetail = () => {
         }
       }
 
-      // Load progress
+      // Load progress - aggregate across ALL sessions for this exam
       const sessions = await getExamSessions(examId);
       if (sessions.length > 0) {
-        const latestSession = sessions[0];
-        const answeredCount = Object.keys(latestSession.answers || {}).length;
-        const totalQuestions = latestSession.questionIds?.length || 0;
-        const progressPercent = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
+        // Get total questions in the exam (from exam.questionIds)
+        const totalExamQuestions = examData.questionIds?.length || 0;
+        
+        // Collect all unique answered questions across ALL sessions
+        const allAnsweredQuestions = new Set();
+        let latestSession = sessions[0];
+        let hasIncompleteSession = false;
+        
+        sessions.forEach(session => {
+          // Track answered questions from each session
+          if (session.answers) {
+            Object.keys(session.answers).forEach(qId => {
+              allAnsweredQuestions.add(qId);
+            });
+          }
+          
+          // Find the latest incomplete session for resume
+          if (!session.isComplete && !hasIncompleteSession) {
+            latestSession = session;
+            hasIncompleteSession = true;
+          }
+        });
+        
+        const answeredCount = allAnsweredQuestions.size;
+        const progressPercent = totalExamQuestions > 0 ? (answeredCount / totalExamQuestions) * 100 : 0;
+        
+        // Check if exam is complete (all questions answered)
+        const isExamComplete = totalExamQuestions > 0 && answeredCount >= totalExamQuestions;
 
         setProgress({
           sessionId: latestSession.sessionId,
           answeredCount,
-          totalQuestions,
+          totalQuestions: totalExamQuestions,
           progressPercent: Math.round(progressPercent),
-          isComplete: latestSession.isComplete || false,
+          isComplete: isExamComplete,
           hasProgress: answeredCount > 0,
           lastAttempt: latestSession.lastUpdated,
           startedAt: latestSession.startedAt
@@ -156,6 +192,23 @@ const ExamDetail = () => {
   const handleRestart = async () => {
     if (window.confirm('Are you sure you want to start a new attempt? Your previous attempts and analysis data will be preserved.')) {
       await handleStartExam();
+    }
+  };
+
+  const handlePracticeSubject = async (subject) => {
+    try {
+      const config = {
+        examId,
+        subject,
+        questionCount: questionsBySubject[subject]?.length || 50,
+        timePerQuestion: enableTimer ? timePerQuestion : null
+      };
+
+      await startExam('exam-subject-practice', config);
+      navigate('/exam');
+    } catch (error) {
+      console.error('Error starting subject practice:', error);
+      alert('Error starting subject practice: ' + error.message);
     }
   };
 
@@ -436,7 +489,7 @@ const ExamDetail = () => {
         )}
 
         {/* Detailed Insights & Analysis */}
-        {progress && progress.hasProgress ? (
+        {progress && progress.hasProgress && (
           <div className="space-y-6">
             {/* Performance Summary */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -467,6 +520,7 @@ const ExamDetail = () => {
                   {strongSubjects.map(subject => {
                     const stat = subjectStats[subject];
                     const colors = getStatusColor('STRONG');
+                    const subjectQuestionCount = questionsBySubject[subject]?.length || 0;
                     return (
                       <div key={subject} className={`p-4 ${colors.bg} rounded-lg border ${colors.border}`}>
                         <div className="flex items-center justify-between mb-2">
@@ -476,9 +530,19 @@ const ExamDetail = () => {
                           </span>
                         </div>
                         <div className="text-2xl font-bold text-green-500 mb-1">{Math.round(stat.accuracy)}%</div>
-                        <div className="text-xs text-text-secondary">
+                        <div className="text-xs text-text-secondary mb-2">
                           {stat.correctCount} / {stat.totalAttempted} correct
                         </div>
+                        {subjectQuestionCount > 0 && (
+                          <button
+                            onClick={() => handlePracticeSubject(subject)}
+                            className="w-full btn-primary text-xs px-3 py-1.5 flex items-center justify-center gap-1.5 mt-2"
+                            title={`Practice ${subject} questions from this exam`}
+                          >
+                            <AcademicCapIcon className="w-3.5 h-3.5" />
+                            Practice ({subjectQuestionCount})
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -496,6 +560,7 @@ const ExamDetail = () => {
                   {weakSubjects.map(subject => {
                     const stat = subjectStats[subject];
                     const colors = getStatusColor('WEAK');
+                    const subjectQuestionCount = questionsBySubject[subject]?.length || 0;
                     return (
                       <div key={subject} className={`p-4 ${colors.bg} rounded-lg border ${colors.border}`}>
                         <div className="flex items-center justify-between mb-2">
@@ -505,12 +570,22 @@ const ExamDetail = () => {
                           </span>
                         </div>
                         <div className="text-2xl font-bold text-red-500 mb-1">{Math.round(stat.accuracy)}%</div>
-                        <div className="text-xs text-text-secondary">
+                        <div className="text-xs text-text-secondary mb-1">
                           {stat.correctCount} / {stat.totalAttempted} correct
                         </div>
-                        <div className="text-xs text-red-400 mt-1">
+                        <div className="text-xs text-red-400 mb-2">
                           {stat.wrongCount} wrong answers
                         </div>
+                        {subjectQuestionCount > 0 && (
+                          <button
+                            onClick={() => handlePracticeSubject(subject)}
+                            className="w-full btn-primary text-xs px-3 py-1.5 flex items-center justify-center gap-1.5 mt-2"
+                            title={`Practice ${subject} questions from this exam`}
+                          >
+                            <AcademicCapIcon className="w-3.5 h-3.5" />
+                            Practice ({subjectQuestionCount})
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -527,6 +602,7 @@ const ExamDetail = () => {
                   .map(([subject, stat]) => {
                     const colors = getStatusColor(stat.status);
                     const barWidth = Math.max(5, stat.accuracy);
+                    const subjectQuestionCount = questionsBySubject[subject]?.length || 0;
                     return (
                       <div key={subject} className={`p-4 ${colors.bg} rounded-lg border ${colors.border}`}>
                         <div className="flex items-center justify-between mb-2">
@@ -543,14 +619,26 @@ const ExamDetail = () => {
                             </span>
                           </div>
                         </div>
-                        <div className="w-full h-2 bg-bg rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-bg rounded-full overflow-hidden mb-2">
                           <div 
                             className={`h-full rounded-full transition-all duration-500 ${colors.bg.replace('/10', '')}`}
                             style={{ width: `${barWidth}%` }}
                           />
                         </div>
-                        <div className="text-xs text-text-secondary mt-2">
-                          {stat.totalAttempted} questions attempted
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-text-secondary">
+                            {stat.totalAttempted} questions attempted
+                          </div>
+                          {subjectQuestionCount > 0 && (
+                            <button
+                              onClick={() => handlePracticeSubject(subject)}
+                              className="btn-primary text-xs px-3 py-1 flex items-center gap-1.5"
+                              title={`Practice ${subject} questions from this exam`}
+                            >
+                              <AcademicCapIcon className="w-3.5 h-3.5" />
+                              Practice
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -558,36 +646,57 @@ const ExamDetail = () => {
               </div>
             </div>
           </div>
-        ) : (
-          /* Topics Covered - When no progress yet */
-          <div className="space-y-6">
-            <div className="p-6 bg-card rounded-xl border border-border">
-              <h3 className="text-xl font-bold text-text mb-4">Topics Covered</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(questionsBySubject).map(([subject, subjectQuestions]) => (
-                  <div key={subject} className="p-4 bg-surface rounded-lg border border-border">
-                    <div className="font-semibold text-text mb-2">{subject}</div>
-                    <div className="text-sm text-text-secondary">
-                      {subjectQuestions.length} questions
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {[...new Set(subjectQuestions.map(q => q.topic || 'General'))].slice(0, 3).map(topic => (
-                        <span key={topic} className="text-xs bg-bg px-2 py-0.5 rounded border border-border text-text-secondary">
-                          {topic}
-                        </span>
-                      ))}
-                      {[...new Set(subjectQuestions.map(q => q.topic || 'General'))].length > 3 && (
-                        <span className="text-xs text-primary-500">
-                          +{[...new Set(subjectQuestions.map(q => q.topic || 'General'))].length - 3}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
         )}
+
+        {/* Topics Covered - Always show all subjects */}
+        <div className="mt-6 p-6 bg-card rounded-xl border border-border">
+          <h3 className="text-xl font-bold text-text mb-4">All Subjects in This Exam</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(questionsBySubject).map(([subject, subjectQuestions]) => {
+              const stat = subjectStats[subject];
+              const hasStats = stat && stat.totalAttempted > 0;
+              return (
+                <div key={subject} className="p-4 bg-surface rounded-lg border border-border hover:border-primary-500/50 transition-colors">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="font-semibold text-text">{subject}</div>
+                    <button
+                      onClick={() => handlePracticeSubject(subject)}
+                      className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5 hover:scale-105 transition-transform"
+                      title={`Practice ${subject} questions from this exam`}
+                    >
+                      <AcademicCapIcon className="w-3.5 h-3.5" />
+                      Practice
+                    </button>
+                  </div>
+                  <div className="text-sm text-text-secondary mb-2">
+                    {subjectQuestions.length} questions
+                    {hasStats && (
+                      <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${
+                        stat.status === 'STRONG' ? 'text-green-500 bg-green-500/20' :
+                        stat.status === 'WEAK' ? 'text-red-500 bg-red-500/20' :
+                        'text-yellow-500 bg-yellow-500/20'
+                      }`}>
+                        {Math.round(stat.accuracy)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {[...new Set(subjectQuestions.map(q => q.topic || 'General'))].slice(0, 3).map(topic => (
+                      <span key={topic} className="text-xs bg-bg px-2 py-0.5 rounded border border-border text-text-secondary">
+                        {topic}
+                      </span>
+                    ))}
+                    {[...new Set(subjectQuestions.map(q => q.topic || 'General'))].length > 3 && (
+                      <span className="text-xs text-primary-500">
+                        +{[...new Set(subjectQuestions.map(q => q.topic || 'General'))].length - 3}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Back Button */}
         <div className="mt-8">

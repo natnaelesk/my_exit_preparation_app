@@ -1,0 +1,34 @@
+# Place your README images in this folder
+
+## Required Images:
+
+1. **hero-banner.png** - Hero/banner image for the top of README (recommended: 1200x400px)
+2. **random-mode.png** - Screenshot of Random Mode interface
+2. **topic-focused-mode.png** - Screenshot of Topic-Focused Mode
+3. **weak-area-mode.png** - Screenshot of Weak-Area Mode
+4. **ai-assistant.png** - Screenshot of AI Assistant in action
+5. **subject-analysis.png** - Screenshot of Subject Analysis dashboard
+6. **topic-analysis.png** - Screenshot of Topic Analysis view
+7. **performance-trends.png** - Screenshot of Performance Trends chart
+8. **status-indicators.png** - Screenshot showing status indicators
+9. **smart-practice.png** - Screenshot of Smart Practice features
+10. **exam-interface.png** - Screenshot of Exam Interface
+11. **question-bank.png** - Screenshot of Question Bank
+12. **daily-plans.png** - Screenshot of Daily Plans page
+13. **results.png** - Screenshot of Results page
+14. **dashboard.png** - Screenshot of main Dashboard
+15. **analytics-dashboard.png** - Screenshot of Analytics Dashboard
+16. **exam-session.png** - Screenshot of active exam session
+17. **results-review.png** - Screenshot of Results Review
+18. **mobile-view.png** - Screenshot of mobile responsive design
+19. **architecture-diagram.png** - System architecture diagram
+20. **database-schema.png** - Database schema diagram
+
+## Image Guidelines:
+
+- **Format**: PNG or JPG
+- **Recommended Size**: 1200x800px or larger
+- **Aspect Ratio**: 3:2 or 16:9
+- **File Size**: Keep under 500KB per image for faster loading
+- **Naming**: Use lowercase with hyphens (e.g., `random-mode.png`)
+

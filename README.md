@@ -1,165 +1,213 @@
-# Exit Exam Preparation Platform
+<div align="center">
 
-A single-user personal exam preparation and analysis platform for the Ethiopian Computer Science BSc Exit Exam.
+![Dashboard](readme-images/dashboard.png)
 
-## Features
+# 🎓 Exit Exam Preparation Platform
 
-- **Three Exam Modes:**
-  - Random Mode: Practice with randomly selected questions
-  - Topic-Focused Mode: Focus on specific subjects and topics
-  - Weak-Area Mode: Automatically targets your weak areas
+### A Comprehensive, AI-Powered Study Platform for Ethiopian Computer Science BSc Exit Exam
 
-- **AI Assistant (Grok Integration):**
-  - Click the ✨ button on any question during exam mode
-  - Get instant AI explanations of questions, answers, and topics
-  - Chat with AI to ask follow-up questions
-  - Questions are marked as incorrect when using AI (for learning purposes)
-  - No chat data is saved - all interactions are temporary
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![React](https://img.shields.io/badge/React-18.2.0-61DAFB?logo=react)
+![Django](https://img.shields.io/badge/Django-4.2.7-092E20?logo=django)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-- **Comprehensive Analytics:**
-  - Subject-level performance analysis
-  - Topic-level drill-down
-  - Performance trends over time
-  - Strong/Medium/Weak status indicators
+[Features](#-features) • [Quick Start](#-quick-start) • [Screenshots](#-screenshots) • [Deployment](#-deployment)
 
-- **Smart Practice:**
-  - "Improve This Area" buttons on subject/topic views
-  - Automatic weak-area identification
-  - Cross-exam aggregation of attempts
+---
 
-- **Exam Features:**
-  - One question at a time
-  - Auto-save on every interaction
-  - Pause and resume functionality
-  - Time tracking per question
-  - Detailed wrong answer review after completion
+</div>
 
-## Tech Stack
+## 🎯 Overview
 
-- React (JavaScript) - Frontend
-- Django REST Framework - Backend API
-- SQLite - Database
-- Vite - Build tool
-- Recharts (for analytics visualization)
+A sophisticated exam preparation platform for Ethiopian Computer Science BSc students. Features intelligent exam modes, AI-powered assistance, comprehensive analytics, and smart practice features.
 
-## Setup
+**Key Highlights:**
+- 🎯 Three Intelligent Exam Modes (Random, Topic-Focused, Weak-Area)
+- 🤖 AI-Powered Learning Assistant (OpenAI/Grok integration)
+- 📊 Comprehensive Analytics & Performance Tracking
+- 📅 Smart Daily Plans & Auto-Save
+- 🎨 Modern UI/UX with Dark Mode
 
-### Frontend Setup
+---
 
-1. Install dependencies:
+## ✨ Features
+
+### 🎮 Exam Modes
+
+**Random Mode** - Practice with randomly selected questions to simulate real exam conditions.
+
+**Topic-Focused Mode** - Focus on specific subjects and topics to strengthen targeted areas.
+
+**Weak-Area Mode** - Automatically identifies and targets your weak areas based on performance history.
+
+![Question Bank](readme-images/questions.png)
+
+### 🤖 AI Assistant
+
+Click the ✨ button during exams to get instant explanations, understand answers, and chat with AI. All interactions are temporary and private.
+
+### 📊 Analytics & Performance
+
+Track performance across 15 subjects with detailed breakdowns, topic-level analysis, performance trends, and visual status indicators.
+
+![Analytics Dashboard](readme-images/analysis.png)
+
+### 📝 Exam Features
+
+- One question at a time interface
+- Auto-save on every interaction
+- Pause & resume functionality
+- Time tracking per question
+- Detailed wrong answer review
+
+![Exam Interface](readme-images/exam-interface.png)
+
+### 📅 Daily Plans
+
+Create and manage personalized daily study plans to track your progress.
+
+![Daily Plans](readme-images/plan.png)
+
+---
+
+## 📸 Screenshots
+
+<div align="center">
+
+![Dashboard](readme-images/dashboard.png)
+*Main Dashboard*
+
+![Exam Session](readme-images/exam.png)
+*Active Exam Session*
+
+![Exam Interface](readme-images/exam-interface.png)
+*Exam Interface*
+
+![Analytics](readme-images/analysis.png)
+*Analytics Dashboard*
+
+![Question Bank](readme-images/questions.png)
+*Question Bank*
+
+![Daily Plans](readme-images/plan.png)
+*Daily Plans*
+
+</div>
+
+---
+
+## 🛠️ Tech Stack
+
+**Frontend:** React 18.2.0 • Vite • Tailwind CSS • Recharts • Framer Motion
+
+**Backend:** Django 4.2.7 • Django REST Framework • PostgreSQL/SQLite
+
+**AI:** OpenAI API / Grok/xAI API
+
+**Deployment:** Vercel (Frontend) • Render/Railway (Backend)
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 16+ and npm
+- Python 3.8+
+- PostgreSQL (optional, SQLite for development)
+
+### Installation
+
+**1. Clone Repository**
 ```bash
-npm install
+git clone https://github.com/yourusername/exit-exam-app.git
+cd exit-exam-app
 ```
 
-2. Configure environment variables:
-   - Create a `.env` file in the root directory (copy from `.env.example` if it exists)
-   - Add Django API URL:
-   ```
-   VITE_API_BASE_URL=http://localhost:8000/api
-   ```
+**2. Frontend Setup**
+```bash
+npm install
+# Create .env file with: VITE_API_BASE_URL=http://localhost:8000/api
+```
 
-3. Configure AI Assistant (Optional - for AI assistant feature):
-   - **Recommended: Use OpenAI** (works immediately, free tier available)
-     - Get API key from [OpenAI](https://platform.openai.com/api-keys)
-     - Add to `.env` file:
-     ```
-     VITE_GROK_API_KEY=sk-your-openai-api-key
-     VITE_GROK_API_URL=https://api.openai.com/v1/chat/completions
-     VITE_GROK_MODEL=gpt-3.5-turbo
-     ```
-   - **Alternative: Use Grok/xAI** (if API is available)
-     - Get API key from [xAI](https://x.ai)
-     - Add to `.env` file:
-     ```
-     VITE_GROK_API_KEY=your-grok-api-key
-     VITE_GROK_API_URL=https://api.x.ai/v1/chat/completions
-     VITE_GROK_MODEL=grok-beta
-     ```
-   - **Note**: The AI assistant feature is optional. If you don't add the API key, the AI button will show an error message when clicked.
-   - **Troubleshooting**: If you get a 400 error, check the browser console (F12) for detailed error messages. The service supports OpenAI-compatible APIs.
+**3. Backend Setup**
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # macOS/Linux
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
 
-### Backend Setup
-
-4. Set up Django backend:
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   python manage.py makemigrations
-   python manage.py migrate
-   python manage.py runserver
-   ```
-   
-   The API will be available at `http://localhost:8000/api/`
-
-5. Run the React development server (in a new terminal):
+**4. Start Frontend**
 ```bash
 npm run dev
 ```
 
-## Features
+**Access:** Frontend → http://localhost:5173 | Backend API → http://localhost:8000/api
 
-### AI Assistant (Grok Integration)
-During exam mode, you can click the Grok AI button (✨) on any question to:
-- Get instant explanations of the question and answer
-- Understand why the correct answer is correct
-- Learn about the topic in detail
-- Chat with AI to ask follow-up questions
-- **Note**: Using Grok marks the question as incorrect for learning purposes (this is intentional for study mode)
-- **Privacy**: No chat data is saved - all AI interactions are temporary and not stored
+---
 
-### Migrating Data from Firebase (Optional)
+## ⚙️ Configuration
 
-If you have existing Firebase data and want to migrate it to Django:
+### Environment Variables
 
-1. Export your Firebase service account key:
-   - Go to Firebase Console → Project Settings → Service Accounts
-   - Click "Generate New Private Key"
-   - Save the JSON file
+**Frontend (.env)**
+```env
+VITE_API_BASE_URL=http://localhost:8000/api
 
-2. Set environment variable:
-   ```bash
-   export FIREBASE_CREDENTIALS_PATH=/path/to/service-account-key.json
-   # On Windows PowerShell:
-   $env:FIREBASE_CREDENTIALS_PATH="C:\path\to\service-account-key.json"
-   ```
-
-3. Run migration script:
-   ```bash
-   python scripts/migrate_firebase_to_django.py
-   ```
-
-See `MIGRATION_GUIDE.md` for detailed migration instructions.
-
-## Database Schema
-
-The app uses the following Django models:
-- `Question` - Stores all question data
-- `Exam` - Stores exam metadata
-- `Attempt` - Stores user answer attempts
-- `ExamSession` - Stores exam session state
-- `DailyPlan` - Stores daily study plans
-- `ThemePreferences` - Stores theme settings
-
-## Question Data Structure
-
-Each question in the database should have:
-```javascript
-{
-  question: string,
-  choices: string[],
-  correctAnswer: string,
-  explanation: string,
-  subject: string, // One of the 15 official subjects
-  topic: string,   // Free-form topic name
-  createdAt: timestamp
-}
+# AI Assistant (Optional - OpenAI recommended)
+VITE_GROK_API_KEY=sk-your-openai-api-key
+VITE_GROK_API_URL=https://api.openai.com/v1/chat/completions
+VITE_GROK_MODEL=gpt-3.5-turbo
 ```
 
-## Official Subjects
+**Backend**
+```env
+SECRET_KEY=your-secret-key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+DATABASE_URL=postgresql://user:password@localhost:5432/exitexam
+```
 
-The system uses these 15 fixed subjects:
+> **Note:** AI assistant is optional. Without API key, the AI button will show an error when clicked.
+
+---
+
+## 📖 Usage
+
+**Starting an Exam:** Choose mode from Dashboard → Answer questions → Use ✨ AI Assistant for help → Submit to see results
+
+**Analytics:** View subject/topic performance → Click "Improve This Area" to practice weak subjects
+
+**Daily Plans:** Set study goals → System suggests questions → Track daily progress
+
+---
+
+## 🚢 Deployment
+
+### Frontend (Vercel)
+1. Push to GitHub
+2. Import to Vercel
+3. Add `VITE_API_BASE_URL` environment variable
+4. Deploy!
+
+### Backend (Render/Railway)
+1. Connect GitHub repository
+2. Set build: `cd backend && pip install -r requirements.txt`
+3. Set start: `cd backend && gunicorn exam_app.wsgi:application`
+4. Add environment variables
+5. Deploy!
+
+**Production Checklist:** Set `DEBUG=False`, configure `ALLOWED_HOSTS`, use PostgreSQL, set up CORS, configure SSL/HTTPS.
+
+See `RENDER_DEPLOYMENT.md` for detailed instructions.
+
+---
+
+## 📊 Official Subjects
+
 1. Computer Programming
 2. Object Oriented Programming
 3. Data Structures and Algorithms
@@ -176,32 +224,81 @@ The system uses these 15 fixed subjects:
 14. Automata and Complexity Theory
 15. Compiler Design
 
-## Deployment
+---
 
-### Frontend Deployment (Vercel)
+## 🔄 Migration
 
-1. Push your code to GitHub
-2. Import project to Vercel
-3. Add environment variable: `VITE_API_BASE_URL` pointing to your Django API
-4. Deploy
+**Migrating from Firebase:**
+1. Export Firebase service account key
+2. Set `FIREBASE_CREDENTIALS_PATH` environment variable
+3. Run: `python scripts/migrate_firebase_to_django.py`
 
-### Backend Deployment
+See `MIGRATION_GUIDE.md` for details.
 
-The Django backend can be deployed to:
-- **Heroku** - See Django deployment guides
-- **Railway** - Easy Django deployment
-- **DigitalOcean App Platform** - Managed Django hosting
-- **AWS/GCP/Azure** - Enterprise solutions
+---
 
-For production:
-- Use PostgreSQL instead of SQLite
-- Set `DEBUG=False` in Django settings
-- Configure CORS for your frontend domain
-- Set up proper secret key and environment variables
+## 🐛 Troubleshooting
 
-See `MIGRATION_GUIDE.md` for more deployment details.
+**Frontend won't start:** `rm -rf node_modules package-lock.json && npm install`
 
-## License
+**Backend connection errors:** Check Django server on port 8000, verify `VITE_API_BASE_URL` in `.env`, check CORS settings
 
-MIT
+**AI Assistant not working:** Verify API key, check browser console, ensure API credits/quota
 
+**Database errors:** Run `python manage.py migrate`, check connection settings
+
+---
+
+## 📚 API Endpoints
+
+```
+GET  /api/questions/          - List questions
+GET  /api/exams/              - List exams
+POST /api/exams/              - Create exam
+GET  /api/attempts/           - List attempts
+GET  /api/analytics/subjects/ - Subject analytics
+GET  /api/analytics/topics/   - Topic analytics
+```
+
+---
+
+## 📝 Question Data Structure
+
+```json
+{
+  "question": "Question text...",
+  "choices": ["A", "B", "C", "D"],
+  "correctAnswer": "B",
+  "explanation": "Explanation text...",
+  "subject": "Computer Programming",
+  "topic": "Operators and Expressions"
+}
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add feature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
+
+---
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+---
+
+<div align="center">
+
+**Made with ❤️ for My-Self Computer Science ExitExam**
+
+⭐ Star this repo if you find it helpful!
+
+[Report Bug](https://github.com/yourusername/exit-exam-app/issues) • [Request Feature](https://github.com/yourusername/exit-exam-app/issues) • [Documentation](#)
+
+</div>

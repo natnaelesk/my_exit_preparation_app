@@ -146,3 +146,20 @@ class FirebaseCollection(models.Model):
     
     def __str__(self):
         return f"{self.collection_name}/{self.document_id}"
+
+
+class SubjectPriority(models.Model):
+    """SubjectPriority model for storing subject priority order and completion status"""
+    subject = models.CharField(max_length=255, primary_key=True)
+    priority_order = models.IntegerField(default=0)  # Lower = higher priority
+    is_completed = models.BooleanField(default=False)
+    round_number = models.IntegerField(default=1)  # Track which round
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'subjectPriorities'
+        ordering = ['priority_order', 'subject']
+    
+    def __str__(self):
+        return f"{self.subject}: Priority {self.priority_order}, Round {self.round_number}, {'Completed' if self.is_completed else 'Active'}"

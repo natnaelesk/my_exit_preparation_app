@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences
+from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, SubjectPriority
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -118,4 +118,16 @@ class ThemePreferencesSerializer(serializers.ModelSerializer):
     class Meta:
         model = ThemePreferences
         fields = ['id', 'favoriteLightTheme', 'favoriteDarkTheme', 'autoMode']
+
+
+class SubjectPrioritySerializer(serializers.ModelSerializer):
+    priorityOrder = serializers.IntegerField(source='priority_order')
+    isCompleted = serializers.BooleanField(source='is_completed')
+    roundNumber = serializers.IntegerField(source='round_number', read_only=True)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    lastUpdated = serializers.DateTimeField(source='last_updated', read_only=True)
+    
+    class Meta:
+        model = SubjectPriority
+        fields = ['subject', 'priorityOrder', 'isCompleted', 'roundNumber', 'createdAt', 'lastUpdated']
 

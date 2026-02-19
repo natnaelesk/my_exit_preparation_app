@@ -5,10 +5,10 @@ from django.db.models import Q, Count, Avg
 from django.utils import timezone
 from datetime import datetime, timedelta
 import json
-from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences
+from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, SubjectPriority
 from .serializers import (
     QuestionSerializer, ExamSerializer, AttemptSerializer, 
-    ExamSessionSerializer, DailyPlanSerializer, ThemePreferencesSerializer
+    ExamSessionSerializer, DailyPlanSerializer, ThemePreferencesSerializer, SubjectPrioritySerializer
 )
 from .utils import get_ethiopian_date_key
 
@@ -269,6 +269,117 @@ class ThemePreferencesViewSet(viewsets.ModelViewSet):
     def get_object(self):
         obj, created = ThemePreferences.objects.get_or_create(id='themePreferences')
         return obj
+
+
+class SubjectPriorityViewSet(viewsets.ModelViewSet):
+    queryset = SubjectPriority.objects.all()
+    serializer_class = SubjectPrioritySerializer
+    lookup_field = 'subject'
+    
+    def list(self, request):
+        """Get all subject priorities, initialize if needed"""
+        priorities = list(SubjectPriority.objects.all())
+        
+        # If no priorities exist, initialize them based on weakness scores
+        if not priorities:
+            # Calculate weakness scores for all subjects
+            all_attempts = Attempt.objects.all()
+            attempts_by_subject = {}
+            for attempt in all_attempts:
+                if attempt.subject not in attempts_by_subject:
+                    attempts_by_subject[attempt.subject] = []
+                attempts_by_subject[attempt.subject].append(attempt)
+            
+            # Calculate weakness score for each subject (matching frontend formula)
+            import math
+            subject_scores = []
+            for subject in OFFICIAL_SUBJECTS:
+                attempts = attempts_by_subject.get(subject, [])
+                if attempts:
+                    correct_count = sum(1 for a in attempts if a.is_correct)
+                    total = len(attempts)
+                    accuracy = (correct_count / total * 100) if total > 0 else 0
+                    # Match frontend formula: (100 - accuracy) * Math.log1p(totalAttempted)
+                    weakness_score = (100 - accuracy) * math.log1p(total)
+                else:
+                    weakness_score = 1000  # High score for subjects with no attempts
+                
+                subject_scores.append({
+                    'subject': subject,
+                    'weakness_score': weakness_score
+                })
+            
+            # Sort by weakness score (highest = weakest = highest priority)
+            subject_scores.sort(key=lambda x: x['weakness_score'], reverse=True)
+            
+            # Create SubjectPriority objects
+            for idx, item in enumerate(subject_scores):
+                SubjectPriority.objects.create(
+                    subject=item['subject'],
+                    priority_order=idx,
+                    is_completed=False,
+                    round_number=1
+                )
+            
+            priorities = list(SubjectPriority.objects.all())
+        
+        serializer = self.get_serializer(priorities, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['patch'])
+    def reorder(self, request):
+        """Bulk update priority order"""
+        order_data = request.data.get('order', [])
+        if not order_data:
+            return Response({'error': 'order array required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update priority order for each subject
+        for idx, subject_name in enumerate(order_data):
+            try:
+                priority = SubjectPriority.objects.get(subject=subject_name)
+                priority.priority_order = idx
+                priority.save()
+            except SubjectPriority.DoesNotExist:
+                # Create if doesn't exist
+                SubjectPriority.objects.create(
+                    subject=subject_name,
+                    priority_order=idx,
+                    is_completed=False,
+                    round_number=1
+                )
+        
+        # Return updated list
+        priorities = SubjectPriority.objects.all().order_by('priority_order')
+        serializer = self.get_serializer(priorities, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['patch'])
+    def toggle(self, request, subject=None):
+        """Toggle completion status for a subject"""
+        try:
+            priority = SubjectPriority.objects.get(subject=subject)
+            priority.is_completed = not priority.is_completed
+            priority.save()
+            serializer = self.get_serializer(priority)
+            return Response(serializer.data)
+        except SubjectPriority.DoesNotExist:
+            return Response({'error': 'Subject priority not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=False, methods=['post'])
+    def round_two(self, request):
+        """Reset all completions and increment round number"""
+        priorities = SubjectPriority.objects.all()
+        max_round = max([p.round_number for p in priorities], default=1)
+        
+        for priority in priorities:
+            priority.is_completed = False
+            priority.round_number = max_round + 1
+            priority.save()
+        
+        # Return updated list
+        priorities = SubjectPriority.objects.all().order_by('priority_order')
+        serializer = self.get_serializer(priorities, many=True)
+        return Response(serializer.data)
 
 
 class DebugViewSet(viewsets.ViewSet):

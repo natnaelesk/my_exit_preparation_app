@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     QuestionViewSet, ExamViewSet, AttemptViewSet, 
-    ExamSessionViewSet, DailyPlanViewSet, ThemePreferencesViewSet, AnalyticsViewSet, DebugViewSet
+    ExamSessionViewSet, DailyPlanViewSet, ThemePreferencesViewSet, AnalyticsViewSet, DebugViewSet,
+    SubjectPriorityViewSet
 )
 
 router = DefaultRouter()
@@ -12,6 +13,7 @@ router.register(r'attempts', AttemptViewSet, basename='attempt')
 router.register(r'sessions', ExamSessionViewSet, basename='session')
 router.register(r'plans', DailyPlanViewSet, basename='plan')
 router.register(r'settings/theme', ThemePreferencesViewSet, basename='theme')
+router.register(r'subject-priorities', SubjectPriorityViewSet, basename='subject-priority')
 router.register(r'analytics', AnalyticsViewSet, basename='analytics')
 router.register(r'debug', DebugViewSet, basename='debug')
 

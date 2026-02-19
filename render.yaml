@@ -6,6 +6,10 @@ services:
     buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && gunicorn exam_app.wsgi:application --bind 0.0.0.0:$PORT
     healthCheckPath: /api/
+    # Run migrations automatically on deploy
+    envVars:
+      - key: RUN_MIGRATIONS
+        value: "true"
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.12

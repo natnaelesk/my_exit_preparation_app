@@ -1,6 +1,7 @@
 /**
  * API Client for Django REST API
  * Replaces Firebase SDK calls with HTTP requests
+ * Always uses production Supabase backend
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://exit-exam-backend-qii8.onrender.com/api';

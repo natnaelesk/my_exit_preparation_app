@@ -5,10 +5,16 @@ import { get, patch, post } from './apiClient';
  */
 export const getSubjectPriorities = async () => {
   try {
+    console.log('Fetching subject priorities from API...');
     const priorities = await get('/subject-priorities/');
-    return Array.isArray(priorities) ? priorities : [];
+    console.log('Raw priorities response:', priorities);
+    const result = Array.isArray(priorities) ? priorities : [];
+    console.log('Processed priorities:', result);
+    return result;
   } catch (error) {
     console.error('Error fetching subject priorities:', error);
+    console.error('Error status:', error.status);
+    console.error('Error message:', error.message);
     throw error;
   }
 };

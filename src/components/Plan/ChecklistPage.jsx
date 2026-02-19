@@ -34,20 +34,30 @@ const ChecklistPage = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
+      console.log('Loading subject priorities...');
       const [prioritiesData, stats] = await Promise.all([
         getSubjectPriorities(),
         calculateSubjectStats()
       ]);
+      
+      console.log('Priorities data received:', prioritiesData);
+      console.log('Stats data received:', stats);
       
       // Sort by priority_order
       const sorted = prioritiesData && prioritiesData.length > 0
         ? [...prioritiesData].sort((a, b) => a.priorityOrder - b.priorityOrder)
         : [];
       
+      console.log('Sorted priorities:', sorted);
       setPriorities(sorted);
       setSubjectStats(stats);
     } catch (error) {
       console.error('Error loading checklist data:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.status,
+        stack: error.stack
+      });
       // On error, set empty array so we don't show "loading" forever
       setPriorities([]);
     } finally {
@@ -179,21 +189,27 @@ const ChecklistPage = () => {
   return (
     <div className="min-h-screen bg-bg text-text">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary-500/10 via-primary-500/5 to-transparent border-b border-border/50">
+      <div className="bg-gradient-to-r from-primary-500/10 via-primary-500/5 to-transparent border-b-2 border-primary-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate('/plan')}
-                className="p-2 rounded-lg hover:bg-surface transition-colors"
+                className="p-2 rounded-lg hover:bg-surface/50 transition-colors border border-border/50 hover:border-primary-500/50"
                 aria-label="Back to plan"
               >
                 <ArrowLeftIcon className="w-6 h-6 text-text" />
               </button>
               <div>
-                <h1 className="text-3xl font-bold text-text">Plan Manager</h1>
-                <p className="text-muted text-sm mt-1">
-                  Drag to reorder • Check to mark as completed
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary-500 to-primary-600 bg-clip-text text-transparent">
+                  Plan Manager
+                </h1>
+                <p className="text-muted text-sm mt-1 flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold text-red-500">🎯 Top = Weakest</span>
+                  <span>•</span>
+                  <span>Drag to reorder</span>
+                  <span>•</span>
+                  <span>Check to complete</span>
                 </p>
               </div>
             </div>
@@ -220,31 +236,42 @@ const ChecklistPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="text-sm text-muted mb-1">Total Subjects</div>
-            <div className="text-2xl font-bold text-text">{priorities.length}</div>
+          <div className="bg-gradient-to-br from-card to-primary-500/5 border-2 border-primary-500/20 rounded-xl p-5 shadow-md">
+            <div className="text-xs text-muted uppercase tracking-wide mb-2">Total Subjects</div>
+            <div className="text-3xl font-bold text-text">{priorities.length}</div>
+            <div className="text-xs text-muted mt-1">All subjects</div>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="text-sm text-muted mb-1">Active</div>
-            <div className="text-2xl font-bold text-primary-500">{activeCount}</div>
+          <div className="bg-gradient-to-br from-card to-primary-500/5 border-2 border-primary-500/20 rounded-xl p-5 shadow-md">
+            <div className="text-xs text-muted uppercase tracking-wide mb-2">Active</div>
+            <div className="text-3xl font-bold text-primary-500">{activeCount}</div>
+            <div className="text-xs text-muted mt-1">Need practice</div>
           </div>
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="text-sm text-muted mb-1">Completed</div>
-            <div className="text-2xl font-bold text-green-500">{completedCount}</div>
+          <div className="bg-gradient-to-br from-card to-green-500/5 border-2 border-green-500/20 rounded-xl p-5 shadow-md">
+            <div className="text-xs text-muted uppercase tracking-wide mb-2">Completed</div>
+            <div className="text-3xl font-bold text-green-500">{completedCount}</div>
+            <div className="text-xs text-muted mt-1">Finished</div>
           </div>
         </div>
 
         {/* Bento Box Layout: Priority List (Left) + Checklist (Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column: Priority List (Draggable) */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="bg-gradient-to-br from-card via-card to-primary-500/5 border-2 border-primary-500/20 rounded-2xl p-6 shadow-lg">
             <div className="flex items-center gap-3 mb-4">
-              <Bars3Icon className="w-6 h-6 text-primary-500" />
-              <h2 className="text-xl font-bold text-text">Priority Order</h2>
+              <div className="p-2 bg-primary-500/10 rounded-lg">
+                <Bars3Icon className="w-6 h-6 text-primary-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-text">Priority Order</h2>
+                <p className="text-xs text-muted">Weakest → Strongest (Top to Bottom)</p>
+              </div>
             </div>
-            <p className="text-sm text-muted mb-4">
-              Drag subjects up or down to change priority. Top subjects get more consideration in daily plans.
-            </p>
+            <div className="bg-primary-500/10 border border-primary-500/20 rounded-lg p-3 mb-4">
+              <p className="text-sm text-text">
+                <span className="font-semibold">💡 Tip:</span> Drag subjects to reorder. 
+                <span className="text-primary-500 font-medium"> Top = Weakest</span> (gets more focus in daily plans).
+              </p>
+            </div>
             
             <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
               {isLoading ? (
@@ -274,38 +301,56 @@ const ChecklistPage = () => {
                         setDragOverIndex(null);
                       }}
                       className={`
-                        bg-surface/50 border-2 rounded-xl p-4 transition-all cursor-move
-                        ${isDragging ? 'opacity-50 scale-95' : ''}
-                        ${isDragOver ? 'border-primary-500 bg-primary-500/10 scale-105' : 'border-border hover:border-primary-500/50'}
-                        ${priority.isCompleted ? 'opacity-60' : ''}
+                        group relative bg-gradient-to-r from-surface/80 to-surface/40 border-2 rounded-xl p-4 transition-all cursor-move
+                        ${isDragging ? 'opacity-50 scale-95 z-50 shadow-2xl' : ''}
+                        ${isDragOver ? 'border-primary-500 bg-primary-500/20 scale-105 shadow-lg' : 'border-border/50 hover:border-primary-500/70 hover:shadow-md'}
+                        ${priority.isCompleted ? 'opacity-50' : 'hover:bg-surface'}
                       `}
                     >
                       <div className="flex items-center gap-3">
                         {/* Drag Handle */}
-                        <div className="flex-shrink-0 text-muted">
+                        <div className="flex-shrink-0 text-muted group-hover:text-primary-500 transition-colors">
                           <Bars3Icon className="w-5 h-5" />
                         </div>
 
-                        {/* Priority Number */}
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary-500">
-                            #{index + 1}
-                          </span>
+                        {/* Priority Number - Visual indicator */}
+                        <div className={`
+                          flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm
+                          ${index === 0 ? 'bg-red-500/20 text-red-500 border-2 border-red-500/30' : ''}
+                          ${index > 0 && index < 3 ? 'bg-orange-500/20 text-orange-500 border-2 border-orange-500/30' : ''}
+                          ${index >= 3 && index < 7 ? 'bg-yellow-500/20 text-yellow-500 border-2 border-yellow-500/30' : ''}
+                          ${index >= 7 ? 'bg-primary-500/10 text-primary-500 border-2 border-primary-500/20' : ''}
+                        `}>
+                          <span>#{index + 1}</span>
                         </div>
 
                         {/* Subject Info */}
                         <div className="flex-1 min-w-0">
-                          <h3 className={`font-semibold ${priority.isCompleted ? 'line-through text-muted' : 'text-text'}`}>
-                            {priority.subject}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className={`px-2 py-0.5 rounded text-xs ${getStatusColor(stat.status)}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className={`font-semibold text-base ${priority.isCompleted ? 'line-through text-muted' : 'text-text'}`}>
+                              {priority.subject}
+                            </h3>
+                            {index === 0 && (
+                              <span className="px-2 py-0.5 bg-red-500/20 text-red-500 text-xs font-bold rounded-full border border-red-500/30">
+                                WEAKEST
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className={`px-2.5 py-1 rounded-md text-xs font-medium ${getStatusColor(stat.status)}`}>
                               {stat.status}
                             </div>
-                            {stat.totalAttempted > 0 && (
-                              <span className="text-xs text-muted">
-                                {Math.round(stat.accuracy)}%
-                              </span>
+                            {stat.totalAttempted > 0 ? (
+                              <>
+                                <span className="text-xs text-muted font-medium">
+                                  {Math.round(stat.accuracy)}% accuracy
+                                </span>
+                                <span className="text-xs text-muted">
+                                  • {stat.totalAttempted} attempts
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-muted italic">No attempts yet</span>
                             )}
                           </div>
                         </div>
@@ -318,14 +363,22 @@ const ChecklistPage = () => {
           </div>
 
           {/* Right Column: Checklist */}
-          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="bg-gradient-to-br from-card via-card to-green-500/5 border-2 border-green-500/20 rounded-2xl p-6 shadow-lg">
             <div className="flex items-center gap-3 mb-4">
-              <CheckCircleIcon className="w-6 h-6 text-green-500" />
-              <h2 className="text-xl font-bold text-text">Checklist</h2>
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <CheckCircleIcon className="w-6 h-6 text-green-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-text">Checklist</h2>
+                <p className="text-xs text-muted">Mark completed subjects</p>
+              </div>
             </div>
-            <p className="text-sm text-muted mb-4">
-              Mark subjects as completed. Completed subjects won't appear in daily plans.
-            </p>
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
+              <p className="text-sm text-text">
+                <span className="font-semibold">✓ Check</span> subjects you've finished. 
+                Completed subjects are <span className="text-green-500 font-medium">excluded</span> from daily plans.
+              </p>
+            </div>
             
             <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
               {isLoading ? (
@@ -344,48 +397,78 @@ const ChecklistPage = () => {
                     <div
                       key={priority.subject}
                       className={`
-                        bg-surface/50 border border-border rounded-xl p-4 transition-all
-                        ${priority.isCompleted ? 'bg-green-500/5 border-green-500/30' : 'hover:bg-surface'}
+                        group relative bg-gradient-to-r rounded-xl p-4 transition-all border-2
+                        ${priority.isCompleted 
+                          ? 'bg-gradient-to-r from-green-500/10 to-green-500/5 border-green-500/40 shadow-md' 
+                          : 'bg-gradient-to-r from-surface/80 to-surface/40 border-border/50 hover:border-green-500/50 hover:shadow-md'
+                        }
                       `}
                     >
                       <div className="flex items-center gap-3">
-                        {/* Checkbox */}
+                        {/* Checkbox - Larger and more prominent */}
                         <div className="flex-shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={priority.isCompleted}
-                            onChange={() => handleToggleCompletion(priority.subject)}
-                            disabled={isSaving}
-                            className="w-5 h-5 rounded border-border text-primary-500 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer disabled:opacity-50"
-                          />
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={priority.isCompleted}
+                              onChange={() => handleToggleCompletion(priority.subject)}
+                              disabled={isSaving}
+                              className="sr-only peer"
+                            />
+                            <div className={`
+                              w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all
+                              ${priority.isCompleted 
+                                ? 'bg-green-500 border-green-500 shadow-lg' 
+                                : 'bg-surface border-border group-hover:border-green-500/50'
+                              }
+                              peer-disabled:opacity-50 peer-disabled:cursor-not-allowed
+                            `}>
+                              {priority.isCompleted && (
+                                <CheckCircleIcon className="w-4 h-4 text-white" />
+                              )}
+                            </div>
+                          </label>
                         </div>
 
                         {/* Subject Info */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className={`font-semibold ${priority.isCompleted ? 'line-through text-muted' : 'text-text'}`}>
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <h3 className={`
+                              font-semibold text-base
+                              ${priority.isCompleted 
+                                ? 'line-through text-muted' 
+                                : 'text-text'
+                              }
+                            `}>
                               {priority.subject}
                             </h3>
                             {priority.isCompleted && (
-                              <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+                              <span className="px-2 py-0.5 bg-green-500/20 text-green-500 text-xs font-bold rounded-full border border-green-500/30 flex items-center gap-1">
+                                <CheckCircleIcon className="w-3 h-3" />
+                                DONE
+                              </span>
                             )}
                             {priority.roundNumber > 1 && (
-                              <span className="px-2 py-0.5 bg-primary-500/10 text-primary-500 text-xs font-semibold rounded-full">
-                                R{priority.roundNumber}
+                              <span className="px-2 py-0.5 bg-primary-500/20 text-primary-500 text-xs font-semibold rounded-full border border-primary-500/30">
+                                Round {priority.roundNumber}
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-muted">
-                            <div className={`px-2 py-0.5 rounded ${getStatusColor(stat.status)}`}>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className={`px-2.5 py-1 rounded-md text-xs font-medium ${getStatusColor(stat.status)}`}>
                               {stat.status}
                             </div>
                             {stat.totalAttempted > 0 ? (
                               <>
-                                <span>{Math.round(stat.accuracy)}%</span>
-                                <span>{stat.totalAttempted} attempts</span>
+                                <span className="text-xs text-muted font-medium">
+                                  {Math.round(stat.accuracy)}%
+                                </span>
+                                <span className="text-xs text-muted">
+                                  • {stat.totalAttempted} attempts
+                                </span>
                               </>
                             ) : (
-                              <span>No attempts</span>
+                              <span className="text-xs text-muted italic">No attempts yet</span>
                             )}
                           </div>
                         </div>

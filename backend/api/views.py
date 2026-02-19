@@ -321,7 +321,10 @@ class SubjectPriorityViewSet(viewsets.ModelViewSet):
                     round_number=1
                 )
             
-            priorities = list(SubjectPriority.objects.all())
+            priorities = list(SubjectPriority.objects.all().order_by('priority_order'))
+        else:
+            # Sort existing priorities by priority_order
+            priorities = sorted(priorities, key=lambda p: p.priority_order)
         
         serializer = self.get_serializer(priorities, many=True)
         return Response(serializer.data)

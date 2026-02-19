@@ -65,24 +65,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'exam_app.wsgi.application'
 
 # Database
-# Always use PostgreSQL from Supabase (remote database)
-# DATABASE_URL must be set in environment variables
+# Use PostgreSQL from Supabase if DATABASE_URL is set, otherwise use SQLite for local development
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-if not DATABASE_URL:
-    raise ImproperlyConfigured(
-        "DATABASE_URL environment variable is required. "
-        "Please set it to your Supabase PostgreSQL connection string."
-    )
-
-# Use PostgreSQL from Supabase
-DATABASES = {
-    'default': dj_database_url.config(
-        default=DATABASE_URL,
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
-}
+if DATABASE_URL:
+    # Use PostgreSQL from Supabase
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+else:
+    # Use SQLite for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

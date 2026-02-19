@@ -40,11 +40,16 @@ const ChecklistPage = () => {
       ]);
       
       // Sort by priority_order
-      const sorted = [...prioritiesData].sort((a, b) => a.priorityOrder - b.priorityOrder);
+      const sorted = prioritiesData && prioritiesData.length > 0
+        ? [...prioritiesData].sort((a, b) => a.priorityOrder - b.priorityOrder)
+        : [];
+      
       setPriorities(sorted);
       setSubjectStats(stats);
     } catch (error) {
       console.error('Error loading checklist data:', error);
+      // On error, set empty array so we don't show "loading" forever
+      setPriorities([]);
     } finally {
       setIsLoading(false);
     }
@@ -171,14 +176,6 @@ const ChecklistPage = () => {
   const completedCount = priorities.filter(p => p.isCompleted).length;
   const activeCount = priorities.length - completedCount;
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <LoadingAnimation message="Loading plan manager" size="large" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-bg text-text">
       {/* Header */}
@@ -220,7 +217,7 @@ const ChecklistPage = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-card border border-border rounded-xl p-4">
@@ -237,114 +234,168 @@ const ChecklistPage = () => {
           </div>
         </div>
 
-        {/* Instructions */}
-        <div className="bg-surface/50 border border-border rounded-xl p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <Bars3Icon className="w-5 h-5 text-primary-500 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-muted">
-              <p className="mb-2">
-                <strong className="text-text">Priority Order:</strong> Drag subjects up or down to change their priority. 
-                Subjects at the top get more consideration when generating daily plans, but the system doesn't always pick #1.
-              </p>
-              <p>
-                <strong className="text-text">Completion:</strong> Check subjects you've finished studying. 
-                Completed subjects are excluded from plan generation. When all subjects are completed, click "Round Two" to start over.
-              </p>
+        {/* Bento Box Layout: Priority List (Left) + Checklist (Right) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column: Priority List (Draggable) */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <Bars3Icon className="w-6 h-6 text-primary-500" />
+              <h2 className="text-xl font-bold text-text">Priority Order</h2>
+            </div>
+            <p className="text-sm text-muted mb-4">
+              Drag subjects up or down to change priority. Top subjects get more consideration in daily plans.
+            </p>
+            
+            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <LoadingAnimation message="Loading subjects..." size="small" />
+                </div>
+              ) : priorities.length === 0 ? (
+                <div className="text-center py-8 text-muted">
+                  <p>No subjects found. Please check your connection.</p>
+                </div>
+              ) : (
+                priorities.map((priority, index) => {
+                  const stat = getSubjectStat(priority.subject);
+                  const isDragging = draggedIndex === index;
+                  const isDragOver = dragOverIndex === index;
+
+                  return (
+                    <div
+                      key={priority.subject}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragEnd={() => {
+                        setDraggedIndex(null);
+                        setDragOverIndex(null);
+                      }}
+                      className={`
+                        bg-surface/50 border-2 rounded-xl p-4 transition-all cursor-move
+                        ${isDragging ? 'opacity-50 scale-95' : ''}
+                        ${isDragOver ? 'border-primary-500 bg-primary-500/10 scale-105' : 'border-border hover:border-primary-500/50'}
+                        ${priority.isCompleted ? 'opacity-60' : ''}
+                      `}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Drag Handle */}
+                        <div className="flex-shrink-0 text-muted">
+                          <Bars3Icon className="w-5 h-5" />
+                        </div>
+
+                        {/* Priority Number */}
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary-500/10 flex items-center justify-center">
+                          <span className="text-sm font-bold text-primary-500">
+                            #{index + 1}
+                          </span>
+                        </div>
+
+                        {/* Subject Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className={`font-semibold ${priority.isCompleted ? 'line-through text-muted' : 'text-text'}`}>
+                            {priority.subject}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className={`px-2 py-0.5 rounded text-xs ${getStatusColor(stat.status)}`}>
+                              {stat.status}
+                            </div>
+                            {stat.totalAttempted > 0 && (
+                              <span className="text-xs text-muted">
+                                {Math.round(stat.accuracy)}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Subject List */}
-        <div className="space-y-2">
-          {priorities.map((priority, index) => {
-            const stat = getSubjectStat(priority.subject);
-            const isDragging = draggedIndex === index;
-            const isDragOver = dragOverIndex === index;
-
-            return (
-              <div
-                key={priority.subject}
-                draggable
-                onDragStart={(e) => handleDragStart(e, index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, index)}
-                onDragEnd={() => {
-                  setDraggedIndex(null);
-                  setDragOverIndex(null);
-                }}
-                className={`
-                  bg-card border-2 rounded-xl p-4 transition-all cursor-move
-                  ${isDragging ? 'opacity-50 scale-95' : ''}
-                  ${isDragOver ? 'border-primary-500 bg-primary-500/10 scale-105' : 'border-border hover:border-primary-500/50'}
-                  ${priority.isCompleted ? 'opacity-60' : ''}
-                `}
-              >
-                <div className="flex items-center gap-4">
-                  {/* Drag Handle */}
-                  <div className="flex-shrink-0 text-muted">
-                    <Bars3Icon className="w-6 h-6" />
-                  </div>
-
-                  {/* Checkbox */}
-                  <div className="flex-shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={priority.isCompleted}
-                      onChange={() => handleToggleCompletion(priority.subject)}
-                      disabled={isSaving}
-                      className="w-5 h-5 rounded border-border text-primary-500 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer disabled:opacity-50"
-                    />
-                  </div>
-
-                  {/* Subject Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className={`text-lg font-semibold ${priority.isCompleted ? 'line-through text-muted' : 'text-text'}`}>
-                        {priority.subject}
-                      </h3>
-                      {priority.isCompleted && (
-                        <span className="px-2 py-0.5 bg-green-500/10 text-green-500 text-xs font-semibold rounded-full">
-                          Completed
-                        </span>
-                      )}
-                      {priority.roundNumber > 1 && (
-                        <span className="px-2 py-0.5 bg-primary-500/10 text-primary-500 text-xs font-semibold rounded-full">
-                          Round {priority.roundNumber}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className={`px-2 py-1 rounded ${getStatusColor(stat.status)}`}>
-                        {stat.status}
-                      </div>
-                      {stat.totalAttempted > 0 && (
-                        <>
-                          <span className="text-muted">
-                            {Math.round(stat.accuracy)}% accuracy
-                          </span>
-                          <span className="text-muted">
-                            {stat.totalAttempted} attempts
-                          </span>
-                        </>
-                      )}
-                      {stat.totalAttempted === 0 && (
-                        <span className="text-muted">No attempts yet</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Priority Number */}
-                  <div className="flex-shrink-0 text-right">
-                    <div className="text-xs text-muted mb-1">Priority</div>
-                    <div className="text-xl font-bold text-primary-500">
-                      #{index + 1}
-                    </div>
-                  </div>
+          {/* Right Column: Checklist */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <CheckCircleIcon className="w-6 h-6 text-green-500" />
+              <h2 className="text-xl font-bold text-text">Checklist</h2>
+            </div>
+            <p className="text-sm text-muted mb-4">
+              Mark subjects as completed. Completed subjects won't appear in daily plans.
+            </p>
+            
+            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
+              {isLoading ? (
+                <div className="text-center py-8">
+                  <LoadingAnimation message="Loading checklist..." size="small" />
                 </div>
-              </div>
-            );
-          })}
+              ) : priorities.length === 0 ? (
+                <div className="text-center py-8 text-muted">
+                  <p>No subjects found. Please check your connection.</p>
+                </div>
+              ) : (
+                priorities.map((priority, index) => {
+                  const stat = getSubjectStat(priority.subject);
+
+                  return (
+                    <div
+                      key={priority.subject}
+                      className={`
+                        bg-surface/50 border border-border rounded-xl p-4 transition-all
+                        ${priority.isCompleted ? 'bg-green-500/5 border-green-500/30' : 'hover:bg-surface'}
+                      `}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Checkbox */}
+                        <div className="flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={priority.isCompleted}
+                            onChange={() => handleToggleCompletion(priority.subject)}
+                            disabled={isSaving}
+                            className="w-5 h-5 rounded border-border text-primary-500 focus:ring-primary-500 focus:ring-offset-0 cursor-pointer disabled:opacity-50"
+                          />
+                        </div>
+
+                        {/* Subject Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className={`font-semibold ${priority.isCompleted ? 'line-through text-muted' : 'text-text'}`}>
+                              {priority.subject}
+                            </h3>
+                            {priority.isCompleted && (
+                              <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            )}
+                            {priority.roundNumber > 1 && (
+                              <span className="px-2 py-0.5 bg-primary-500/10 text-primary-500 text-xs font-semibold rounded-full">
+                                R{priority.roundNumber}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-muted">
+                            <div className={`px-2 py-0.5 rounded ${getStatusColor(stat.status)}`}>
+                              {stat.status}
+                            </div>
+                            {stat.totalAttempted > 0 ? (
+                              <>
+                                <span>{Math.round(stat.accuracy)}%</span>
+                                <span>{stat.totalAttempted} attempts</span>
+                              </>
+                            ) : (
+                              <span>No attempts</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Info Box */}
@@ -355,9 +406,9 @@ const ChecklistPage = () => {
             </p>
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li>Subjects are ordered from weakest (top) to strongest (bottom) by default</li>
-              <li>You can drag subjects to reorder them based on your preference</li>
-              <li>Checked subjects are considered "finished" and won't appear in daily plans</li>
-              <li>The plan page uses this priority as a helper - top subjects get more consideration</li>
+              <li>Drag subjects in the Priority Order column to reorder them</li>
+              <li>Check subjects in the Checklist column to mark them as completed</li>
+              <li>Completed subjects are excluded from daily plan generation</li>
               <li>When all subjects are checked, click "Round Two" to start a new round</li>
             </ul>
           </div>

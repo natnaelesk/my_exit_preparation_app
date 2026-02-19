@@ -8,7 +8,8 @@ import {
   getDailyPlan, 
   listRecentDailyPlans, 
   recomputeDailyPlanStats,
-  filterQuestionsByType
+  filterQuestionsByType,
+  selectFocusSubject
 } from '../../services/dailyPlanService';
 import { getOrGenerateBonusChallenge } from '../../services/bonusChallengeService';
 import { EXAM_MODES, OFFICIAL_SUBJECTS } from '../../utils/constants';
@@ -26,7 +27,8 @@ import {
   XMarkIcon,
   ChartBarIcon,
   ClockIcon,
-  FireIcon
+  FireIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import { format, startOfWeek, addDays, isToday } from 'date-fns';
 import { getEthiopianDateKey, isTodayEthiopian, hasDayEnded } from '../../utils/ethiopianTime';
@@ -194,15 +196,11 @@ const PlanPage = () => {
       const stats = await calculateSubjectStats();
       setSubjectStats(stats);
 
-      const subjectsWithData = Object.values(stats).filter(s => s && s.totalAttempted > 0);
-      let focusSubject = OFFICIAL_SUBJECTS[0];
-      if (subjectsWithData.length > 0) {
-        const weaknessScores = subjectsWithData.map(stat => ({
-          subject: stat.subject,
-          weaknessScore: (100 - (stat.accuracy || 0)) * Math.log1p(stat.totalAttempted),
-        }));
-        weaknessScores.sort((a, b) => b.weaknessScore - a.weaknessScore);
-        focusSubject = weaknessScores[0].subject;
+      // Use priority-based selection
+      let focusSubject = await selectFocusSubject();
+      if (!focusSubject) {
+        // Fallback to first subject if no selection
+        focusSubject = OFFICIAL_SUBJECTS[0];
       }
 
       const currentTodayKey = getDateKey();
@@ -241,16 +239,10 @@ const PlanPage = () => {
         const updated = await getDailyPlan(dateKey);
         setCurrentDailyPlan(updated || plan);
       } else if (dateKey === todayKey) {
-        const stats = await calculateSubjectStats();
-        const subjectsWithData = Object.values(stats).filter(s => s && s.totalAttempted > 0);
-        let focusSubject = OFFICIAL_SUBJECTS[0];
-        if (subjectsWithData.length > 0) {
-          const weaknessScores = subjectsWithData.map(stat => ({
-            subject: stat.subject,
-            weaknessScore: (100 - (stat.accuracy || 0)) * Math.log1p(stat.totalAttempted),
-          }));
-          weaknessScores.sort((a, b) => b.weaknessScore - a.weaknessScore);
-          focusSubject = weaknessScores[0].subject;
+        // Use priority-based selection
+        let focusSubject = await selectFocusSubject();
+        if (!focusSubject) {
+          focusSubject = OFFICIAL_SUBJECTS[0];
         }
         const newPlan = await getOrCreateDailyPlan(dateKey, focusSubject);
         setCurrentDailyPlan(newPlan);
@@ -388,6 +380,14 @@ const PlanPage = () => {
                     Bonus Zone
                   </span>
                 )}
+                <button
+                  onClick={() => navigate('/plan-manager')}
+                  className="ml-2 px-4 py-2 bg-surface hover:bg-surface/80 border border-border rounded-lg text-sm font-medium text-text transition-colors flex items-center gap-2"
+                  title="Manage subject priorities and checklist"
+                >
+                  <Cog6ToothIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Plan Manager</span>
+                </button>
               </div>
               <p className="text-muted">
                 {isViewingToday ? 'Your personalized plan for today' : `Viewing plan for ${selectedDateKey}`}

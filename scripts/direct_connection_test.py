@@ -66,3 +66,9 @@ except psycopg2.OperationalError as e:
 except Exception as e:
     print(f"[ERROR] Unexpected error: {e}")
 
+
+
+
+
+
+

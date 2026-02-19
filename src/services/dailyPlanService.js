@@ -4,6 +4,7 @@ import { getAllAttempts } from './attemptService';
 import { calculateSubjectStats } from './analyticsService';
 import { getRandomQuote } from '../utils/motivationalQuotes';
 import { getAnsweredQuestionIds } from './attemptService';
+import { getSubjectPriorities } from './subjectPriorityService';
 
 const MAX_PLANNED_QUESTIONS = 35;
 
@@ -34,6 +35,99 @@ function getSeed(dateKey, subject) {
   }
   return Math.abs(hash);
 }
+
+/**
+ * Select focus subject using priorities and weakness scores
+ * Top priority subjects get more consideration, but not always #1
+ */
+export const selectFocusSubject = async () => {
+  try {
+    // Get subject priorities and stats
+    const [priorities, stats] = await Promise.all([
+      getSubjectPriorities().catch(() => []), // Fallback to empty if priorities don't exist
+      calculateSubjectStats()
+    ]);
+
+    // Filter out completed subjects
+    const completedSubjects = new Set(
+      priorities.filter(p => p.isCompleted).map(p => p.subject)
+    );
+
+    // Get active (non-completed) subjects with data
+    const activeSubjects = Object.values(stats).filter(
+      s => s && s.totalAttempted > 0 && !completedSubjects.has(s.subject)
+    );
+
+    // If no active subjects with data, use any non-completed subject
+    if (activeSubjects.length === 0) {
+      const allPriorities = priorities.length > 0 
+        ? priorities.sort((a, b) => a.priorityOrder - b.priorityOrder)
+        : [];
+      const firstActive = allPriorities.find(p => !p.isCompleted);
+      return firstActive ? firstActive.subject : null;
+    }
+
+    // Create a map of priority order for quick lookup
+    const priorityMap = {};
+    priorities.forEach(p => {
+      priorityMap[p.subject] = p.priorityOrder;
+    });
+
+    // Calculate weakness scores with priority weighting
+    // Top priority subjects (lower priority_order) get a boost
+    const subjectScores = activeSubjects.map(stat => {
+      const priorityOrder = priorityMap[stat.subject] ?? 999; // High number if not in priorities
+      const weaknessScore = (100 - (stat.accuracy || 0)) * Math.log1p(stat.totalAttempted);
+      
+      // Priority boost: subjects with lower priority_order get a boost
+      // But we still consider weakness score, so it's not always #1
+      const priorityBoost = (15 - priorityOrder) * 2; // Max boost of ~30 for top priority
+      const finalScore = weaknessScore + priorityBoost;
+      
+      return {
+        subject: stat.subject,
+        weaknessScore,
+        priorityOrder,
+        finalScore
+      };
+    });
+
+    // Sort by final score (higher = weaker + higher priority)
+    subjectScores.sort((a, b) => b.finalScore - a.finalScore);
+
+    // Use weighted random selection: top 3 subjects have higher chance
+    // This ensures top priority gets more consideration but not always #1
+    const topCandidates = subjectScores.slice(0, Math.min(3, subjectScores.length));
+    if (topCandidates.length > 0) {
+      // 60% chance for #1, 30% for #2, 10% for #3
+      const rand = Math.random();
+      if (rand < 0.6) {
+        return topCandidates[0].subject;
+      } else if (rand < 0.9 && topCandidates.length > 1) {
+        return topCandidates[1].subject;
+      } else if (topCandidates.length > 2) {
+        return topCandidates[2].subject;
+      }
+      return topCandidates[0].subject;
+    }
+
+    return subjectScores[0]?.subject || null;
+  } catch (error) {
+    console.error('Error selecting focus subject:', error);
+    // Fallback to old method
+    const stats = await calculateSubjectStats();
+    const subjectsWithData = Object.values(stats).filter(s => s && s.totalAttempted > 0);
+    if (subjectsWithData.length > 0) {
+      const weaknessScores = subjectsWithData.map(stat => ({
+        subject: stat.subject,
+        weaknessScore: (100 - (stat.accuracy || 0)) * Math.log1p(stat.totalAttempted),
+      }));
+      weaknessScores.sort((a, b) => b.weaknessScore - a.weaknessScore);
+      return weaknessScores[0].subject;
+    }
+    return null;
+  }
+};
 
 /**
  * Get or create today's daily plan (lazy initialization)

@@ -72,3 +72,9 @@ else:
     print("2. Copy the EXACT connection string (with password filled in)")
     print("3. Share it so we can test it")
 
+
+
+
+
+
+

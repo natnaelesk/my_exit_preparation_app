@@ -28,3 +28,9 @@ except Exception as e:
     print("1. Project status shows 'Active'")
     print("2. Database is provisioned (can take a few minutes)")
 
+
+
+
+
+
+

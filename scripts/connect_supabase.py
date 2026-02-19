@@ -75,3 +75,9 @@ except Exception as e:
     print("4. Try getting the connection string again from Supabase Dashboard")
     sys.exit(1)
 
+
+
+
+
+
+

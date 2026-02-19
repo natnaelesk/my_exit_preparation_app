@@ -67,3 +67,9 @@ All 828 records have been migrated to Supabase:
 - Daily Plans: 3
 - Theme Preferences: 1
 
+
+
+
+
+
+

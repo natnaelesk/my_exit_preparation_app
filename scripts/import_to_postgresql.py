@@ -80,3 +80,9 @@ print(f"  Sessions: {ExamSession.objects.count()}")
 print(f"  Daily Plans: {DailyPlan.objects.count()}")
 print(f"  Theme Preferences: {ThemePreferences.objects.count()}")
 
+
+
+
+
+
+

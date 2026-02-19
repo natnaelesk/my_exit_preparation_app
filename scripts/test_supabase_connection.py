@@ -88,3 +88,9 @@ if __name__ == '__main__':
         print("\n[ERROR] Please check your DATABASE_URL connection string")
         sys.exit(1)
 
+
+
+
+
+
+

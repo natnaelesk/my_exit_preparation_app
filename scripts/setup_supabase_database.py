@@ -79,3 +79,9 @@ print("=" * 60)
 print("\nNext: Your data from SQLite needs to be migrated.")
 print("Run: python scripts/migrate_data_to_postgresql.py")
 
+
+
+
+
+
+

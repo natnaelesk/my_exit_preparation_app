@@ -12,6 +12,7 @@ import ExamsList from './components/Exams/ExamsList';
 import CreateExam from './components/Exams/CreateExam';
 import ExamDetail from './components/Exams/ExamDetail';
 import PlanPage from './components/Plan/PlanPage';
+import ChecklistPage from './components/Plan/ChecklistPage';
 import ResetData from './components/Admin/ResetData';
 import QuestionBank from './components/Bank/QuestionBank';
 
@@ -37,6 +38,7 @@ function AppContent() {
           <Route path="/results" element={<ExamResults />} />
           <Route path="/analytics" element={<AnalyticsDashboard />} />
           <Route path="/plan" element={<PlanPage />} />
+          <Route path="/plan-manager" element={<ChecklistPage />} />
           <Route path="/bank" element={<QuestionBank />} />
           <Route path="/admin/reset" element={<ResetData />} />
                   <Route path="/topic-focused" element={<TopicFocusedMode />} />

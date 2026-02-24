@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OFFICIAL_SUBJECTS, EXAM_MODES } from '../../utils/constants';
-import { getAllQuestions } from '../../services/questionService';
+import { getQuestionsBySubject } from '../../services/questionService';
 import { getAnsweredQuestionIds } from '../../services/attemptService';
+import { calculateTopicStats } from '../../services/analyticsService';
 import { useExam } from '../../contexts/ExamContext';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import { BookOpenIcon, PlayIcon, FunnelIcon } from '@heroicons/react/24/outline';
-import { normalizeSubject } from '../../utils/subjectNormalization';
 
 const QuestionBank = () => {
   const navigate = useNavigate();
@@ -19,19 +19,18 @@ const QuestionBank = () => {
   const [includeAnswered, setIncludeAnswered] = useState(true);
   const [questionCount, setQuestionCount] = useState(20);
 
-  const [allQuestions, setAllQuestions] = useState([]);
+  const [subjectQuestions, setSubjectQuestions] = useState([]);
   const [answeredIdSet, setAnsweredIdSet] = useState(new Set());
+  const [allTopics, setAllTopics] = useState([]);
+  const [topicStats, setTopicStats] = useState({});
+  const [isTopicsLoading, setIsTopicsLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       try {
         setIsLoading(true);
         setError('');
-        const [qs, answeredIds] = await Promise.all([
-          getAllQuestions(),
-          getAnsweredQuestionIds().catch(() => [])
-        ]);
-        setAllQuestions(qs || []);
+        const answeredIds = await getAnsweredQuestionIds().catch(() => []);
         setAnsweredIdSet(new Set(answeredIds || []));
       } catch (e) {
         setError(e?.message || 'Failed to load question bank.');
@@ -42,22 +41,48 @@ const QuestionBank = () => {
     load();
   }, []);
 
-  const subjectSummary = useMemo(() => {
-    const bySubject = {};
-    for (const s of OFFICIAL_SUBJECTS) {
-      bySubject[s] = { total: 0, answered: 0 };
-    }
-    for (const q of allQuestions) {
-      const normalized = normalizeSubject(q.subject) || String(q.subject || '').trim() || 'Unknown';
-      // Only count into official buckets; everything else is ignored for the selector count.
-      if (!bySubject[normalized]) continue;
-      bySubject[normalized].total += 1;
-      if (answeredIdSet.has(q.questionId)) bySubject[normalized].answered += 1;
-    }
-    return bySubject;
-  }, [allQuestions, answeredIdSet]);
+  // Load questions + topics for the currently selected subject (single source of truth)
+  useEffect(() => {
+    const loadSubjectData = async () => {
+      if (!selectedSubject) {
+        setSubjectQuestions([]);
+        setAllTopics([]);
+        setTopicStats({});
+        return;
+      }
+      try {
+        setIsTopicsLoading(true);
+        const questions = await getQuestionsBySubject(selectedSubject);
+        const qList = Array.isArray(questions) ? questions : [];
+        setSubjectQuestions(qList);
 
-  const current = subjectSummary[selectedSubject] || { total: 0, answered: 0 };
+        const topicsSet = new Set();
+        qList.forEach((q) => {
+          if (q.topic) topicsSet.add(q.topic);
+        });
+        setAllTopics(Array.from(topicsSet).sort());
+
+        const stats = await calculateTopicStats(selectedSubject);
+        setTopicStats(stats || {});
+      } catch (err) {
+        console.error('Error loading subject data:', err);
+        setSubjectQuestions([]);
+        setAllTopics([]);
+        setTopicStats({});
+      } finally {
+        setIsTopicsLoading(false);
+      }
+    };
+
+    loadSubjectData();
+  }, [selectedSubject]);
+
+  const current = useMemo(() => {
+    const total = subjectQuestions.length;
+    const answered = subjectQuestions.filter((q) => answeredIdSet.has(q.questionId)).length;
+    return { total, answered };
+  }, [subjectQuestions, answeredIdSet]);
+
   const remaining = Math.max(0, (current.total || 0) - (current.answered || 0));
   const maxSelectable = includeAnswered ? current.total : remaining;
 
@@ -116,7 +141,7 @@ const QuestionBank = () => {
           </div>
         </div>
 
-        <div className="card space-y-4">
+        <div className="card space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-text mb-2">Subject</label>
@@ -125,14 +150,11 @@ const QuestionBank = () => {
                 onChange={(e) => setSelectedSubject(e.target.value)}
                 className="input w-full"
               >
-                {OFFICIAL_SUBJECTS.map((s) => {
-                  const sum = subjectSummary[s] || { total: 0, answered: 0 };
-                  return (
-                    <option key={s} value={s}>
-                      {s} ({sum.total})
-                    </option>
-                  );
-                })}
+                {OFFICIAL_SUBJECTS.map((s) => (
+                  <option key={s} value={s}>
+                    {s} {s === selectedSubject ? `(${subjectQuestions.length})` : ''}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -179,6 +201,83 @@ const QuestionBank = () => {
             Start Subject Practice
           </button>
         </div>
+
+        {/* Topics for selected subject (similar to Plan page, but subject is user-selected) */}
+        {selectedSubject && (
+          <div className="card mt-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <BookOpenIcon className="w-6 h-6 text-primary-500" />
+                <div>
+                  <h2 className="text-xl font-bold text-text">Topics in {selectedSubject}</h2>
+                  <p className="text-xs text-muted">
+                    Based on all questions in the bank for this subject.
+                  </p>
+                </div>
+              </div>
+              <span className="text-sm text-muted bg-surface px-3 py-1 rounded-full">
+                {allTopics.length} topics
+              </span>
+            </div>
+
+            {isTopicsLoading ? (
+              <div className="py-8">
+                <LoadingAnimation message="Loading topics..." size="medium" />
+              </div>
+            ) : allTopics.length === 0 ? (
+              <div className="py-6 text-sm text-muted">
+                No topics found yet for this subject. Upload more questions with topics to see them here.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {allTopics.map((topic) => {
+                  const stats = topicStats[topic];
+                  const accuracy = stats?.accuracy || 0;
+                  const attempts = stats?.totalAttempted || 0;
+
+                  const getStatusColor = () => {
+                    if (attempts === 0) return 'border-border bg-surface';
+                    if (accuracy >= 80) return 'border-green-500/30 bg-green-500/5';
+                    if (accuracy >= 60) return 'border-yellow-500/30 bg-yellow-500/5';
+                    return 'border-red-500/30 bg-red-500/5';
+                  };
+
+                  return (
+                    <div
+                      key={topic}
+                      className={`p-4 rounded-xl border transition-all hover:shadow-md ${getStatusColor()}`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="font-semibold text-sm text-text line-clamp-2 flex-1 pr-2">
+                          {topic}
+                        </div>
+                        {attempts > 0 && (
+                          <div className="text-right flex-shrink-0">
+                            <div
+                              className={`text-lg font-bold ${
+                                accuracy >= 80
+                                  ? 'text-green-500'
+                                  : accuracy >= 60
+                                  ? 'text-yellow-500'
+                                  : 'text-red-500'
+                              }`}
+                            >
+                              {Math.round(accuracy)}%
+                            </div>
+                            <div className="text-xs text-muted">{attempts} attempts</div>
+                          </div>
+                        )}
+                      </div>
+                      {attempts === 0 && (
+                        <div className="text-xs text-muted">Not attempted yet</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

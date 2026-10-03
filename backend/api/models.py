@@ -287,6 +287,8 @@ class StudySession(models.Model):
     plan_date_key = models.CharField(max_length=10, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_IDLE)
     error = models.TextField(blank=True)
+    # The Cursor cloud agent (bc-...) holding this chat's conversation; follow-up messages resume it.
+    cursor_agent_id = models.CharField(max_length=128, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

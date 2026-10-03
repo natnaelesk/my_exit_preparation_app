@@ -8,5 +8,5 @@ gunicorn==21.2.0
 whitenoise==6.6.0
 pypdfium2>=4.30,<5
 Pillow>=10.4
-requests>=2.31
+cursor-sdk>=1.0.35,<2
 

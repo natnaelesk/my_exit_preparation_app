@@ -189,20 +189,19 @@ def extract_batch(pages, page_count):
     page_range = f"{pages[0]['number']}-{pages[-1]['number']}"
     messages = build_messages(pages, page_count)
     last_error = None
-    finish_reason = None
     for _attempt in range(2):
         try:
-            text, finish_reason = ai_client.chat_completion(messages)
-            parsed = parse_ai_json(text)
+            parsed = parse_ai_json(ai_client.complete(messages))
         except ai_client.AIConfigError as exc:
             raise ExtractionError(str(exc)) from exc
         except ai_client.AIUnavailableError as exc:
             last_error = ExtractionError(f'{exc} Pages {page_range} were not read; retry to continue.')
+            if isinstance(exc, ai_client.AITimeoutError):
+                break
             continue
         except BadAIOutput as exc:
-            hint = ' The reply was cut off; try a smaller EXAM_IMPORT_PAGES_PER_BATCH.' if finish_reason == 'length' else ''
             logger.warning('Unreadable AI output for pages %s: %s', page_range, exc)
-            last_error = ExtractionError(f'The AI returned an unreadable answer for pages {page_range}.{hint} Retry to try again.')
+            last_error = ExtractionError(f'The AI returned an unreadable answer for pages {page_range}. Retry to try again.')
             continue
 
         source_pages = [p['number'] for p in pages]
@@ -261,7 +260,7 @@ def _fail(import_id, message):
 
 def run_extraction(import_id):
     """Extract remaining pages batch by batch, saving progress after each batch."""
-    batch_size = max(1, settings.EXAM_IMPORT_PAGES_PER_BATCH)
+    batch_size = max(1, min(settings.EXAM_IMPORT_PAGES_PER_BATCH, ai_client.MAX_IMAGES_PER_SEND))
     while True:
         exam_import = ExamImport.objects.filter(pk=import_id, status=ExamImport.STATUS_EXTRACTING).first()
         if exam_import is None:

@@ -122,19 +122,21 @@ def generate_reply(session_id):
         return
     try:
         if not ai_client.is_configured():
-            raise ai_client.AIConfigError('AI_API_KEY / AI_MODEL are not set')
+            raise ai_client.AIConfigError('CURSOR_API_KEY is not set')
         messages = build_messages(session, relevant_docs(session.owner, session.subject, session.topics))
         for attempt in range(2):
             try:
-                text, finish_reason = ai_client.chat_completion(messages)
-                if not (text or '').strip():
-                    raise ai_client.BadAIOutput('empty reply')
+                agent_id, text = ai_client.chat_turn(session.cursor_agent_id, messages)
                 break
+            except ai_client.AITimeoutError:
+                raise
             except (ai_client.BadAIOutput, ai_client.AIUnavailableError):
                 if attempt == 1:
                     raise
     except ai_client.AIConfigError as exc:
         _fail(session_id, f'The AI tutor is not configured on the server ({exc}).')
+    except ai_client.AITimeoutError as exc:
+        _fail(session_id, f'{exc} Retry.')
     except ai_client.AIUnavailableError:
         _fail(session_id, 'The AI service is busy or unreachable right now. Retry in a minute.')
     except ai_client.BadAIOutput:
@@ -143,15 +145,14 @@ def generate_reply(session_id):
         logger.exception('Study reply for session %s failed', session_id)
         _fail(session_id, 'Something went wrong while generating the reply. Retry.')
     else:
-        content = text.strip()
-        if finish_reason == 'length':
-            content += '\n\n_(This reply hit the length limit — say "continue" to pick up where it stopped.)_'
         with transaction.atomic():
             finished = StudySession.objects.filter(pk=session_id, status=StudySession.STATUS_THINKING).update(
-                status=StudySession.STATUS_IDLE, error='', updated_at=timezone.now(),
+                status=StudySession.STATUS_IDLE, error='', cursor_agent_id=agent_id, updated_at=timezone.now(),
             )
             if finished:
-                StudyMessage.objects.create(session_id=session_id, role=StudyMessage.ROLE_ASSISTANT, content=content)
+                StudyMessage.objects.create(session_id=session_id, role=StudyMessage.ROLE_ASSISTANT, content=text)
+        if not finished and agent_id != session.cursor_agent_id:
+            ai_client.delete_agent(agent_id)
 
 
 def claim_for_reply(session):

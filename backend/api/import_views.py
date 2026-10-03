@@ -69,7 +69,7 @@ class ExamImportViewSet(OwnedQuerysetMixin,
             return _error('All pages were already extracted.', status.HTTP_409_CONFLICT)
         if not ai_client.is_configured():
             return _error(
-                'PDF import is not configured on the server yet (AI_API_KEY / AI_MODEL). Use JSON import for now.',
+                'PDF import is not configured on the server yet (CURSOR_API_KEY). Use JSON import for now.',
                 status.HTTP_503_SERVICE_UNAVAILABLE,
             )
         if not claim_for_extraction(exam_import):

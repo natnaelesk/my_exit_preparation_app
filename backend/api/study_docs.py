@@ -97,21 +97,24 @@ def describe(doc_id):
         return
     try:
         if not ai_client.is_configured():
-            raise ai_client.AIConfigError('AI_API_KEY / AI_MODEL are not set')
+            raise ai_client.AIConfigError('CURSOR_API_KEY is not set')
         with doc.file.open('rb') as handle:
             data = handle.read()
         pages = render_pages(data, 0, min(DESCRIBE_PAGES, doc.page_count))
         messages = build_messages(doc, pages)
         for attempt in range(2):
             try:
-                text, _ = ai_client.chat_completion(messages)
-                result = normalize_description(ai_client.parse_json_reply(text))
+                result = normalize_description(ai_client.parse_json_reply(ai_client.complete(messages)))
                 break
+            except ai_client.AITimeoutError:
+                raise
             except (ai_client.BadAIOutput, ai_client.AIUnavailableError):
                 if attempt == 1:
                     raise
     except ai_client.AIConfigError as exc:
         _fail(doc_id, f'AI descriptions are not configured on the server ({exc}). The file is saved; retry once AI is set up.')
+    except ai_client.AITimeoutError as exc:
+        _fail(doc_id, f'{exc} The file is saved; retry.')
     except ai_client.AIUnavailableError:
         _fail(doc_id, 'The AI service is busy or unreachable right now. The file is saved; retry in a minute.')
     except ai_client.BadAIOutput:

@@ -239,7 +239,7 @@ const PdfImport = () => {
               <div className="h-full bg-primary-500 transition-all duration-500" style={{ width: `${progress}%` }} />
             </div>
             <p className="text-xs text-muted">
-              Each batch of pages can take up to a minute. You can leave this page; the import keeps going and shows up
+              Each batch of pages can take a few minutes. You can leave this page; the import keeps going and shows up
               under “Unfinished imports”.
               {examImport?.questions?.length > 0 && ` ${examImport.questions.length} question(s) found so far.`}
             </p>

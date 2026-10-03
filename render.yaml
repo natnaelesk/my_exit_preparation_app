@@ -20,9 +20,9 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
-      - key: AI_API_KEY
+      - key: CURSOR_API_KEY
         sync: false
-      - key: AI_BASE_URL
-        value: https://api.x.ai/v1
-      - key: AI_MODEL
+      - key: CURSOR_MODEL
         sync: false
+      - key: AI_TIMEOUT_SECONDS
+        value: 600

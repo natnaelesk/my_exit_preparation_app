@@ -207,7 +207,7 @@ const StudyChat = ({ sessionId, initialSession = null, startMessage = START_MESS
         {thinking && (
           <div className="flex justify-start">
             <div className="bg-surface border border-border rounded-lg p-3">
-              <LoadingAnimation message="Tutor is thinking" size="small" />
+              <LoadingAnimation message="Tutor is thinking (this can take a minute or two)" size="small" />
             </div>
           </div>
         )}

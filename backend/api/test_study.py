@@ -49,14 +49,12 @@ def description_reply(**overrides):
         'keyPoints': ['3NF removes transitive dependencies'],
     }
     data.update(overrides)
-    return json.dumps(data), 'stop'
+    return json.dumps(data)
 
 
 @override_settings(
     MEDIA_ROOT=TEST_MEDIA,
-    AI_API_KEY='server-secret-key',
-    AI_MODEL='vision-model',
-    AI_BASE_URL='https://ai.example.test/v1',
+    CURSOR_API_KEY='crsr_server-secret-key',
     AI_JOBS_RUN_INLINE=True,
 )
 class StudyTestCase(APITestCase):
@@ -80,7 +78,7 @@ class StudyTestCase(APITestCase):
 
     def upload_doc(self, data=None, name='normalization.pdf', reply=None):
         file = SimpleUploadedFile(name, data if data is not None else make_photo_pdf(1), content_type='application/pdf')
-        with mock.patch.object(ai_client, 'chat_completion', return_value=reply or description_reply()) as ai:
+        with mock.patch.object(ai_client, 'complete', return_value=reply or description_reply()) as ai:
             response = self.client.post('/api/study-docs/', {'file': file}, format='multipart')
         return response, ai
 
@@ -148,20 +146,20 @@ class StudyDocTests(StudyTestCase):
     def test_ai_failure_is_retry_friendly(self):
         self.as_user(self.token_a)
         file = SimpleUploadedFile('notes.pdf', make_photo_pdf(1), content_type='application/pdf')
-        with mock.patch.object(ai_client, 'chat_completion', side_effect=ai_client.AIUnavailableError('busy')):
+        with mock.patch.object(ai_client, 'complete', side_effect=ai_client.AIUnavailableError('busy')):
             response = self.client.post('/api/study-docs/', {'file': file}, format='multipart')
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.data['status'], 'failed')
         self.assertIn('retry', response.data['error'])
         self.assertEqual(response.data['title'], 'notes')
 
-        with mock.patch.object(ai_client, 'chat_completion', return_value=description_reply()):
+        with mock.patch.object(ai_client, 'complete', return_value=description_reply()):
             retry = self.client.post(f'/api/study-docs/{response.data["id"]}/describe/')
         self.assertEqual(retry.status_code, 202)
         self.assertEqual(retry.data['status'], 'ready')
         self.assertEqual(retry.data['error'], '')
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(CURSOR_API_KEY='', AI_API_KEY='')
     def test_upload_without_ai_config_saves_doc_with_clear_error(self):
         self.as_user(self.token_a)
         response, ai = self.upload_doc()
@@ -216,21 +214,25 @@ class StudySessionTests(StudyTestCase):
         session = self.open_plan_session().data
         self.assertEqual([m['id'] for m in session['materials']], [relevant_id])
 
-        with mock.patch.object(ai_client, 'chat_completion', return_value=('## Chunk 1 of 4: Why normalize', 'stop')) as ai:
+        with mock.patch.object(ai_client, 'chat_turn', return_value=('bc-tutor-1', '## Chunk 1 of 4: Why normalize')) as ai:
             response = self.client.post(f'/api/study-sessions/{session["id"]}/messages/', {'content': 'Start'}, format='json')
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.data['status'], 'idle')
+        self.assertNotIn('cursorAgentId', response.data)
+        self.assertIsNone(ai.call_args.args[0])
+        self.assertEqual(StudySession.objects.get(pk=session['id']).cursor_agent_id, 'bc-tutor-1')
 
-        system = ai.call_args.args[0][0]['content']
+        system = ai.call_args.args[1][0]['content']
         for phrase in ['EXACTLY 4', 'Memory Lock', 'Exam Traps', 'Likely Questions', '"continue"',
                        'Normalization, Transactions', 'Normalization Notes', 'BCNF']:
             self.assertIn(phrase, system)
         self.assertNotIn('OSI', system)
-        self.assertEqual(ai.call_args.args[0][1:], [{'role': 'user', 'content': 'Start'}])
+        self.assertEqual(ai.call_args.args[1][1:], [{'role': 'user', 'content': 'Start'}])
 
-        with mock.patch.object(ai_client, 'chat_completion', return_value=('## Chunk 2 of 4', 'stop')) as ai:
+        with mock.patch.object(ai_client, 'chat_turn', return_value=('bc-tutor-1', '## Chunk 2 of 4')) as ai:
             self.client.post(f'/api/study-sessions/{session["id"]}/messages/', {'content': 'continue'}, format='json')
-        self.assertEqual([m['role'] for m in ai.call_args.args[0][1:]], ['user', 'assistant', 'user'])
+        self.assertEqual(ai.call_args.args[0], 'bc-tutor-1')
+        self.assertEqual([m['role'] for m in ai.call_args.args[1][1:]], ['user', 'assistant', 'user'])
 
         reloaded = self.client.get(f'/api/study-sessions/{session["id"]}/')
         self.assertEqual(
@@ -248,7 +250,7 @@ class StudySessionTests(StudyTestCase):
         self.as_user(self.token_b)
         self.assertEqual(self.client.get('/api/study-sessions/').data, [])
         self.assertEqual(self.client.get(f'/api/study-sessions/{session_id}/').status_code, 404)
-        with mock.patch.object(ai_client, 'chat_completion') as ai:
+        with mock.patch.object(ai_client, 'chat_turn') as ai:
             response = self.client.post(f'/api/study-sessions/{session_id}/messages/', {'content': 'hi'}, format='json')
         self.assertEqual(response.status_code, 404)
         ai.assert_not_called()
@@ -263,13 +265,13 @@ class StudySessionTests(StudyTestCase):
         session = self.client.post('/api/study-sessions/', {'subject': 'Operating System', 'topic': 'Deadlock'}, format='json').data
         self.assertEqual(session['topics'], ['Deadlock'])
 
-        with mock.patch.object(ai_client, 'chat_completion', side_effect=ai_client.AIUnavailableError('down')):
+        with mock.patch.object(ai_client, 'chat_turn', side_effect=ai_client.AIUnavailableError('down')):
             failed = self.client.post(f'/api/study-sessions/{session["id"]}/messages/', {'content': 'Start'}, format='json')
         self.assertEqual(failed.data['status'], 'failed')
         self.assertIn('Retry', failed.data['error'])
         self.assertEqual(len(failed.data['messages']), 1)
 
-        with mock.patch.object(ai_client, 'chat_completion', return_value=('## Chunk 1 of 4: Conditions', 'stop')):
+        with mock.patch.object(ai_client, 'chat_turn', return_value=('bc-tutor-2', '## Chunk 1 of 4: Conditions')):
             retried = self.client.post(f'/api/study-sessions/{session["id"]}/retry/')
         self.assertEqual(retried.status_code, 202)
         self.assertEqual(retried.data['status'], 'idle')
@@ -284,7 +286,7 @@ class StudySessionTests(StudyTestCase):
         self.assertEqual(response.status_code, 409)
         self.assertEqual(StudyMessage.objects.count(), 0)
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(CURSOR_API_KEY='', AI_API_KEY='')
     def test_message_without_ai_config_is_rejected_clearly(self):
         self.as_user(self.token_a)
         session = self.client.post('/api/study-sessions/', {'subject': 'Compiler Design', 'topic': 'Parsing'}, format='json').data
@@ -292,3 +294,25 @@ class StudySessionTests(StudyTestCase):
         self.assertEqual(response.status_code, 503)
         self.assertIn('not configured', response.data['error'])
         self.assertEqual(StudyMessage.objects.count(), 0)
+
+    def test_deleting_session_deletes_its_cursor_agent(self):
+        self.as_user(self.token_a)
+        session = self.client.post('/api/study-sessions/', {'subject': 'Operating System', 'topic': 'Paging'}, format='json').data
+        with mock.patch.object(ai_client, 'chat_turn', return_value=('bc-tutor-3', '## Chunk 1 of 4: Pages')):
+            self.client.post(f'/api/study-sessions/{session["id"]}/messages/', {'content': 'Start'}, format='json')
+
+        with mock.patch.object(ai_client, 'delete_agent') as delete_agent:
+            response = self.client.delete(f'/api/study-sessions/{session["id"]}/')
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(StudySession.objects.filter(pk=session['id']).exists())
+        delete_agent.assert_called_once_with('bc-tutor-3')
+
+    def test_deleting_session_survives_cursor_being_down(self):
+        self.as_user(self.token_a)
+        session = self.client.post('/api/study-sessions/', {'subject': 'Operating System', 'topic': 'Paging'}, format='json').data
+        StudySession.objects.filter(pk=session['id']).update(cursor_agent_id='bc-tutor-4')
+        with mock.patch.object(ai_client.Agent, 'delete', side_effect=ConnectionError('down')) as delete:
+            response = self.client.delete(f'/api/study-sessions/{session["id"]}/')
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(StudySession.objects.filter(pk=session['id']).exists())
+        self.assertEqual(delete.call_args.args[0], 'bc-tutor-4')

@@ -86,8 +86,11 @@ const ExamsList = () => {
         {exams.length === 0 ? (
           <div className="card text-center py-12">
             <BookOpenIcon className="w-16 h-16 mx-auto mb-4 text-muted" />
-            <p className="text-muted mb-4 text-lg">No exams available yet</p>
-            <p className="text-muted mb-6 text-sm">Create your first exam to get started practicing!</p>
+            <p className="text-muted mb-4 text-lg">No exams yet</p>
+            <p className="text-muted mb-6 text-sm max-w-md mx-auto">
+              Upload a PDF (or phone photos saved as a PDF) of a past exam and the AI turns it into questions you can review,
+              or import a JSON file. Questions from your exams also fill your daily plan.
+            </p>
             <button 
               className="btn-primary"
               onClick={() => navigate('/exams/create')}

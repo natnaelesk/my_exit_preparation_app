@@ -23,7 +23,7 @@ const ServerStatusBanner = () => {
         <span>Waking up the server... free hosting sleeps when idle, this can take up to a minute.</span>
       ) : (
         <>
-          <span>Can't reach the server right now.</span>
+          <span>Can&apos;t reach the server right now. It may still be waking up; wait a few seconds, then retry.</span>
           <button
             className="underline font-medium"
             onClick={() => window.location.reload()}

@@ -1022,6 +1022,19 @@ const PlanPage = () => {
               </div>
             )}
 
+            {isViewingToday && activeTab === 'today' && viewingPlan && !(viewingPlan.questionIds?.length > 0) && (
+              <div className="bg-card border border-dashed border-border rounded-xl p-4 text-sm text-muted">
+                <p className="text-text font-semibold mb-1">No questions for {viewingPlan.focusSubject} yet</p>
+                <p>
+                  Today&apos;s plan is built from your own question bank. Add an exam that covers this subject and the plan
+                  fills in automatically. You can still study the subject with the tutor below.
+                </p>
+                <button onClick={() => navigate('/exams/create')} className="mt-3 text-primary-500 font-semibold hover:underline">
+                  + Add an exam
+                </button>
+              </div>
+            )}
+
             {/* Start Button - Only show for Today tab */}
             {isViewingToday && activeTab === 'today' && viewingPlan && !viewingPlan.isComplete && (
               <button

@@ -135,14 +135,30 @@ export const selectFocusSubject = async () => {
 export const getOrCreateDailyPlan = async (dateKey, focusSubject) => {
   try {
     // Try to get existing plan first
+    let existing = null;
     try {
-      const plan = await get(`/plans/${dateKey}/`);
-      return {
-        planId: plan.dateKey,
-        ...plan
-      };
+      existing = await get(`/plans/${dateKey}/`);
     } catch (error) {
       // Plan doesn't exist, will create it below
+    }
+    if (existing) {
+      // A plan made before any questions existed (e.g. a brand-new account) fills in once they do.
+      if (!existing.questionIds?.length && existing.focusSubject) {
+        const available = await getQuestionsBySubject(existing.focusSubject);
+        if (available.length > 0) {
+          const picked = seededShuffle(available, getSeed(dateKey, existing.focusSubject))
+            .slice(0, MAX_PLANNED_QUESTIONS)
+            .map(q => q.questionId);
+          existing = await patch(`/plans/${dateKey}/`, {
+            questionIds: picked,
+            totalAvailableInSubject: available.length,
+          });
+        }
+      }
+      return {
+        planId: existing.dateKey,
+        ...existing
+      };
     }
 
     // Create a new plan

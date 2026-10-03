@@ -106,7 +106,7 @@ class ExamImportTests(APITestCase):
         import_id, response, chat = self.upload_and_extract([
             ai_reply([AI_QUESTION], title='AAU Model Exam'),
             ai_reply([{**AI_QUESTION, 'question': 'Q2) What is a queue?', 'choices': ['FIFO', 'LIFO'],
-                       'correctAnswer': 'FIFO', 'subject': 'Astrology'}]),
+                       'correctAnswer': 'Answer: a', 'subject': 'Astrology'}]),
         ])
         self.assertEqual(response.status_code, 202)
         self.assertEqual(chat.call_count, 2)  # one AI call per page batch
@@ -123,6 +123,7 @@ class ExamImportTests(APITestCase):
         self.assertEqual(first['sourcePages'], [1])
         self.assertEqual(first['issues'], [])
         self.assertEqual(second['question'], 'What is a queue?')
+        self.assertEqual(second['correctAnswer'], 'FIFO')
         self.assertEqual(second['subject'], '')
         self.assertIn('Pick a subject from the official list.', second['issues'])
         self.assertEqual(Question.objects.count(), 0)  # nothing is saved before publish

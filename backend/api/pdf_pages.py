@@ -45,7 +45,7 @@ def render_pages(data, start, end):
                 image.save(buffer, format='JPEG', quality=JPEG_QUALITY)
                 textpage = page.get_textpage()
                 try:
-                    text = textpage.get_text_range().strip()[:MAX_PAGE_TEXT_CHARS]
+                    text = textpage.get_text_bounded().strip()[:MAX_PAGE_TEXT_CHARS]
                 finally:
                     textpage.close()
             finally:

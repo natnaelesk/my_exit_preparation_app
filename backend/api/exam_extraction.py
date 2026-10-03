@@ -41,6 +41,7 @@ Rules:
 NUMBERING_RE = re.compile(r'^\s*(?:(?:q(?:uestion)?|no)\.?\s*)?\d{1,3}\s*(?:[.):]\s+|\s-\s+)', re.IGNORECASE)
 CHOICE_LABEL_RE = re.compile(r'^\s*\(?([a-hA-H])\s*[.):]\s+')
 ANSWER_LETTER_RE = re.compile(r'^\(?([a-hA-H])[.)]?$')
+ANSWER_PREFIX_RE = re.compile(r'^\s*(?:correct\s+)?(?:answer|ans)\s*[:.\-]?\s*', re.IGNORECASE)
 
 
 class ExtractionError(Exception):
@@ -112,6 +113,9 @@ def clean_submitted_question(raw):
 
 
 def _resolve_answer(answer, choices):
+    if answer in choices:
+        return answer
+    answer = ANSWER_PREFIX_RE.sub('', answer, count=1)
     if answer in choices:
         return answer
     letter = ANSWER_LETTER_RE.match(answer)

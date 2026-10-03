@@ -256,16 +256,19 @@ class DailyPlanViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
         try:
             plan = self.get_owned_queryset().get(date_key=date_key)
             # Get attempts for this plan
-            plan_attempts = Attempt.objects.filter(owner=request.user, plan_date_key=date_key)
             plan_question_ids = set(plan.question_ids)
-            
-            relevant_attempts = [a for a in plan_attempts if a.question_id in plan_question_ids]
-            
-            plan.answered_count = len(relevant_attempts)
-            plan.correct_count = sum(1 for a in relevant_attempts if a.is_correct)
+            # Each planned question counts once, by its latest answer, however often it was practiced.
+            latest_by_question = {}
+            for attempt in Attempt.objects.filter(
+                owner=request.user, plan_date_key=date_key, question_id__in=plan_question_ids,
+            ).order_by('timestamp'):
+                latest_by_question[attempt.question_id] = attempt
+
+            plan.answered_count = len(latest_by_question)
+            plan.correct_count = sum(1 for a in latest_by_question.values() if a.is_correct)
             plan.wrong_count = plan.answered_count - plan.correct_count
             plan.accuracy = (plan.correct_count / plan.answered_count * 100) if plan.answered_count > 0 else 0
-            plan.is_complete = plan.answered_count >= len(plan.question_ids)
+            plan.is_complete = bool(plan_question_ids) and plan.answered_count >= len(plan_question_ids)
             plan.save()
             
             serializer = self.get_serializer(plan)

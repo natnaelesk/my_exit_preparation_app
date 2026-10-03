@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from rest_framework.test import APITestCase
 
-from .models import Attempt, Question, SubjectPriority
+from .models import Attempt, DailyPlan, Question, SubjectPriority
 
 
 class TrustFixTestCase(APITestCase):
@@ -107,3 +107,24 @@ class PaginationTests(TrustFixTestCase):
 
         self.as_user(self.token_b)
         self.assertEqual(self.client.get('/api/questions/', {'page_size': 1000}).data['count'], 0)
+
+
+class PlanRecomputeTests(TrustFixTestCase):
+    def test_each_planned_question_counts_once_by_latest_answer(self):
+        DailyPlan.objects.create(owner=self.user_a, date_key='2019-01-23', focus_subject='Database Systems',
+                                 question_ids=['q1', 'q2', 'q3'])
+        self.as_user(self.token_a)
+        for question_id, correct, session in [('q1', False, 's1'), ('q1', True, 's2'), ('q2', True, 's2')]:
+            self.client.post('/api/attempts/', {
+                'questionId': question_id, 'selectedAnswer': 'A', 'isCorrect': correct, 'timeSpent': 1,
+                'subject': 'Database Systems', 'planDateKey': '2019-01-23', 'sessionId': session,
+            }, format='json')
+
+        plan = self.client.post('/api/plans/2019-01-23/recompute/').data
+        self.assertEqual((plan['answeredCount'], plan['correctCount'], plan['wrongCount']), (2, 2, 0))
+        self.assertFalse(plan['isComplete'])
+
+    def test_empty_plan_is_not_complete(self):
+        DailyPlan.objects.create(owner=self.user_a, date_key='2019-01-24', focus_subject='Compiler Design', question_ids=[])
+        self.as_user(self.token_a)
+        self.assertFalse(self.client.post('/api/plans/2019-01-24/recompute/').data['isComplete'])

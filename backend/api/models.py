@@ -218,3 +218,89 @@ class ExamImport(models.Model):
 
     def __str__(self):
         return f"{self.original_filename} ({self.status}, {self.pages_processed}/{self.page_count})"
+
+
+def study_doc_upload_path(instance, filename):
+    return f"study_docs/{instance.owner_id}/{uuid.uuid4().hex}.pdf"
+
+
+class StudyDoc(models.Model):
+    """A user's study material (PDF) plus an AI description that is kept in the DB for retrieval."""
+    STATUS_DESCRIBING = 'describing'
+    STATUS_READY = 'ready'
+    STATUS_FAILED = 'failed'
+    STATUS_CHOICES = [
+        (STATUS_DESCRIBING, 'Describing'),
+        (STATUS_READY, 'Ready'),
+        (STATUS_FAILED, 'Failed'),
+    ]
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='study_docs')
+    file = models.FileField(upload_to=study_doc_upload_path, blank=True)
+    original_filename = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    subject = models.CharField(max_length=255, blank=True)
+    topics = models.JSONField(default=list)
+    key_points = models.JSONField(default=list)
+    text_excerpt = models.TextField(blank=True)
+    page_count = models.IntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DESCRIBING)
+    error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'studyDocs'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title or self.original_filename} ({self.status})"
+
+
+class StudySession(models.Model):
+    """A tutor chat scoped to a daily plan or a subject/topic. One session per context per user."""
+    STATUS_IDLE = 'idle'
+    STATUS_THINKING = 'thinking'
+    STATUS_FAILED = 'failed'
+    STATUS_CHOICES = [
+        (STATUS_IDLE, 'Idle'),
+        (STATUS_THINKING, 'Thinking'),
+        (STATUS_FAILED, 'Failed'),
+    ]
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='study_sessions')
+    context_key = models.CharField(max_length=512)
+    title = models.CharField(max_length=255)
+    subject = models.CharField(max_length=255, blank=True)
+    topics = models.JSONField(default=list)
+    plan_date_key = models.CharField(max_length=10, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_IDLE)
+    error = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'studySessions'
+        ordering = ['-updated_at']
+        constraints = [
+            models.UniqueConstraint(fields=['owner', 'context_key'], name='unique_study_session_per_context'),
+        ]
+
+    def __str__(self):
+        return f"{self.title} ({self.status})"
+
+
+class StudyMessage(models.Model):
+    ROLE_USER = 'user'
+    ROLE_ASSISTANT = 'assistant'
+    ROLE_CHOICES = [(ROLE_USER, 'User'), (ROLE_ASSISTANT, 'Assistant')]
+
+    session = models.ForeignKey(StudySession, on_delete=models.CASCADE, related_name='messages')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'studyMessages'
+        ordering = ['created_at', 'id']

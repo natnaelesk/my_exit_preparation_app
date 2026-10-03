@@ -1,5 +1,8 @@
 """Minimal OpenAI-compatible chat-completions client (server-side only)."""
 
+import json
+import re
+
 import requests
 from django.conf import settings
 
@@ -10,6 +13,10 @@ class AIConfigError(Exception):
 
 class AIUnavailableError(Exception):
     """A transient provider failure (network, timeout, rate limit, 5xx)."""
+
+
+class BadAIOutput(Exception):
+    """The model replied, but not with the JSON we asked for."""
 
 
 def is_configured():
@@ -64,3 +71,18 @@ def chat_completion(messages):
     if isinstance(content, list):
         content = ''.join(part.get('text', '') for part in content if isinstance(part, dict))
     return content, choice.get('finish_reason')
+
+
+def parse_json_reply(text):
+    """Parse a model reply that should be JSON, tolerating markdown fences and surrounding prose."""
+    cleaned = re.sub(r'^\s*```(?:json)?\s*|\s*```\s*$', '', text or '', flags=re.IGNORECASE)
+    try:
+        return json.loads(cleaned)
+    except ValueError:
+        start, end = cleaned.find('{'), cleaned.rfind('}')
+        if start == -1 or end <= start:
+            raise BadAIOutput('no JSON object found')
+        try:
+            return json.loads(cleaned[start:end + 1])
+        except ValueError as exc:
+            raise BadAIOutput('invalid JSON') from exc

@@ -30,6 +30,50 @@ def count_pages(data):
         pdf.close()
 
 
+def read_upload(upload, max_mb, max_pages):
+    """Validate an uploaded PDF and return (bytes, page_count); raise PdfReadError with a user-facing message."""
+    if upload is None:
+        raise PdfReadError('Choose a PDF file to upload.')
+    if upload.size > max_mb * 1024 * 1024:
+        raise PdfReadError(f'The PDF is larger than {max_mb} MB.')
+    data = upload.read()
+    if not data.startswith(b'%PDF-'):
+        raise PdfReadError('That file is not a PDF.')
+    page_count = count_pages(data)
+    if page_count == 0:
+        raise PdfReadError('The PDF has no pages.')
+    if page_count > max_pages:
+        raise PdfReadError(
+            f'The PDF has {page_count} pages; the limit is {max_pages}. Split it and upload the parts.'
+        )
+    return data, page_count
+
+
+def extract_text(data, max_chars):
+    """Concatenate the text layer of the PDF (empty for scanned/photo PDFs), up to max_chars."""
+    pdf = _open(data)
+    try:
+        parts, total = [], 0
+        for index in range(len(pdf)):
+            page = pdf[index]
+            try:
+                textpage = page.get_textpage()
+                try:
+                    text = ' '.join(textpage.get_text_bounded().split())
+                finally:
+                    textpage.close()
+            finally:
+                page.close()
+            if text:
+                parts.append(text)
+                total += len(text) + 1
+                if total >= max_chars:
+                    break
+        return '\n'.join(parts)[:max_chars]
+    finally:
+        pdf.close()
+
+
 def render_pages(data, start, end):
     """Render 0-based pages [start, end) as dicts with a 1-based page number, image data URL and text."""
     pdf = _open(data)

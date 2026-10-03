@@ -1,17 +1,14 @@
 """PDF exam → AI-extracted draft questions, plus the strict validation used before publishing."""
 
-import json
 import logging
 import re
-import threading
-from datetime import timedelta
 
 from django.conf import settings
-from django.db import connection
 from django.db.models import Q
 from django.utils import timezone
 
 from . import ai_client
+from .background import run_job, stale_after
 from .models import ExamImport
 from .pdf_pages import PdfReadError, render_pages
 from .subjects import OFFICIAL_SUBJECTS, normalize_subject
@@ -48,8 +45,7 @@ class ExtractionError(Exception):
     """A user-facing, retry-friendly extraction failure."""
 
 
-class BadAIOutput(Exception):
-    pass
+BadAIOutput = ai_client.BadAIOutput
 
 
 # ---------------------------------------------------------------------------
@@ -158,18 +154,7 @@ def normalize_ai_question(raw, source_pages):
 
 def parse_ai_json(text):
     """Parse the model's reply into {'title': str, 'questions': list}; raise BadAIOutput otherwise."""
-    cleaned = re.sub(r'^\s*```(?:json)?\s*|\s*```\s*$', '', text or '', flags=re.IGNORECASE)
-    try:
-        data = json.loads(cleaned)
-    except ValueError:
-        start, end = cleaned.find('{'), cleaned.rfind('}')
-        if start == -1 or end <= start:
-            raise BadAIOutput('no JSON object found')
-        try:
-            data = json.loads(cleaned[start:end + 1])
-        except ValueError as exc:
-            raise BadAIOutput('invalid JSON') from exc
-
+    data = ai_client.parse_json_reply(text)
     if isinstance(data, list):
         data = {'title': '', 'questions': data}
     if not isinstance(data, dict) or not isinstance(data.get('questions'), list):
@@ -242,10 +227,6 @@ def _merge(existing, new_questions):
 # Job control
 # ---------------------------------------------------------------------------
 
-def stale_after():
-    return timedelta(seconds=settings.AI_TIMEOUT_SECONDS * 2 + 120)
-
-
 def mark_if_stale(exam_import):
     """Fail an extraction whose worker stopped updating (e.g. the server restarted or slept)."""
     if exam_import.status != ExamImport.STATUS_EXTRACTING:
@@ -316,15 +297,5 @@ def run_extraction(import_id):
         )
 
 
-def _run_in_thread(import_id):
-    try:
-        run_extraction(import_id)
-    finally:
-        connection.close()
-
-
 def start_extraction(exam_import):
-    if settings.EXAM_IMPORT_RUN_INLINE:
-        run_extraction(exam_import.pk)
-    else:
-        threading.Thread(target=_run_in_thread, args=(exam_import.pk,), daemon=True).start()
+    run_job(run_extraction, exam_import.pk)

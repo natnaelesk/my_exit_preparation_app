@@ -71,7 +71,7 @@ async function trackedFetch(url, config) {
 /**
  * Make API request with error handling
  */
-async function apiRequest(endpoint, options = {}) {
+async function apiRequest(endpoint, { responseType = 'json', ...options } = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = getAuthToken();
   const isFormData = options.body instanceof FormData;
@@ -138,6 +138,10 @@ async function apiRequest(endpoint, options = {}) {
       throw error;
     }
     
+    if (responseType === 'blob') {
+      return await response.blob();
+    }
+
     // Handle empty responses
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
@@ -181,6 +185,13 @@ export async function upload(endpoint, formData) {
 }
 
 /**
+ * GET a file as a Blob (sends the auth token, unlike a plain link)
+ */
+export async function getBlob(endpoint) {
+  return apiRequest(endpoint, { method: 'GET', responseType: 'blob' });
+}
+
+/**
  * PATCH request
  */
 export async function patch(endpoint, data = {}) {
@@ -211,6 +222,7 @@ export default {
   get,
   post,
   upload,
+  getBlob,
   patch,
   put,
   delete: del,

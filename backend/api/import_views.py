@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from . import ai_client
 from .exam_extraction import claim_for_extraction, clean_submitted_question, mark_if_stale, start_extraction
 from .models import Exam, ExamImport, Question
-from .pdf_pages import PdfReadError, count_pages
+from .pdf_pages import PdfReadError, read_upload
 from .serializers import ExamImportSerializer, ExamSerializer
 from .views import OwnedQuerysetMixin
 
@@ -38,26 +38,12 @@ class ExamImportViewSet(OwnedQuerysetMixin,
 
     def create(self, request):
         upload = request.FILES.get('file')
-        if upload is None:
-            return _error('Choose a PDF file to upload.', status.HTTP_400_BAD_REQUEST)
-        max_bytes = settings.EXAM_IMPORT_MAX_UPLOAD_MB * 1024 * 1024
-        if upload.size > max_bytes:
-            return _error(f'The PDF is larger than {settings.EXAM_IMPORT_MAX_UPLOAD_MB} MB.', status.HTTP_400_BAD_REQUEST)
-
-        data = upload.read()
-        if not data.startswith(b'%PDF-'):
-            return _error('That file is not a PDF.', status.HTTP_400_BAD_REQUEST)
         try:
-            page_count = count_pages(data)
+            data, page_count = read_upload(
+                upload, settings.EXAM_IMPORT_MAX_UPLOAD_MB, settings.EXAM_IMPORT_MAX_PAGES,
+            )
         except PdfReadError as exc:
             return _error(str(exc), status.HTTP_400_BAD_REQUEST)
-        if page_count == 0:
-            return _error('The PDF has no pages.', status.HTTP_400_BAD_REQUEST)
-        if page_count > settings.EXAM_IMPORT_MAX_PAGES:
-            return _error(
-                f'The PDF has {page_count} pages; the limit is {settings.EXAM_IMPORT_MAX_PAGES}. Split it and upload the parts.',
-                status.HTTP_400_BAD_REQUEST,
-            )
 
         exam_import = ExamImport(
             owner=request.user,

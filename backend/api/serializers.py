@@ -3,7 +3,11 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
-from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, SubjectPriority, ExamImport
+from .models import (
+    Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, SubjectPriority, ExamImport,
+    StudyDoc, StudySession, StudyMessage,
+)
+from .study_docs import relevant_docs
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -190,3 +194,56 @@ class ExamImportSerializer(serializers.ModelSerializer):
 
     def get_pagesPerBatch(self, obj):
         return max(1, settings.EXAM_IMPORT_PAGES_PER_BATCH)
+
+
+class StudyDocSerializer(serializers.ModelSerializer):
+    originalFilename = serializers.CharField(source='original_filename', read_only=True)
+    keyPoints = serializers.JSONField(source='key_points', read_only=True)
+    pageCount = serializers.IntegerField(source='page_count', read_only=True)
+    fileAvailable = serializers.SerializerMethodField()
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    updatedAt = serializers.DateTimeField(source='updated_at', read_only=True)
+
+    class Meta:
+        model = StudyDoc
+        fields = ['id', 'originalFilename', 'title', 'description', 'subject', 'topics', 'keyPoints',
+                  'pageCount', 'status', 'error', 'fileAvailable', 'createdAt', 'updatedAt']
+        read_only_fields = fields
+
+    def get_fileAvailable(self, obj):
+        return bool(obj.file) and obj.file.storage.exists(obj.file.name)
+
+
+class StudyMessageSerializer(serializers.ModelSerializer):
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+
+    class Meta:
+        model = StudyMessage
+        fields = ['id', 'role', 'content', 'createdAt']
+        read_only_fields = fields
+
+
+class StudySessionSerializer(serializers.ModelSerializer):
+    planDateKey = serializers.CharField(source='plan_date_key', read_only=True)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    updatedAt = serializers.DateTimeField(source='updated_at', read_only=True)
+
+    class Meta:
+        model = StudySession
+        fields = ['id', 'title', 'subject', 'topics', 'planDateKey', 'status', 'error', 'createdAt', 'updatedAt']
+        read_only_fields = fields
+
+
+class StudySessionDetailSerializer(StudySessionSerializer):
+    messages = StudyMessageSerializer(many=True, read_only=True)
+    materials = serializers.SerializerMethodField()
+
+    class Meta(StudySessionSerializer.Meta):
+        fields = StudySessionSerializer.Meta.fields + ['messages', 'materials']
+        read_only_fields = fields
+
+    def get_materials(self, obj):
+        return [
+            {'id': doc.id, 'title': doc.title or doc.original_filename}
+            for doc in relevant_docs(obj.owner, obj.subject, obj.topics)
+        ]

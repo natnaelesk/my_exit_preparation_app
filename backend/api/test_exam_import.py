@@ -50,7 +50,7 @@ AI_QUESTION = {
     AI_API_KEY='server-secret-key',
     AI_MODEL='vision-model',
     AI_BASE_URL='https://ai.example.test/v1',
-    EXAM_IMPORT_RUN_INLINE=True,
+    AI_JOBS_RUN_INLINE=True,
     EXAM_IMPORT_PAGES_PER_BATCH=1,
 )
 class ExamImportTests(APITestCase):

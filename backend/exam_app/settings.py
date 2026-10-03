@@ -131,8 +131,13 @@ AI_MAX_TOKENS = int(os.environ.get('AI_MAX_TOKENS', '8192'))
 EXAM_IMPORT_MAX_UPLOAD_MB = int(os.environ.get('EXAM_IMPORT_MAX_UPLOAD_MB', '25'))
 EXAM_IMPORT_MAX_PAGES = int(os.environ.get('EXAM_IMPORT_MAX_PAGES', '60'))
 EXAM_IMPORT_PAGES_PER_BATCH = int(os.environ.get('EXAM_IMPORT_PAGES_PER_BATCH', '3'))
-# Run extraction inside the request instead of a background thread (used by tests).
-EXAM_IMPORT_RUN_INLINE = os.environ.get('EXAM_IMPORT_RUN_INLINE', 'False') == 'True'
+
+# Study materials (PDFs used as Study chat context)
+STUDY_DOC_MAX_UPLOAD_MB = int(os.environ.get('STUDY_DOC_MAX_UPLOAD_MB', '25'))
+STUDY_DOC_MAX_PAGES = int(os.environ.get('STUDY_DOC_MAX_PAGES', '400'))
+# Run AI jobs (PDF extraction, study-doc descriptions, tutor replies) inside the request
+# instead of a background thread (used by tests).
+AI_JOBS_RUN_INLINE = os.environ.get('AI_JOBS_RUN_INLINE', 'False') == 'True'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

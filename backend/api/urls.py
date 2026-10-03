@@ -3,6 +3,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.routers import APIRootView, DefaultRouter
 from . import auth_views
 from .import_views import ExamImportViewSet
+from .study_views import StudyDocViewSet, StudySessionViewSet
 from .views import (
     QuestionViewSet, ExamViewSet, AttemptViewSet, 
     ExamSessionViewSet, DailyPlanViewSet, ThemePreferencesView, AnalyticsViewSet, DebugViewSet,
@@ -20,6 +21,8 @@ router.APIRootView = PublicAPIRootView
 router.register(r'questions', QuestionViewSet, basename='question')
 router.register(r'exams', ExamViewSet, basename='exam')
 router.register(r'exam-imports', ExamImportViewSet, basename='exam-import')
+router.register(r'study-docs', StudyDocViewSet, basename='study-doc')
+router.register(r'study-sessions', StudySessionViewSet, basename='study-session')
 router.register(r'attempts', AttemptViewSet, basename='attempt')
 router.register(r'sessions', ExamSessionViewSet, basename='session')
 router.register(r'plans', DailyPlanViewSet, basename='plan')

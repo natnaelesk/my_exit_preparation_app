@@ -156,11 +156,6 @@ npm run dev
 **Frontend (.env)**
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
-
-# AI Assistant (Optional - OpenAI recommended)
-VITE_GROK_API_KEY=sk-your-openai-api-key
-VITE_GROK_API_URL=https://api.openai.com/v1/chat/completions
-VITE_GROK_MODEL=gpt-3.5-turbo
 ```
 
 **Backend**
@@ -169,15 +164,20 @@ SECRET_KEY=your-secret-key
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 DATABASE_URL=postgresql://user:password@localhost:5432/exitexam
+
+# AI (PDF exam import, study-doc descriptions, Study chat). Any OpenAI-compatible API.
+AI_API_KEY=your-key
+AI_MODEL=your-vision-capable-model
+AI_BASE_URL=https://api.x.ai/v1
 ```
 
-> **Note:** AI assistant is optional. Without API key, the AI button will show an error when clicked.
+> **Note:** AI keys live only on the backend; never put them in `VITE_` variables. Without `AI_API_KEY` / `AI_MODEL`, the app still works and AI features show a "not configured" message.
 
 ---
 
 ## 📖 Usage
 
-**Starting an Exam:** Choose mode from Dashboard → Answer questions → Use ✨ AI Assistant for help → Submit to see results
+**Starting an Exam:** Choose mode from Dashboard → Answer questions → Use ✨ Study tutor for help → Submit to see results
 
 **Analytics:** View subject/topic performance → Click "Improve This Area" to practice weak subjects
 

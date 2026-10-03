@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from '../Theme/ThemeToggle';
 import { useAuth } from '../../contexts/AuthContext';
-import { HomeIcon, BookOpenIcon, ChartBarIcon, CalendarDaysIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, BookOpenIcon, ChartBarIcon, CalendarDaysIcon, AcademicCapIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import './NavBar.css';
 
 const BottomNav = () => {
@@ -19,6 +19,7 @@ const BottomNav = () => {
     { path: '/', icon: HomeIcon, label: 'Home', exact: true },
     { path: '/exams', icon: BookOpenIcon, label: 'Exams' },
     { path: '/plan', icon: CalendarDaysIcon, label: 'Plan' },
+    { path: '/study', icon: AcademicCapIcon, label: 'Study' },
     { path: '/analytics', icon: ChartBarIcon, label: 'Analysis' },
   ];
 

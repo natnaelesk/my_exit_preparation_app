@@ -1,4 +1,4 @@
-import { get, post } from './apiClient';
+import { get, getAll, post } from './apiClient';
 import { normalizeSubject, normalizeTopic } from '../utils/subjectNormalization';
 
 /**
@@ -6,8 +6,7 @@ import { normalizeSubject, normalizeTopic } from '../utils/subjectNormalization'
  */
 export const getAllQuestions = async () => {
   try {
-    const response = await get('/questions/');
-    return response.results || response; // Handle pagination if present
+    return await getAll('/questions/');
   } catch (error) {
     console.error('Error fetching all questions:', error);
     throw error;
@@ -23,10 +22,7 @@ export const getQuestionsBySubject = async (subject) => {
     const normalizedRequested = normalizeSubject(requested) || requested;
 
     // Try normalized subject first
-    let questions = await get('/questions/', { subject: normalizedRequested });
-    if (Array.isArray(questions.results)) {
-      questions = questions.results;
-    }
+    let questions = await getAll('/questions/', { subject: normalizedRequested });
     
     if (questions.length > 0) {
       return questions;
@@ -34,18 +30,14 @@ export const getQuestionsBySubject = async (subject) => {
 
     // Try raw subject string
     if (normalizedRequested !== requested && requested) {
-      questions = await get('/questions/', { subject: requested });
-      if (Array.isArray(questions.results)) {
-        questions = questions.results;
-      }
+      questions = await getAll('/questions/', { subject: requested });
       if (questions.length > 0) {
         return questions;
       }
     }
 
     // Fallback: load all and filter with normalization
-    const all = await getAllQuestions();
-    const allQuestions = Array.isArray(all.results) ? all.results : all;
+    const allQuestions = await getAllQuestions();
     return allQuestions.filter((qDoc) => {
       const docSubject = normalizeSubject(qDoc.subject) || String(qDoc.subject || '').trim();
       return docSubject === normalizedRequested;

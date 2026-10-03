@@ -50,11 +50,12 @@ class AttemptSerializer(serializers.ModelSerializer):
     timeSpent = serializers.IntegerField(source='time_spent')
     examId = serializers.CharField(source='exam_id', required=False, allow_blank=True, allow_null=True)
     planDateKey = serializers.CharField(source='plan_date_key', required=False, allow_blank=True, allow_null=True)
+    sessionId = serializers.CharField(source='session_id', required=False, allow_null=True, max_length=255)
     
     class Meta:
         model = Attempt
         fields = ['attemptId', 'questionId', 'selectedAnswer', 'isCorrect', 'timeSpent', 
-                  'subject', 'topic', 'examId', 'mode', 'planDateKey', 'timestamp']
+                  'subject', 'topic', 'examId', 'mode', 'planDateKey', 'sessionId', 'timestamp']
         read_only_fields = ['attemptId', 'timestamp']
     
     def create(self, validated_data):

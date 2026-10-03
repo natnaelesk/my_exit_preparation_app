@@ -1,12 +1,11 @@
-import { get, post } from './apiClient';
+import { get, getAll, post } from './apiClient';
 
 /**
  * Get all exams from API
  */
 export const getAllExams = async () => {
   try {
-    const response = await get('/exams/');
-    return response.results || response; // Handle pagination if present
+    return await getAll('/exams/');
   } catch (error) {
     console.error('Error fetching all exams:', error);
     throw error;

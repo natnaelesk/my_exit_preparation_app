@@ -25,6 +25,7 @@ import {
   SparklesIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import { getStatusBand } from '../../utils/statusHelpers';
 
 const Dashboard = () => {
   const [subjectStats, setSubjectStats] = useState({});
@@ -128,8 +129,8 @@ const Dashboard = () => {
     : 0;
 
   const subjectsWithData = Object.values(subjectStats).filter(s => s && s.totalAttempted > 0);
-  const strongCount = subjectsWithData.filter(s => s.status === 'STRONG').length;
-  const weakCount = subjectsWithData.filter(s => s.status === 'WEAK').length;
+  const strongCount = subjectsWithData.filter(s => getStatusBand(s.status) === 'STRONG').length;
+  const weakCount = subjectsWithData.filter(s => getStatusBand(s.status) === 'WEAK').length;
 
   // Prepare 7-day trend data starting from first usage date with dynamic projection
   const prepareTrendData = () => {

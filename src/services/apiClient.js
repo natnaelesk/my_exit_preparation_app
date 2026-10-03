@@ -164,6 +164,25 @@ export async function get(endpoint, params = {}) {
   return apiRequest(url, { method: 'GET' });
 }
 
+const LIST_PAGE_SIZE = 1000;
+const MAX_LIST_PAGES = 200;
+
+/**
+ * GET every row of a paginated list endpoint (DRF page-number pagination), following pages
+ * until `next` is empty. Unpaginated (plain array) responses are returned as-is.
+ */
+export async function getAll(endpoint, params = {}) {
+  const rows = [];
+  for (let page = 1; page <= MAX_LIST_PAGES; page++) {
+    const response = await get(endpoint, { ...params, page, page_size: LIST_PAGE_SIZE });
+    if (Array.isArray(response)) return response;
+    if (!response || !Array.isArray(response.results)) return rows;
+    rows.push(...response.results);
+    if (!response.next) return rows;
+  }
+  throw new Error(`Too many results from ${endpoint}; stopped after ${MAX_LIST_PAGES * LIST_PAGE_SIZE} rows.`);
+}
+
 /**
  * POST request
  */
@@ -220,6 +239,7 @@ export async function del(endpoint) {
 
 export default {
   get,
+  getAll,
   post,
   upload,
   getBlob,

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { get } from '../../services/apiClient';
+import { getAll } from '../../services/apiClient';
 import {
   uploadExamPdf,
   startExtraction,
@@ -33,9 +33,8 @@ const PdfImport = () => {
 
   useEffect(() => {
     cancelledRef.current = false;
-    get('/exam-imports/')
-      .then((response) => {
-        const imports = response.results || response;
+    getAll('/exam-imports/')
+      .then((imports) => {
         if (!cancelledRef.current) setUnfinished(imports.filter((i) => i.status !== 'published'));
       })
       .catch(() => {});

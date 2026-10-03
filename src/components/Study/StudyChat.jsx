@@ -222,6 +222,11 @@ const StudyChat = ({ sessionId, initialSession = null, startMessage = START_MESS
                   <ArrowPathIcon className="w-4 h-4" /> Retry reply
                 </button>
               )}
+              {!canRetry && sendError && thinking && (
+                <button onClick={() => { setSendError(''); load(); }} className="mt-2 inline-flex items-center gap-1 font-semibold hover:underline">
+                  <ArrowPathIcon className="w-4 h-4" /> Check again
+                </button>
+              )}
             </div>
           </div>
         ) : null}

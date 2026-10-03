@@ -9,6 +9,7 @@ import LoadingAnimation from '../Common/LoadingAnimation';
 import { EXAM_MODES } from '../../utils/constants';
 import { format } from 'date-fns';
 import { BookOpenIcon, ExclamationTriangleIcon, PlayIcon, ArrowPathIcon, CheckCircleIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
+import { getStatusBand } from '../../utils/statusHelpers';
 
 const ExamDetail = () => {
   const { examId } = useParams();
@@ -223,7 +224,7 @@ const ExamDetail = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (getStatusBand(status)) {
       case 'STRONG': return { bg: 'bg-green-500/10', border: 'border-green-500/50', text: 'text-green-500', label: 'bg-green-500/20' };
       case 'MEDIUM': return { bg: 'bg-yellow-500/10', border: 'border-yellow-500/50', text: 'text-yellow-500', label: 'bg-yellow-500/20' };
       case 'WEAK': return { bg: 'bg-red-500/10', border: 'border-red-500/50', text: 'text-red-500', label: 'bg-red-500/20' };
@@ -232,9 +233,9 @@ const ExamDetail = () => {
   };
 
   const subjectList = Object.keys(subjectStats);
-  const strongSubjects = subjectList.filter(s => subjectStats[s]?.status === 'STRONG');
-  const weakSubjects = subjectList.filter(s => subjectStats[s]?.status === 'WEAK');
-  const mediumSubjects = subjectList.filter(s => subjectStats[s]?.status === 'MEDIUM');
+  const strongSubjects = subjectList.filter(s => getStatusBand(subjectStats[s]?.status) === 'STRONG');
+  const weakSubjects = subjectList.filter(s => getStatusBand(subjectStats[s]?.status) === 'WEAK');
+  const mediumSubjects = subjectList.filter(s => getStatusBand(subjectStats[s]?.status) === 'MEDIUM');
 
   // Calculate overall stats
   let totalCorrect = 0;
@@ -672,8 +673,8 @@ const ExamDetail = () => {
                     {subjectQuestions.length} questions
                     {hasStats && (
                       <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold ${
-                        stat.status === 'STRONG' ? 'text-green-500 bg-green-500/20' :
-                        stat.status === 'WEAK' ? 'text-red-500 bg-red-500/20' :
+                        getStatusBand(stat.status) === 'STRONG' ? 'text-green-500 bg-green-500/20' :
+                        getStatusBand(stat.status) === 'WEAK' ? 'text-red-500 bg-red-500/20' :
                         'text-yellow-500 bg-yellow-500/20'
                       }`}>
                         {Math.round(stat.accuracy)}%

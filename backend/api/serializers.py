@@ -1,9 +1,14 @@
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, SubjectPriority
 
 
 class QuestionSerializer(serializers.ModelSerializer):
-    questionId = serializers.CharField(source='question_id', required=False, allow_blank=True, allow_null=True)
+    # Question ids are a global primary key shared by all users, so they are
+    # always generated server-side; client-supplied ids are ignored.
+    questionId = serializers.CharField(source='question_id', read_only=True)
     correctAnswer = serializers.CharField(source='correct_answer')
     
     class Meta:
@@ -17,12 +22,8 @@ class QuestionSerializer(serializers.ModelSerializer):
         return data
     
     def create(self, validated_data):
-        # Handle questionId - use provided or generate
-        question_id = validated_data.pop('question_id', None)
-        if not question_id:
-            import uuid
-            question_id = f"q_{uuid.uuid4().hex[:16]}"
-        validated_data['question_id'] = question_id
+        import uuid
+        validated_data['question_id'] = f"q_{uuid.uuid4().hex[:16]}"
         return super().create(validated_data)
 
 
@@ -117,7 +118,44 @@ class ThemePreferencesSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ThemePreferences
-        fields = ['id', 'favoriteLightTheme', 'favoriteDarkTheme', 'autoMode']
+        fields = ['favoriteLightTheme', 'favoriteDarkTheme', 'autoMode']
+
+
+class SignupSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+    email = serializers.EmailField(required=False, allow_blank=True)
+
+    def validate_username(self, value):
+        value = value.strip()
+        try:
+            get_user_model().username_validator(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages))
+        if get_user_model().objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('That username is already taken.')
+        return value
+
+    def validate(self, attrs):
+        user = get_user_model()(username=attrs['username'], email=attrs.get('email', ''))
+        try:
+            validate_password(attrs['password'], user=user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({'password': list(exc.messages)})
+        return attrs
+
+    def create(self, validated_data):
+        return get_user_model().objects.create_user(
+            username=validated_data['username'],
+            email=validated_data.get('email', ''),
+            password=validated_data['password'],
+        )
+
+
+class UserSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    email = serializers.EmailField(read_only=True)
 
 
 class SubjectPrioritySerializer(serializers.ModelSerializer):

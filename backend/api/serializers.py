@@ -1,8 +1,9 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
-from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, SubjectPriority
+from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, SubjectPriority, ExamImport
 
 
 class QuestionSerializer(serializers.ModelSerializer):
@@ -169,3 +170,23 @@ class SubjectPrioritySerializer(serializers.ModelSerializer):
         model = SubjectPriority
         fields = ['subject', 'priorityOrder', 'isCompleted', 'roundNumber', 'createdAt', 'lastUpdated']
 
+
+
+class ExamImportSerializer(serializers.ModelSerializer):
+    originalFilename = serializers.CharField(source='original_filename', read_only=True)
+    pageCount = serializers.IntegerField(source='page_count', read_only=True)
+    pagesProcessed = serializers.IntegerField(source='pages_processed', read_only=True)
+    pagesPerBatch = serializers.SerializerMethodField()
+    questions = serializers.JSONField(source='draft_questions', read_only=True)
+    examId = serializers.CharField(source='exam_id', read_only=True)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    updatedAt = serializers.DateTimeField(source='updated_at', read_only=True)
+
+    class Meta:
+        model = ExamImport
+        fields = ['id', 'originalFilename', 'title', 'status', 'error', 'pageCount', 'pagesProcessed',
+                  'pagesPerBatch', 'questions', 'examId', 'createdAt', 'updatedAt']
+        read_only_fields = fields
+
+    def get_pagesPerBatch(self, obj):
+        return max(1, settings.EXAM_IMPORT_PAGES_PER_BATCH)

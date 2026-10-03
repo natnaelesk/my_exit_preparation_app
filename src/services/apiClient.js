@@ -74,10 +74,12 @@ async function trackedFetch(url, config) {
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = getAuthToken();
+  const isFormData = options.body instanceof FormData;
   const config = {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      // Let the browser set the multipart boundary for FormData bodies.
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Token ${token}` } : {}),
       ...options.headers,
     },
@@ -169,6 +171,16 @@ export async function post(endpoint, data = {}) {
 }
 
 /**
+ * POST multipart/form-data (file uploads)
+ */
+export async function upload(endpoint, formData) {
+  return apiRequest(endpoint, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+/**
  * PATCH request
  */
 export async function patch(endpoint, data = {}) {
@@ -198,6 +210,7 @@ export async function del(endpoint) {
 export default {
   get,
   post,
+  upload,
   patch,
   put,
   delete: del,

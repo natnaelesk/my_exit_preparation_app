@@ -116,6 +116,24 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # WhiteNoise for serving static files on Render
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Uploaded files (exam PDFs). Never served by URL; only read server-side.
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
+
+# AI provider: any OpenAI-compatible chat-completions API with image input (xAI Grok, Cursor, OpenAI...).
+# Server-side only; never expose these to the frontend.
+AI_API_KEY = os.environ.get('AI_API_KEY', '')
+AI_BASE_URL = os.environ.get('AI_BASE_URL', 'https://api.x.ai/v1').rstrip('/')
+AI_MODEL = os.environ.get('AI_MODEL', '')
+AI_TIMEOUT_SECONDS = int(os.environ.get('AI_TIMEOUT_SECONDS', '180'))
+AI_MAX_TOKENS = int(os.environ.get('AI_MAX_TOKENS', '8192'))
+
+# PDF exam import
+EXAM_IMPORT_MAX_UPLOAD_MB = int(os.environ.get('EXAM_IMPORT_MAX_UPLOAD_MB', '25'))
+EXAM_IMPORT_MAX_PAGES = int(os.environ.get('EXAM_IMPORT_MAX_PAGES', '60'))
+EXAM_IMPORT_PAGES_PER_BATCH = int(os.environ.get('EXAM_IMPORT_PAGES_PER_BATCH', '3'))
+# Run extraction inside the request instead of a background thread (used by tests).
+EXAM_IMPORT_RUN_INLINE = os.environ.get('EXAM_IMPORT_RUN_INLINE', 'False') == 'True'
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences
+from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, ExamImport
 
 
 @admin.register(Question)
@@ -46,3 +46,10 @@ class DailyPlanAdmin(admin.ModelAdmin):
 class ThemePreferencesAdmin(admin.ModelAdmin):
     list_display = ('owner', 'favorite_light_theme', 'favorite_dark_theme', 'auto_mode')
 
+
+
+@admin.register(ExamImport)
+class ExamImportAdmin(admin.ModelAdmin):
+    list_display = ('id', 'owner', 'original_filename', 'status', 'pages_processed', 'page_count', 'created_at')
+    list_filter = ('owner', 'status')
+    readonly_fields = ('created_at', 'updated_at')

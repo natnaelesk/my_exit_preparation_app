@@ -103,7 +103,7 @@ Create and manage personalized daily study plans to track your progress.
 
 **Backend:** Django 4.2.7 • Django REST Framework • PostgreSQL/SQLite
 
-**AI:** any OpenAI-compatible chat API with image input (e.g. xAI Grok), called from Django only
+**AI:** Cursor Python SDK (`cursor-sdk`) no-repo cloud agents with `CURSOR_API_KEY` (`crsr_…`), called from Django only — see `prompts/06-cursor-sdk-ai.md` (until that ships, the live code still uses an OpenAI-compatible `AI_*` client)
 
 **Deployment:** Vercel (Frontend) • Render/Railway (Backend)
 
@@ -166,13 +166,19 @@ DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 DATABASE_URL=postgresql://user:password@localhost:5432/exitexam
 
-# AI (PDF exam import, study-doc descriptions, Study chat). Any OpenAI-compatible API.
-AI_API_KEY=your-key
-AI_MODEL=your-vision-capable-model
-AI_BASE_URL=https://api.x.ai/v1
+# AI (PDF exam import, study-doc descriptions, Study chat) — server only.
+# Target (prompt 06): Cursor SDK no-repo cloud agents. Account must allow no-repo agents.
+CURSOR_API_KEY=crsr_your_key
+# CURSOR_MODEL=auto-smart   # optional; see docs/DEPLOY.md for vision vs chat defaults
+# AI_TIMEOUT_SECONDS=600    # cloud agents are slow; raise for exam-import batches
+
+# Legacy OpenAI-compatible path (pre–prompt 06 / until Cursor SDK lands):
+# AI_API_KEY=your-key
+# AI_MODEL=your-vision-capable-model
+# AI_BASE_URL=https://api.x.ai/v1
 ```
 
-> **Note:** AI keys live only on the backend; never put them in `VITE_` variables. Without `AI_API_KEY` / `AI_MODEL`, the app still works and AI features show a "not configured" message.
+> **Note:** AI keys live only on the backend; never put them in `VITE_` variables. Without `CURSOR_API_KEY` (or a valid legacy `AI_*` setup), the app still works and AI features show a "not configured" message. Full deploy checklist: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ---
 
@@ -220,7 +226,7 @@ See **[docs/DEPLOY.md](docs/DEPLOY.md)** for the step-by-step deploy checklist (
 
 **Backend connection errors:** Check Django server on port 8000, verify `VITE_API_BASE_URL` in `.env`, check CORS settings
 
-**AI features say "not configured":** set `AI_API_KEY` and `AI_MODEL` on the backend (Render), then redeploy. Other AI errors: check the provider key, model name and quota.
+**AI features say "not configured":** set `CURSOR_API_KEY` on the backend (Render) after prompt 06, or legacy `AI_API_KEY` / `AI_MODEL` until then; redeploy. Other AI errors: check the Cursor key, model id, no-repo agent access, and timeout.
 
 **Database errors:** Run `python manage.py migrate`, check connection settings
 

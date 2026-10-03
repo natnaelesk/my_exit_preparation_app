@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 import json
+import uuid
 
 
 class Question(models.Model):
@@ -177,3 +178,43 @@ class SubjectPriority(models.Model):
     
     def __str__(self):
         return f"{self.subject}: Priority {self.priority_order}, Round {self.round_number}, {'Completed' if self.is_completed else 'Active'}"
+
+
+def exam_import_upload_path(instance, filename):
+    return f"exam_imports/{instance.owner_id}/{uuid.uuid4().hex}.pdf"
+
+
+class ExamImport(models.Model):
+    """An uploaded exam PDF and the AI-extracted draft questions awaiting review."""
+    STATUS_PENDING = 'pending'          # uploaded, pages left to extract
+    STATUS_EXTRACTING = 'extracting'    # a worker is extracting pages
+    STATUS_READY = 'ready'              # all pages extracted, draft ready for review
+    STATUS_FAILED = 'failed'            # last batch failed; extraction can be retried
+    STATUS_PUBLISHED = 'published'      # draft saved as an Exam
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_EXTRACTING, 'Extracting'),
+        (STATUS_READY, 'Ready for review'),
+        (STATUS_FAILED, 'Failed'),
+        (STATUS_PUBLISHED, 'Published'),
+    ]
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='exam_imports')
+    pdf = models.FileField(upload_to=exam_import_upload_path, blank=True)
+    original_filename = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, blank=True)
+    page_count = models.IntegerField(default=0)
+    pages_processed = models.IntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    error = models.TextField(blank=True)
+    draft_questions = models.JSONField(default=list)
+    exam_id = models.CharField(max_length=255, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'examImports'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.original_filename} ({self.status}, {self.pages_processed}/{self.page_count})"

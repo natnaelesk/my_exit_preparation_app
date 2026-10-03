@@ -11,26 +11,8 @@ from .serializers import (
     QuestionSerializer, ExamSerializer, AttemptSerializer, 
     ExamSessionSerializer, DailyPlanSerializer, ThemePreferencesSerializer, SubjectPrioritySerializer
 )
+from .subjects import OFFICIAL_SUBJECTS
 from .utils import get_ethiopian_date_key
-
-# Official subjects list (from constants)
-OFFICIAL_SUBJECTS = [
-    'Computer Programming',
-    'Object Oriented Programming',
-    'Data Structures and Algorithms',
-    'Design and Analysis of Algorithms',
-    'Database Systems',
-    'Software Engineering',
-    'Web Programming',
-    'Operating System',
-    'Computer Organization and Architecture',
-    'Data Communication and Computer Networking',
-    'Computer Security',
-    'Network and System Administration',
-    'Introduction to Artificial Intelligence',
-    'Automata and Complexity Theory',
-    'Compiler Design'
-]
 
 
 class OwnedQuerysetMixin:

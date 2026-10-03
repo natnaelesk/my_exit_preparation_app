@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.permissions import AllowAny
 from rest_framework.routers import APIRootView, DefaultRouter
 from . import auth_views
+from .import_views import ExamImportViewSet
 from .views import (
     QuestionViewSet, ExamViewSet, AttemptViewSet, 
     ExamSessionViewSet, DailyPlanViewSet, ThemePreferencesView, AnalyticsViewSet, DebugViewSet,
@@ -18,6 +19,7 @@ router = DefaultRouter()
 router.APIRootView = PublicAPIRootView
 router.register(r'questions', QuestionViewSet, basename='question')
 router.register(r'exams', ExamViewSet, basename='exam')
+router.register(r'exam-imports', ExamImportViewSet, basename='exam-import')
 router.register(r'attempts', AttemptViewSet, basename='attempt')
 router.register(r'sessions', ExamSessionViewSet, basename='session')
 router.register(r'plans', DailyPlanViewSet, basename='plan')

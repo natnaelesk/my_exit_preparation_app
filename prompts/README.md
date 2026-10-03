@@ -27,6 +27,10 @@ Do **not** open feature PRs into `main`. Do **not** commit as Cursor Agent / bot
 - **One prompt = one PR.** Keep scope small enough to review in one sitting.
 - Copy `prompts/_TEMPLATE.md` when starting a new prompt.
 
+## Current prompts
+
+- `02-pdf-exam-import.md` — in-app PDF → multimodal AI → review → save Exam + Questions
+
 ## Authorship
 
 Commits and PRs must be attributed only as **Natnael Eskinder** (`natnaelesk`). Never commit, co-author, or push as Cursor Agent, `cursoragent`, or any bot identity.

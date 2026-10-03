@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Q, Count, Avg
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -134,6 +134,34 @@ class AttemptViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
             queryset = queryset.filter(question_id=question_id)
         
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        """Record an answer. Within an exam session, re-sending a question updates its attempt instead of
+        adding another one (pause and finish both submit the answers given so far)."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        session_id = serializer.validated_data.get('session_id') or None
+        if not session_id:
+            serializer.save(owner=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        values = {**serializer.validated_data, 'session_id': session_id}
+        lookup = {'owner': request.user, 'session_id': session_id, 'question_id': values['question_id']}
+        for _ in range(2):
+            existing = Attempt.objects.filter(**lookup).first()
+            if existing:
+                for field, value in values.items():
+                    setattr(existing, field, value)
+                existing.save()
+                return Response(self.get_serializer(existing).data, status=status.HTTP_200_OK)
+            try:
+                with transaction.atomic():
+                    attempt = serializer.save(owner=request.user, session_id=session_id)
+                return Response(self.get_serializer(attempt).data, status=status.HTTP_201_CREATED)
+            except IntegrityError:
+                # A concurrent request for the same session/question won the insert; update it instead.
+                continue
+        return Response({'error': 'Could not save the attempt; please retry.'}, status=status.HTTP_409_CONFLICT)
     
     @action(detail=False, methods=['get'])
     def answered_ids(self, request):
@@ -366,7 +394,7 @@ class SubjectPriorityViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
         except SubjectPriority.DoesNotExist:
             return Response({'error': 'Subject priority not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], url_path='round-two')
     def round_two(self, request):
         """Reset all completions and increment round number"""
         priorities = self.get_owned_queryset()

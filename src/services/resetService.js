@@ -43,29 +43,29 @@ export const getCollectionCounts = async () => {
 
     // Get counts from API endpoints
     try {
-      const questions = await get('/questions/');
-      counts.questions = Array.isArray(questions.results) ? questions.results.length : (Array.isArray(questions) ? questions.length : 0);
+      const questions = await get('/questions/', { page_size: 1 });
+      counts.questions = questions?.count ?? (Array.isArray(questions) ? questions.length : 0);
     } catch (e) {
       counts.questions = 0;
     }
 
     try {
-      const exams = await get('/exams/');
-      counts.exams = Array.isArray(exams.results) ? exams.results.length : (Array.isArray(exams) ? exams.length : 0);
+      const exams = await get('/exams/', { page_size: 1 });
+      counts.exams = exams?.count ?? (Array.isArray(exams) ? exams.length : 0);
     } catch (e) {
       counts.exams = 0;
     }
 
     try {
-      const attempts = await get('/attempts/');
-      counts.attempts = Array.isArray(attempts.results) ? attempts.results.length : (Array.isArray(attempts) ? attempts.length : 0);
+      const attempts = await get('/attempts/', { page_size: 1 });
+      counts.attempts = attempts?.count ?? (Array.isArray(attempts) ? attempts.length : 0);
     } catch (e) {
       counts.attempts = 0;
     }
 
     try {
-      const sessions = await get('/sessions/');
-      counts.examSessions = Array.isArray(sessions.results) ? sessions.results.length : (Array.isArray(sessions) ? sessions.length : 0);
+      const sessions = await get('/sessions/', { page_size: 1 });
+      counts.examSessions = sessions?.count ?? (Array.isArray(sessions) ? sessions.length : 0);
     } catch (e) {
       counts.examSessions = 0;
     }

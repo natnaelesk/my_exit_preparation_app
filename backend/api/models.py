@@ -52,6 +52,9 @@ class Attempt(models.Model):
     exam_id = models.CharField(max_length=255, blank=True, null=True, db_column='examId')
     mode = models.CharField(max_length=50, blank=True, null=True)
     plan_date_key = models.CharField(max_length=50, blank=True, null=True, db_column='planDateKey')
+    # The exam session the answer belongs to; pause and finish both save attempts, so
+    # an answer is stored once per session and question.
+    session_id = models.CharField(max_length=255, blank=True, null=True, db_column='sessionId')
     timestamp = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -62,6 +65,13 @@ class Attempt(models.Model):
             models.Index(fields=['subject']),
             models.Index(fields=['subject', 'topic']),
             models.Index(fields=['plan_date_key']),
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['owner', 'session_id', 'question_id'],
+                condition=models.Q(session_id__isnull=False),
+                name='unique_attempt_per_session_question',
+            ),
         ]
     
     def __str__(self):

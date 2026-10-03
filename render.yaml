@@ -4,7 +4,8 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && gunicorn exam_app.wsgi:application --bind 0.0.0.0:$PORT
+    # Render's free plan has no pre-deploy hook, so migrations run on every start (no-op when up to date).
+    startCommand: cd backend && python manage.py migrate --noinput && gunicorn exam_app.wsgi:application --bind 0.0.0.0:$PORT --timeout 120
     healthCheckPath: /api/
     envVars:
       - key: PYTHON_VERSION
@@ -19,4 +20,9 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
-
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_BASE_URL
+        value: https://api.x.ai/v1
+      - key: AI_MODEL
+        sync: false

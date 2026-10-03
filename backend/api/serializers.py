@@ -1,9 +1,19 @@
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
-from .models import Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, SubjectPriority
+from .models import (
+    Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, SubjectPriority, ExamImport,
+    StudyDoc, StudySession, StudyMessage,
+)
+from .study_docs import relevant_docs
 
 
 class QuestionSerializer(serializers.ModelSerializer):
-    questionId = serializers.CharField(source='question_id', required=False, allow_blank=True, allow_null=True)
+    # Question ids are a global primary key shared by all users, so they are
+    # always generated server-side; client-supplied ids are ignored.
+    questionId = serializers.CharField(source='question_id', read_only=True)
     correctAnswer = serializers.CharField(source='correct_answer')
     
     class Meta:
@@ -17,12 +27,8 @@ class QuestionSerializer(serializers.ModelSerializer):
         return data
     
     def create(self, validated_data):
-        # Handle questionId - use provided or generate
-        question_id = validated_data.pop('question_id', None)
-        if not question_id:
-            import uuid
-            question_id = f"q_{uuid.uuid4().hex[:16]}"
-        validated_data['question_id'] = question_id
+        import uuid
+        validated_data['question_id'] = f"q_{uuid.uuid4().hex[:16]}"
         return super().create(validated_data)
 
 
@@ -44,11 +50,12 @@ class AttemptSerializer(serializers.ModelSerializer):
     timeSpent = serializers.IntegerField(source='time_spent')
     examId = serializers.CharField(source='exam_id', required=False, allow_blank=True, allow_null=True)
     planDateKey = serializers.CharField(source='plan_date_key', required=False, allow_blank=True, allow_null=True)
+    sessionId = serializers.CharField(source='session_id', required=False, allow_null=True, max_length=255)
     
     class Meta:
         model = Attempt
         fields = ['attemptId', 'questionId', 'selectedAnswer', 'isCorrect', 'timeSpent', 
-                  'subject', 'topic', 'examId', 'mode', 'planDateKey', 'timestamp']
+                  'subject', 'topic', 'examId', 'mode', 'planDateKey', 'sessionId', 'timestamp']
         read_only_fields = ['attemptId', 'timestamp']
     
     def create(self, validated_data):
@@ -117,7 +124,44 @@ class ThemePreferencesSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ThemePreferences
-        fields = ['id', 'favoriteLightTheme', 'favoriteDarkTheme', 'autoMode']
+        fields = ['favoriteLightTheme', 'favoriteDarkTheme', 'autoMode']
+
+
+class SignupSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+    email = serializers.EmailField(required=False, allow_blank=True)
+
+    def validate_username(self, value):
+        value = value.strip()
+        try:
+            get_user_model().username_validator(value)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages))
+        if get_user_model().objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError('That username is already taken.')
+        return value
+
+    def validate(self, attrs):
+        user = get_user_model()(username=attrs['username'], email=attrs.get('email', ''))
+        try:
+            validate_password(attrs['password'], user=user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({'password': list(exc.messages)})
+        return attrs
+
+    def create(self, validated_data):
+        return get_user_model().objects.create_user(
+            username=validated_data['username'],
+            email=validated_data.get('email', ''),
+            password=validated_data['password'],
+        )
+
+
+class UserSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    email = serializers.EmailField(read_only=True)
 
 
 class SubjectPrioritySerializer(serializers.ModelSerializer):
@@ -131,3 +175,76 @@ class SubjectPrioritySerializer(serializers.ModelSerializer):
         model = SubjectPriority
         fields = ['subject', 'priorityOrder', 'isCompleted', 'roundNumber', 'createdAt', 'lastUpdated']
 
+
+
+class ExamImportSerializer(serializers.ModelSerializer):
+    originalFilename = serializers.CharField(source='original_filename', read_only=True)
+    pageCount = serializers.IntegerField(source='page_count', read_only=True)
+    pagesProcessed = serializers.IntegerField(source='pages_processed', read_only=True)
+    pagesPerBatch = serializers.SerializerMethodField()
+    questions = serializers.JSONField(source='draft_questions', read_only=True)
+    examId = serializers.CharField(source='exam_id', read_only=True)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    updatedAt = serializers.DateTimeField(source='updated_at', read_only=True)
+
+    class Meta:
+        model = ExamImport
+        fields = ['id', 'originalFilename', 'title', 'status', 'error', 'pageCount', 'pagesProcessed',
+                  'pagesPerBatch', 'questions', 'examId', 'createdAt', 'updatedAt']
+        read_only_fields = fields
+
+    def get_pagesPerBatch(self, obj):
+        return max(1, settings.EXAM_IMPORT_PAGES_PER_BATCH)
+
+
+class StudyDocSerializer(serializers.ModelSerializer):
+    originalFilename = serializers.CharField(source='original_filename', read_only=True)
+    keyPoints = serializers.JSONField(source='key_points', read_only=True)
+    pageCount = serializers.IntegerField(source='page_count', read_only=True)
+    fileAvailable = serializers.SerializerMethodField()
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    updatedAt = serializers.DateTimeField(source='updated_at', read_only=True)
+
+    class Meta:
+        model = StudyDoc
+        fields = ['id', 'originalFilename', 'title', 'description', 'subject', 'topics', 'keyPoints',
+                  'pageCount', 'status', 'error', 'fileAvailable', 'createdAt', 'updatedAt']
+        read_only_fields = fields
+
+    def get_fileAvailable(self, obj):
+        return bool(obj.file) and obj.file.storage.exists(obj.file.name)
+
+
+class StudyMessageSerializer(serializers.ModelSerializer):
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+
+    class Meta:
+        model = StudyMessage
+        fields = ['id', 'role', 'content', 'createdAt']
+        read_only_fields = fields
+
+
+class StudySessionSerializer(serializers.ModelSerializer):
+    planDateKey = serializers.CharField(source='plan_date_key', read_only=True)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    updatedAt = serializers.DateTimeField(source='updated_at', read_only=True)
+
+    class Meta:
+        model = StudySession
+        fields = ['id', 'title', 'subject', 'topics', 'planDateKey', 'status', 'error', 'createdAt', 'updatedAt']
+        read_only_fields = fields
+
+
+class StudySessionDetailSerializer(StudySessionSerializer):
+    messages = StudyMessageSerializer(many=True, read_only=True)
+    materials = serializers.SerializerMethodField()
+
+    class Meta(StudySessionSerializer.Meta):
+        fields = StudySessionSerializer.Meta.fields + ['messages', 'materials']
+        read_only_fields = fields
+
+    def get_materials(self, obj):
+        return [
+            {'id': doc.id, 'title': doc.title or doc.original_filename}
+            for doc in relevant_docs(obj.owner, obj.subject, obj.topics)
+        ]

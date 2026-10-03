@@ -1,4 +1,5 @@
 import { SparklesIcon } from '@heroicons/react/24/outline';
+import { getStatusBand } from '../../utils/statusHelpers';
 
 const ExamAnalytics = ({ subjectStats, totalQuestions, correctCount, wrongCount, score }) => {
   const subjects = Object.values(subjectStats);
@@ -12,12 +13,12 @@ const ExamAnalytics = ({ subjectStats, totalQuestions, correctCount, wrongCount,
   }
 
   // Separate into strong, medium, and weak
-  const strongSubjects = subjects.filter(s => s.status === 'STRONG');
-  const mediumSubjects = subjects.filter(s => s.status === 'MEDIUM');
-  const weakSubjects = subjects.filter(s => s.status === 'WEAK');
+  const strongSubjects = subjects.filter(s => getStatusBand(s.status) === 'STRONG');
+  const mediumSubjects = subjects.filter(s => getStatusBand(s.status) === 'MEDIUM');
+  const weakSubjects = subjects.filter(s => getStatusBand(s.status) === 'WEAK');
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (getStatusBand(status)) {
       case 'STRONG':
         return 'text-green-500 bg-green-500/10 border-green-500/50';
       case 'MEDIUM':

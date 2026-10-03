@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import QuestionCard from './QuestionCard';
 import ExamProgress from './ExamProgress';
-import GrokAssistant from './GrokAssistant';
+import StudyTutorModal from '../Study/StudyTutorModal';
 import LoadingAnimation from '../Common/LoadingAnimation';
 
 const ExamInterface = () => {
@@ -28,7 +28,7 @@ const ExamInterface = () => {
 
   const [showConfirmFinish, setShowConfirmFinish] = useState(false);
   const [showConfirmPause, setShowConfirmPause] = useState(false);
-  const [showGrokAssistant, setShowGrokAssistant] = useState(false);
+  const [showTutor, setShowTutor] = useState(false);
   // Timer removed: exams are untimed (no countdown UI, no auto-advance).
 
   if (isLoading) {
@@ -59,8 +59,8 @@ const ExamInterface = () => {
     selectAnswer(answer);
   };
 
-  // Handle Grok AI button click - marks question as wrong and opens AI assistant
-  const handleGrokClick = () => {
+  // Handle AI tutor button click - marks question as wrong and opens the study tutor
+  const handleTutorClick = () => {
     if (!currentQuestion) return;
     if (!lockedAnswers[currentQuestion.questionId]) return;
     
@@ -75,14 +75,7 @@ const ExamInterface = () => {
       selectAnswer(incorrectAnswer);
     }
     
-    // Open Grok assistant
-    setShowGrokAssistant(true);
-  };
-
-  const handleMarkAsWrong = () => {
-    // This is called when Grok modal closes
-    // The question is already marked as wrong when the button is clicked
-    // This is just a callback for any additional logic if needed
+    setShowTutor(true);
   };
 
   const handleNext = () => {
@@ -181,7 +174,7 @@ const ExamInterface = () => {
           isLocked={isLocked}
           onAnswerSelect={handleAnswerSelect}
           onShowAnswer={() => lockCurrentQuestion()}
-          onGrokClick={handleGrokClick}
+          onTutorClick={handleTutorClick}
         />
       </div>
 
@@ -254,12 +247,10 @@ const ExamInterface = () => {
         </div>
       )}
 
-      {/* Grok AI Assistant Modal */}
-      <GrokAssistant
+      <StudyTutorModal
         question={currentQuestion}
-        isOpen={showGrokAssistant}
-        onClose={() => setShowGrokAssistant(false)}
-        onMarkAsWrong={handleMarkAsWrong}
+        isOpen={showTutor}
+        onClose={() => setShowTutor(false)}
       />
     </div>
   );

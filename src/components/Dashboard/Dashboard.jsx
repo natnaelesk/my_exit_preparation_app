@@ -23,12 +23,15 @@ import {
   TrophyIcon,
   ArrowTrendingUpIcon,
   SparklesIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  CalendarDaysIcon
 } from '@heroicons/react/24/outline';
+import { getStatusBand } from '../../utils/statusHelpers';
 
 const Dashboard = () => {
   const [subjectStats, setSubjectStats] = useState({});
   const [recentExams, setRecentExams] = useState([]);
+  const [examCount, setExamCount] = useState(0);
   const [overallTrend, setOverallTrend] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
@@ -53,6 +56,7 @@ const Dashboard = () => {
       
       setSubjectStats(stats);
       setOverallTrend(trend);
+      setExamCount(exams.length);
       
       // Load progress for recent exams
       const examsWithProgress = await Promise.all(
@@ -128,8 +132,8 @@ const Dashboard = () => {
     : 0;
 
   const subjectsWithData = Object.values(subjectStats).filter(s => s && s.totalAttempted > 0);
-  const strongCount = subjectsWithData.filter(s => s.status === 'STRONG').length;
-  const weakCount = subjectsWithData.filter(s => s.status === 'WEAK').length;
+  const strongCount = subjectsWithData.filter(s => getStatusBand(s.status) === 'STRONG').length;
+  const weakCount = subjectsWithData.filter(s => getStatusBand(s.status) === 'WEAK').length;
 
   // Prepare 7-day trend data starting from first usage date with dynamic projection
   const prepareTrendData = () => {
@@ -416,6 +420,30 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {examCount === 0 && overallStats.totalAttempted === 0 && (
+          <div className="card border-2 border-primary-500/40 bg-gradient-to-br from-primary-500/10 via-card to-card">
+            <h2 className="text-xl font-bold text-text mb-1">Welcome! Three steps to get started</h2>
+            <p className="text-sm text-muted mb-4">Your account starts empty. Everything you add is private to you.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <button onClick={() => navigate('/exams/create')} className="text-left p-4 rounded-xl bg-surface border border-border hover:border-primary-500/60 transition-colors">
+                <BookOpenIcon className="w-6 h-6 text-primary-500 mb-2" />
+                <p className="font-semibold text-text">1. Add an exam</p>
+                <p className="text-xs text-muted mt-1">Upload a PDF or photos of a past exam and the AI reads the questions, or import a JSON file.</p>
+              </button>
+              <button onClick={() => navigate('/study')} className="text-left p-4 rounded-xl bg-surface border border-border hover:border-primary-500/60 transition-colors">
+                <AcademicCapIcon className="w-6 h-6 text-primary-500 mb-2" />
+                <p className="font-semibold text-text">2. Upload study notes</p>
+                <p className="text-xs text-muted mt-1">Add lecture notes or handouts as PDFs so the AI tutor can teach from them.</p>
+              </button>
+              <button onClick={() => navigate('/plan')} className="text-left p-4 rounded-xl bg-surface border border-border hover:border-primary-500/60 transition-colors">
+                <CalendarDaysIcon className="w-6 h-6 text-primary-500 mb-2" />
+                <p className="font-semibold text-text">3. Follow today&apos;s plan</p>
+                <p className="text-xs text-muted mt-1">Practice the day&apos;s questions, then press &ldquo;Study these topics&rdquo; to learn them with the tutor.</p>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

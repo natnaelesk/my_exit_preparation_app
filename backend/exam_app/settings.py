@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
     'api',
 ]
@@ -115,15 +116,46 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # WhiteNoise for serving static files on Render
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# Uploaded files (exam PDFs). Never served by URL; only read server-side.
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
+
+# AI provider: any OpenAI-compatible chat-completions API with image input (xAI Grok, Cursor, OpenAI...).
+# Server-side only; never expose these to the frontend.
+AI_API_KEY = os.environ.get('AI_API_KEY', '')
+AI_BASE_URL = os.environ.get('AI_BASE_URL', 'https://api.x.ai/v1').rstrip('/')
+AI_MODEL = os.environ.get('AI_MODEL', '')
+AI_TIMEOUT_SECONDS = int(os.environ.get('AI_TIMEOUT_SECONDS', '180'))
+AI_MAX_TOKENS = int(os.environ.get('AI_MAX_TOKENS', '8192'))
+
+# PDF exam import
+EXAM_IMPORT_MAX_UPLOAD_MB = int(os.environ.get('EXAM_IMPORT_MAX_UPLOAD_MB', '25'))
+EXAM_IMPORT_MAX_PAGES = int(os.environ.get('EXAM_IMPORT_MAX_PAGES', '60'))
+EXAM_IMPORT_PAGES_PER_BATCH = int(os.environ.get('EXAM_IMPORT_PAGES_PER_BATCH', '3'))
+
+# Study materials (PDFs used as Study chat context)
+STUDY_DOC_MAX_UPLOAD_MB = int(os.environ.get('STUDY_DOC_MAX_UPLOAD_MB', '25'))
+STUDY_DOC_MAX_PAGES = int(os.environ.get('STUDY_DOC_MAX_PAGES', '400'))
+# Run AI jobs (PDF extraction, study-doc descriptions, tutor replies) inside the request
+# instead of a background thread (used by tests).
+AI_JOBS_RUN_INLINE = os.environ.get('AI_JOBS_RUN_INLINE', 'False') == 'True'
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework configuration
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+    # Token auth only: the SPA is served from a different origin than the API,
+    # so it sends "Authorization: Token <key>" instead of relying on cookies/CSRF.
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'auth': '20/minute',
+    },
+    'DEFAULT_PAGINATION_CLASS': 'api.pagination.StandardPagination',
     'PAGE_SIZE': 100,
 }
 

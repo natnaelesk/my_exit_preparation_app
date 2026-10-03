@@ -4,6 +4,7 @@ import { useExam } from '../../contexts/ExamContext';
 import { calculateTopicStats } from '../../services/analyticsService';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import PerformanceChart from './PerformanceChart';
+import { getStatusBand } from '../../utils/statusHelpers';
 
 const SubjectAnalysis = ({ subject, stats, onBack, onImproveTopic }) => {
   const [topicStats, setTopicStats] = useState({});
@@ -45,7 +46,7 @@ const SubjectAnalysis = ({ subject, stats, onBack, onImproveTopic }) => {
   });
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (getStatusBand(status)) {
       case 'STRONG':
         return 'text-green-500 bg-green-500/10';
       case 'MEDIUM':

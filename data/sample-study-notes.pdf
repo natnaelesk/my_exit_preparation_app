@@ -1,0 +1,32 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1128 >>
+stream
+BT /F1 12 Tf 50 750 Td 14 TL (Database Systems - Normalization Notes) ' () ' (Why normalize? To remove redundancy and the update, insert and delete anomalies.) ' (Functional dependency X -> Y: rows that agree on X must agree on Y.) ' (Candidate key: a minimal set of attributes that determines every attribute.) ' () ' (1NF: every attribute holds a single atomic value; no repeating groups.) ' (2NF: 1NF and no partial dependency of a non-key attribute on part of a composite key.) ' (3NF: 2NF and no transitive dependency \(non-key -> non-key\).) ' (BCNF: for every non-trivial dependency X -> Y, X is a superkey.) ' () ' (Exam trap: a table with a single-attribute key is automatically in 2NF.) ' (Exam trap: BCNF is stricter than 3NF; every BCNF table is in 3NF, not the reverse.) ' (Decomposition should be lossless-join and, ideally, dependency-preserving.) ' () ' (Transactions \(ACID\): Atomicity, Consistency, Isolation, Durability.) ' (Serializability: a concurrent schedule equivalent to some serial schedule.) ' (Two-phase locking \(2PL\): a growing phase, then a shrinking phase; it guarantees serializability.) ' ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001421 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1491
+%%EOF

@@ -15,7 +15,6 @@ pip install -r requirements.txt
 
 3. Run migrations:
 ```bash
-python manage.py makemigrations
 python manage.py migrate
 ```
 
@@ -31,21 +30,6 @@ python manage.py runserver
 
 The API will be available at `http://localhost:8000/api/`
 
-## Data Migration from Firebase
-
-To migrate existing Firebase data:
-
-1. Export your Firebase service account key JSON file
-2. Set the environment variable:
-```bash
-export FIREBASE_CREDENTIALS_PATH=/path/to/your/service-account-key.json
-```
-
-3. Run the migration script:
-```bash
-python scripts/migrate_firebase_to_django.py
-```
-
 ## API Endpoints
 
 - `/api/questions/` - Question management
@@ -55,6 +39,11 @@ python scripts/migrate_firebase_to_django.py
 - `/api/plans/` - Daily plan management
 - `/api/settings/theme/` - Theme preferences
 - `/api/analytics/` - Analytics endpoints
+- `/api/auth/` - Signup, login, logout, current user (token auth)
+- `/api/exam-imports/` - PDF exam import
+- `/api/study-docs/`, `/api/study-sessions/` - Study materials and Study chat
+
+Run the tests with `python manage.py test api`. Deployment: see `../docs/DEPLOY.md`.
 
 ## Admin Interface
 

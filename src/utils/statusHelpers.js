@@ -117,10 +117,16 @@ export const getStatusLabel = (status) => {
   }
 };
 
+const STRONG_STATUSES = ['EXCELLENT', 'VERY_GOOD', 'GOOD', 'STRONG'];
+const MEDIUM_STATUSES = ['MODERATE', 'MEDIUM'];
+const WEAK_STATUSES = ['NEED_IMPROVEMENT', 'NEED_IMPROVEMENT_VERY_MUCH', 'DEAD_ZONE', 'WEAK'];
 
-
-
-
-
-
-
+/**
+ * Collapse the 7-level status into 'STRONG' (>= 70%), 'MEDIUM' (60-69%) or 'WEAK' (< 60%); null if no data.
+ */
+export const getStatusBand = (status) => {
+  if (STRONG_STATUSES.includes(status)) return 'STRONG';
+  if (MEDIUM_STATUSES.includes(status)) return 'MEDIUM';
+  if (WEAK_STATUSES.includes(status)) return 'WEAK';
+  return null;
+};

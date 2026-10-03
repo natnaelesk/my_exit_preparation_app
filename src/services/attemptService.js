@@ -1,11 +1,11 @@
-import { get, post } from './apiClient';
+import { get, getAll, post } from './apiClient';
 
 /**
  * Save an attempt (answer to a question)
  * 
- * IMPORTANT: This always creates a new document.
- * Attempts are NEVER updated or deleted - this ensures analysis data
- * is preserved even when exams are restarted.
+ * Outside an exam session this always creates a new attempt, so analysis data is preserved
+ * even when exams are restarted. With a `sessionId`, the server keeps one attempt per
+ * session and question (pause and finish both submit the answers given so far).
  */
 export const saveAttempt = async (attemptData) => {
   try {
@@ -22,8 +22,7 @@ export const saveAttempt = async (attemptData) => {
  */
 export const getAllAttempts = async () => {
   try {
-    const response = await get('/attempts/');
-    return response.results || response; // Handle pagination if present
+    return await getAll('/attempts/');
   } catch (error) {
     console.error('Error fetching all attempts:', error);
     throw error;
@@ -35,8 +34,7 @@ export const getAllAttempts = async () => {
  */
 export const getAttemptsBySubject = async (subject) => {
   try {
-    const response = await get('/attempts/', { subject });
-    return response.results || response;
+    return await getAll('/attempts/', { subject });
   } catch (error) {
     console.error('Error fetching attempts by subject:', error);
     throw error;
@@ -48,8 +46,7 @@ export const getAttemptsBySubject = async (subject) => {
  */
 export const getAttemptsByTopic = async (subject, topic) => {
   try {
-    const response = await get('/attempts/', { subject, topic });
-    return response.results || response;
+    return await getAll('/attempts/', { subject, topic });
   } catch (error) {
     console.error('Error fetching attempts by topic:', error);
     throw error;
@@ -74,8 +71,7 @@ export const getAnsweredQuestionIds = async () => {
  */
 export const getAttemptsByQuestionId = async (questionId) => {
   try {
-    const response = await get('/attempts/', { questionId });
-    return response.results || response;
+    return await getAll('/attempts/', { questionId });
   } catch (error) {
     console.error('Error fetching attempts by question ID:', error);
     throw error;

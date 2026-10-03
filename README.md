@@ -19,11 +19,12 @@
 
 ## 🎯 Overview
 
-A sophisticated exam preparation platform for Ethiopian Computer Science BSc students. Features intelligent exam modes, AI-powered assistance, comprehensive analytics, and smart practice features.
+A private exam preparation app for Ethiopian Computer Science BSc students. Each person has their own account, question bank, study materials and progress.
 
 **Key Highlights:**
 - 🎯 Three Intelligent Exam Modes (Random, Topic-Focused, Weak-Area)
-- 🤖 AI-Powered Learning Assistant (OpenAI/Grok integration)
+- 📄 Create exams from a PDF or photos of a past paper (AI reads the questions; you review before saving)
+- 🤖 AI Study tutor that teaches plan topics in 4 chunks, using your own uploaded notes
 - 📊 Comprehensive Analytics & Performance Tracking
 - 📅 Smart Daily Plans & Auto-Save
 - 🎨 Modern UI/UX with Dark Mode
@@ -42,9 +43,9 @@ A sophisticated exam preparation platform for Ethiopian Computer Science BSc stu
 
 ![Question Bank](readme-images/questions.png)
 
-### 🤖 AI Assistant
+### 🤖 AI Study tutor
 
-Click the ✨ button during exams to get instant explanations, understand answers, and chat with AI. All interactions are temporary and private.
+Upload your notes under **Study**; the server gives each PDF a short AI description. From the daily plan, **Study these topics** opens a saved chat that teaches the day's topics in 4 chunks (Memory Lock, Exam Traps, Likely Questions) and waits for you to say "continue". The ✨ button on an exam question opens the same tutor for that question's topic. All AI calls run on the Django server; no keys are in the browser.
 
 ### 📊 Analytics & Performance
 
@@ -102,7 +103,7 @@ Create and manage personalized daily study plans to track your progress.
 
 **Backend:** Django 4.2.7 • Django REST Framework • PostgreSQL/SQLite
 
-**AI:** OpenAI API / Grok/xAI API
+**AI:** any OpenAI-compatible chat API with image input (e.g. xAI Grok), called from Django only
 
 **Deployment:** Vercel (Frontend) • Render/Railway (Backend)
 
@@ -156,11 +157,6 @@ npm run dev
 **Frontend (.env)**
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api
-
-# AI Assistant (Optional - OpenAI recommended)
-VITE_GROK_API_KEY=sk-your-openai-api-key
-VITE_GROK_API_URL=https://api.openai.com/v1/chat/completions
-VITE_GROK_MODEL=gpt-3.5-turbo
 ```
 
 **Backend**
@@ -169,15 +165,20 @@ SECRET_KEY=your-secret-key
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 DATABASE_URL=postgresql://user:password@localhost:5432/exitexam
+
+# AI (PDF exam import, study-doc descriptions, Study chat). Any OpenAI-compatible API.
+AI_API_KEY=your-key
+AI_MODEL=your-vision-capable-model
+AI_BASE_URL=https://api.x.ai/v1
 ```
 
-> **Note:** AI assistant is optional. Without API key, the AI button will show an error when clicked.
+> **Note:** AI keys live only on the backend; never put them in `VITE_` variables. Without `AI_API_KEY` / `AI_MODEL`, the app still works and AI features show a "not configured" message.
 
 ---
 
 ## 📖 Usage
 
-**Starting an Exam:** Choose mode from Dashboard → Answer questions → Use ✨ AI Assistant for help → Submit to see results
+**Starting an Exam:** Choose mode from Dashboard → Answer questions → Use ✨ Study tutor for help → Submit to see results
 
 **Analytics:** View subject/topic performance → Click "Improve This Area" to practice weak subjects
 
@@ -187,22 +188,9 @@ DATABASE_URL=postgresql://user:password@localhost:5432/exitexam
 
 ## 🚢 Deployment
 
-### Frontend (Vercel)
-1. Push to GitHub
-2. Import to Vercel
-3. Add `VITE_API_BASE_URL` environment variable
-4. Deploy!
+Backend on Render (`render.yaml`), database on Supabase Postgres, frontend on Vercel.
 
-### Backend (Render/Railway)
-1. Connect GitHub repository
-2. Set build: `cd backend && pip install -r requirements.txt`
-3. Set start: `cd backend && gunicorn exam_app.wsgi:application`
-4. Add environment variables
-5. Deploy!
-
-**Production Checklist:** Set `DEBUG=False`, configure `ALLOWED_HOSTS`, use PostgreSQL, set up CORS, configure SSL/HTTPS.
-
-See `RENDER_DEPLOYMENT.md` for detailed instructions.
+See **[docs/DEPLOY.md](docs/DEPLOY.md)** for the step-by-step deploy checklist (env vars, migrations, storage limits) and the smoke test to run before handing the app over.
 
 ---
 
@@ -226,24 +214,13 @@ See `RENDER_DEPLOYMENT.md` for detailed instructions.
 
 ---
 
-## 🔄 Migration
-
-**Migrating from Firebase:**
-1. Export Firebase service account key
-2. Set `FIREBASE_CREDENTIALS_PATH` environment variable
-3. Run: `python scripts/migrate_firebase_to_django.py`
-
-See `MIGRATION_GUIDE.md` for details.
-
----
-
 ## 🐛 Troubleshooting
 
 **Frontend won't start:** `rm -rf node_modules package-lock.json && npm install`
 
 **Backend connection errors:** Check Django server on port 8000, verify `VITE_API_BASE_URL` in `.env`, check CORS settings
 
-**AI Assistant not working:** Verify API key, check browser console, ensure API credits/quota
+**AI features say "not configured":** set `AI_API_KEY` and `AI_MODEL` on the backend (Render), then redeploy. Other AI errors: check the provider key, model name and quota.
 
 **Database errors:** Run `python manage.py migrate`, check connection settings
 
@@ -251,13 +228,19 @@ See `MIGRATION_GUIDE.md` for details.
 
 ## 📚 API Endpoints
 
+All endpoints except `/api/` and signup/login require `Authorization: Token <key>` and only return the caller's data.
+
 ```
-GET  /api/questions/          - List questions
+POST /api/auth/signup/ | /api/auth/login/ | /api/auth/logout/   GET /api/auth/me/
+GET  /api/questions/          - List questions (paginated; ?page_size= up to 1000)
 GET  /api/exams/              - List exams
 POST /api/exams/              - Create exam
+POST /api/exam-imports/       - Upload an exam PDF, then /extract/ and /publish/
 GET  /api/attempts/           - List attempts
 GET  /api/analytics/subjects/ - Subject analytics
 GET  /api/analytics/topics/   - Topic analytics
+GET  /api/study-docs/         - Study materials (upload, /describe/, /file/)
+POST /api/study-sessions/     - Open a Study chat for {planDateKey} or {subject, topic}; /messages/, /retry/
 ```
 
 ---

@@ -1,10 +1,11 @@
 import { BookOpenIcon } from '@heroicons/react/24/outline';
+import { getStatusBand } from '../../utils/statusHelpers';
 
 const SubjectCard = ({ stats, onClick }) => {
   const { subject, accuracy, totalAttempted, status } = stats;
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (getStatusBand(status)) {
       case 'STRONG':
         return { 
           text: 'text-green-500', 

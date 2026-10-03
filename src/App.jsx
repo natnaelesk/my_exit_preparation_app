@@ -1,6 +1,10 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ExamProvider } from './contexts/ExamContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import AuthPage from './components/Auth/AuthPage';
+import RequireAuth from './components/Auth/RequireAuth';
+import ServerStatusBanner from './components/Common/ServerStatusBanner';
 import Sidebar from './components/Navigation/Sidebar';
 import BottomNav from './components/Navigation/BottomNav';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -15,6 +19,8 @@ import PlanPage from './components/Plan/PlanPage';
 import ChecklistPage from './components/Plan/ChecklistPage';
 import ResetData from './components/Admin/ResetData';
 import QuestionBank from './components/Bank/QuestionBank';
+import StudyPage from './components/Study/StudyPage';
+import StudySessionPage from './components/Study/StudySessionPage';
 
 function AppContent() {
   const location = useLocation();
@@ -39,6 +45,8 @@ function AppContent() {
           <Route path="/analytics" element={<AnalyticsDashboard />} />
           <Route path="/plan" element={<PlanPage />} />
           <Route path="/plan-manager" element={<ChecklistPage />} />
+          <Route path="/study" element={<StudyPage />} />
+          <Route path="/study/sessions/:sessionId" element={<StudySessionPage />} />
           <Route path="/bank" element={<QuestionBank />} />
           <Route path="/admin/reset" element={<ResetData />} />
                   <Route path="/topic-focused" element={<TopicFocusedMode />} />
@@ -59,20 +67,43 @@ function AppContent() {
   );
 }
 
+function AuthenticatedApp() {
+  const { user } = useAuth();
+
+  // Keyed by user so in-memory exam state never carries over between accounts.
+  return (
+    <ExamProvider key={user.id}>
+      <AppContent />
+    </ExamProvider>
+  );
+}
+
 function App() {
   return (
-    <ThemeProvider>
-      <ExamProvider>
+    <AuthProvider>
+      <ThemeProvider>
         <Router
           future={{
             v7_startTransition: true,
             v7_relativeSplatPath: true
           }}
         >
-          <AppContent />
+          <ServerStatusBanner />
+          <Routes>
+            <Route path="/login" element={<AuthPage mode="login" />} />
+            <Route path="/signup" element={<AuthPage mode="signup" />} />
+            <Route
+              path="/*"
+              element={
+                <RequireAuth>
+                  <AuthenticatedApp />
+                </RequireAuth>
+              }
+            />
+          </Routes>
         </Router>
-      </ExamProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

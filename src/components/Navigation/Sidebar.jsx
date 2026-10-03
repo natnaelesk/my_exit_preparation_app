@@ -1,15 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from '../Theme/ThemeToggle';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   HomeIcon, 
   BookOpenIcon, 
   ChartBarIcon, 
   CalendarDaysIcon,
-  RectangleStackIcon
+  RectangleStackIcon,
+  AcademicCapIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   const isActive = (path) => {
     if (path === '/') {
@@ -23,6 +27,7 @@ const Sidebar = () => {
     { path: '/exams', icon: BookOpenIcon, label: 'Exams' },
     { path: '/bank', icon: RectangleStackIcon, label: 'Question Bank' },
     { path: '/plan', icon: CalendarDaysIcon, label: 'Plan' },
+    { path: '/study', icon: AcademicCapIcon, label: 'Study' },
     { path: '/analytics', icon: ChartBarIcon, label: 'Analytics' },
   ];
 
@@ -67,6 +72,13 @@ const Sidebar = () => {
           <ThemeToggle />
           <span className="text-sm text-muted">Theme</span>
         </div>
+        <button
+          onClick={logout}
+          className="w-full flex items-center gap-3 px-3 py-2 mt-1 rounded-lg text-muted hover:text-text hover:bg-surface transition-colors"
+        >
+          <ArrowRightOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm font-medium truncate">Log out{user ? ` (${user.username})` : ''}</span>
+        </button>
       </div>
     </aside>
   );

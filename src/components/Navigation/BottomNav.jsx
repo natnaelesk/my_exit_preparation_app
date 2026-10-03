@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import ThemeToggle from '../Theme/ThemeToggle';
-import { HomeIcon, BookOpenIcon, ChartBarIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../../contexts/AuthContext';
+import { HomeIcon, BookOpenIcon, ChartBarIcon, CalendarDaysIcon, AcademicCapIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import './NavBar.css';
 
 const BottomNav = () => {
   const location = useLocation();
+  const { logout } = useAuth();
 
   const isActive = (path) => {
     if (path === '/') {
@@ -17,6 +19,7 @@ const BottomNav = () => {
     { path: '/', icon: HomeIcon, label: 'Home', exact: true },
     { path: '/exams', icon: BookOpenIcon, label: 'Exams' },
     { path: '/plan', icon: CalendarDaysIcon, label: 'Plan' },
+    { path: '/study', icon: AcademicCapIcon, label: 'Study' },
     { path: '/analytics', icon: ChartBarIcon, label: 'Analysis' },
   ];
 
@@ -51,6 +54,13 @@ const BottomNav = () => {
           <ThemeToggle />
           <span className="text-[10px] font-medium text-muted mt-0.5">Theme</span>
         </div>
+        <button
+          onClick={logout}
+          className="flex flex-col items-center justify-center flex-1 h-full text-muted"
+        >
+          <ArrowRightOnRectangleIcon className="w-6 h-6 mb-0.5" />
+          <span className="text-[10px] font-medium">Log out</span>
+        </button>
       </div>
     </nav>
   );

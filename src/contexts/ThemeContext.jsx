@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { VS_CODE_THEMES, getThemeById, getDefaultThemeForMode } from '../utils/vscodeThemes';
 import { getThemePreferences, saveThemePreferences } from '../services/themeService';
+import { useAuth } from './AuthContext';
 
 const ThemeContext = createContext();
 
@@ -45,6 +46,8 @@ const getInitialThemeId = (mode) => {
 };
 
 export const ThemeProvider = ({ children }) => {
+  const { user } = useAuth();
+  const userId = user?.id;
   const initialMode = getInitialMode();
   const initialThemeId = getInitialThemeId(initialMode);
   
@@ -85,8 +88,13 @@ export const ThemeProvider = ({ children }) => {
     }
   }, []);
 
-  // Load theme preferences from API on mount
+  // Load the logged-in user's theme preferences from the API
   useEffect(() => {
+    if (!userId) {
+      setLoadingPreferences(false);
+      return;
+    }
+
     const loadPreferences = async () => {
       try {
         const preferences = await getThemePreferences();
@@ -116,7 +124,7 @@ export const ThemeProvider = ({ children }) => {
     };
     
     loadPreferences();
-  }, []);
+  }, [userId]);
 
   // Initialize theme on mount (after preferences load)
   useEffect(() => {

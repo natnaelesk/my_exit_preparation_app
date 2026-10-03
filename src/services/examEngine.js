@@ -1,4 +1,4 @@
-import { get, post, patch, del } from './apiClient';
+import { get, getAll, post, patch, del } from './apiClient';
 import { getAllQuestions, getQuestionsBySubject, getQuestionsByTopic, getQuestionsByIds } from './questionService';
 import { getAnsweredQuestionIds } from './attemptService';
 import { getWeakTopics } from './analyticsService';
@@ -456,8 +456,7 @@ export const getIncompleteSessions = async () => {
  */
 export const getExamSessions = async (examId) => {
   try {
-    const allSessions = await get('/sessions/');
-    const sessions = Array.isArray(allSessions.results) ? allSessions.results : allSessions;
+    const sessions = await getAll('/sessions/');
     const filtered = sessions.filter(s => s.examId === examId);
     return filtered.sort((a, b) => {
       const aTime = new Date(a.lastUpdated || a.startedAt).getTime();

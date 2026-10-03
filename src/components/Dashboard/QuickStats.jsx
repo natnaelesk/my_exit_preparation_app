@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { TrophyIcon, CheckCircleIcon, XCircleIcon, AcademicCapIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { getStatusBand } from '../../utils/statusHelpers';
 
 const QuickStats = ({ subjectStats }) => {
   const stats = useMemo(() => {
@@ -11,9 +12,9 @@ const QuickStats = ({ subjectStats }) => {
       ? Math.round((totalCorrect / totalAttempted) * 100 * 100) / 100 
       : 0;
     
-    const strongCount = allStats.filter(s => s.status === 'STRONG').length;
-    const mediumCount = allStats.filter(s => s.status === 'MEDIUM').length;
-    const weakCount = allStats.filter(s => s.status === 'WEAK').length;
+    const strongCount = allStats.filter(s => getStatusBand(s.status) === 'STRONG').length;
+    const mediumCount = allStats.filter(s => getStatusBand(s.status) === 'MEDIUM').length;
+    const weakCount = allStats.filter(s => getStatusBand(s.status) === 'WEAK').length;
 
     return {
       totalAttempted,

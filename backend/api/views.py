@@ -1,6 +1,7 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db import IntegrityError
 from django.db.models import Q, Count, Avg
 from django.utils import timezone
 from datetime import datetime, timedelta
@@ -32,6 +33,19 @@ OFFICIAL_SUBJECTS = [
 ]
 
 
+class OwnedQuerysetMixin:
+    """Scope a ModelViewSet to rows owned by the requesting user."""
+
+    def get_owned_queryset(self):
+        return self.queryset.model.objects.filter(owner=self.request.user)
+
+    def get_queryset(self):
+        return self.get_owned_queryset()
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
 def calculate_status(accuracy):
     """Calculate status based on accuracy"""
     if accuracy >= 90:
@@ -50,12 +64,12 @@ def calculate_status(accuracy):
         return 'DEAD_ZONE'
 
 
-class QuestionViewSet(viewsets.ModelViewSet):
+class QuestionViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
     
     def get_queryset(self):
-        queryset = Question.objects.all()
+        queryset = self.get_owned_queryset()
         subject = self.request.query_params.get('subject', None)
         topic = self.request.query_params.get('topic', None)
         
@@ -72,7 +86,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         if 'questionIds' in request.data:
             # Get multiple questions by IDs
             question_ids = request.data.get('questionIds', [])
-            questions = Question.objects.filter(question_id__in=question_ids)
+            questions = self.get_owned_queryset().filter(question_id__in=question_ids)
             serializer = self.get_serializer(questions, many=True)
             return Response(serializer.data)
         elif 'questions' in request.data:
@@ -83,14 +97,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
             
             for i, q_data in enumerate(questions_data):
                 try:
-                    # Generate question_id if not provided
-                    if 'questionId' not in q_data:
-                        import uuid
-                        q_data['questionId'] = f"q_{uuid.uuid4().hex[:16]}"
-                    
                     serializer = self.get_serializer(data=q_data)
                     if serializer.is_valid():
-                        question = serializer.save()
+                        question = serializer.save(owner=request.user)
                         created_questions.append(question)
                     else:
                         errors.append({
@@ -115,22 +124,22 @@ class QuestionViewSet(viewsets.ModelViewSet):
             return Response({'error': 'questionIds or questions required'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ExamViewSet(viewsets.ModelViewSet):
+class ExamViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Exam.objects.all()
     serializer_class = ExamSerializer
     
     def perform_create(self, serializer):
         import uuid
         exam_id = f"exam_{uuid.uuid4().hex[:16]}"
-        serializer.save(exam_id=exam_id)
+        serializer.save(exam_id=exam_id, owner=self.request.user)
 
 
-class AttemptViewSet(viewsets.ModelViewSet):
+class AttemptViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
     queryset = Attempt.objects.all()
     serializer_class = AttemptSerializer
     
     def get_queryset(self):
-        queryset = Attempt.objects.all()
+        queryset = self.get_owned_queryset()
         subject = self.request.query_params.get('subject', None)
         topic = self.request.query_params.get('topic', None)
         question_id = self.request.query_params.get('questionId', None)
@@ -147,18 +156,18 @@ class AttemptViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def answered_ids(self, request):
         """Get all answered question IDs"""
-        answered_ids = Attempt.objects.values_list('question_id', flat=True).distinct()
+        answered_ids = self.get_owned_queryset().values_list('question_id', flat=True).distinct()
         return Response(list(answered_ids))
 
 
-class ExamSessionViewSet(viewsets.ModelViewSet):
+class ExamSessionViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
     queryset = ExamSession.objects.all()
     serializer_class = ExamSessionSerializer
     
     @action(detail=False, methods=['get'])
     def incomplete(self, request):
         """Get all incomplete sessions"""
-        incomplete = ExamSession.objects.filter(is_complete=False)
+        incomplete = self.get_owned_queryset().filter(is_complete=False)
         serializer = self.get_serializer(incomplete, many=True)
         return Response(serializer.data)
     
@@ -184,7 +193,7 @@ class ExamSessionViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class DailyPlanViewSet(viewsets.ModelViewSet):
+class DailyPlanViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
     queryset = DailyPlan.objects.all()
     serializer_class = DailyPlanSerializer
     lookup_field = 'date_key'
@@ -194,7 +203,7 @@ class DailyPlanViewSet(viewsets.ModelViewSet):
     def recent(self, request):
         """Get recent daily plans"""
         days = int(request.query_params.get('days', 7))
-        recent = DailyPlan.objects.all().order_by('-date_key')[:days]
+        recent = self.get_owned_queryset().order_by('-date_key')[:days]
         serializer = self.get_serializer(recent, many=True)
         return Response(serializer.data)
     
@@ -206,21 +215,26 @@ class DailyPlanViewSet(viewsets.ModelViewSet):
         
         # Check if plan already exists
         try:
-            plan = DailyPlan.objects.get(date_key=date_key)
+            plan = self.get_owned_queryset().get(date_key=date_key)
             serializer = self.get_serializer(plan)
             return Response(serializer.data)
         except DailyPlan.DoesNotExist:
             # Create new plan
             serializer = self.get_serializer(data=request.data)
             if serializer.is_valid():
-                serializer.save()
+                try:
+                    serializer.save(owner=request.user)
+                except IntegrityError:
+                    # Concurrent create for the same day: return the winner
+                    plan = self.get_owned_queryset().get(date_key=date_key)
+                    return Response(self.get_serializer(plan).data)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def retrieve(self, request, date_key=None):
         """Get daily plan by date_key"""
         try:
-            plan = DailyPlan.objects.get(date_key=date_key)
+            plan = self.get_owned_queryset().get(date_key=date_key)
             serializer = self.get_serializer(plan)
             return Response(serializer.data)
         except DailyPlan.DoesNotExist:
@@ -230,9 +244,9 @@ class DailyPlanViewSet(viewsets.ModelViewSet):
     def recompute(self, request, date_key=None):
         """Recompute daily plan stats"""
         try:
-            plan = DailyPlan.objects.get(date_key=date_key)
+            plan = self.get_owned_queryset().get(date_key=date_key)
             # Get attempts for this plan
-            plan_attempts = Attempt.objects.filter(plan_date_key=date_key)
+            plan_attempts = Attempt.objects.filter(owner=request.user, plan_date_key=date_key)
             plan_question_ids = set(plan.question_ids)
             
             relevant_attempts = [a for a in plan_attempts if a.question_id in plan_question_ids]
@@ -253,7 +267,7 @@ class DailyPlanViewSet(viewsets.ModelViewSet):
     def complete(self, request, date_key=None):
         """Mark daily plan as complete"""
         try:
-            plan = DailyPlan.objects.get(date_key=date_key)
+            plan = self.get_owned_queryset().get(date_key=date_key)
             plan.is_complete = True
             plan.save()
             serializer = self.get_serializer(plan)
@@ -262,28 +276,28 @@ class DailyPlanViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Plan not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
-class ThemePreferencesViewSet(viewsets.ModelViewSet):
-    queryset = ThemePreferences.objects.all()
+class ThemePreferencesView(generics.RetrieveUpdateAPIView):
+    """The requesting user's theme preferences (created with defaults on first access)."""
     serializer_class = ThemePreferencesSerializer
     
     def get_object(self):
-        obj, created = ThemePreferences.objects.get_or_create(id='themePreferences')
+        obj, created = ThemePreferences.objects.get_or_create(owner=self.request.user)
         return obj
 
 
-class SubjectPriorityViewSet(viewsets.ModelViewSet):
+class SubjectPriorityViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
     queryset = SubjectPriority.objects.all()
     serializer_class = SubjectPrioritySerializer
     lookup_field = 'subject'
     
     def list(self, request):
         """Get all subject priorities, initialize if needed"""
-        priorities = list(SubjectPriority.objects.all())
+        priorities = list(self.get_owned_queryset())
         
         # If no priorities exist, initialize them based on weakness scores
         if not priorities:
             # Calculate weakness scores for all subjects
-            all_attempts = Attempt.objects.all()
+            all_attempts = Attempt.objects.filter(owner=request.user)
             attempts_by_subject = {}
             for attempt in all_attempts:
                 if attempt.subject not in attempts_by_subject:
@@ -315,13 +329,14 @@ class SubjectPriorityViewSet(viewsets.ModelViewSet):
             # Create SubjectPriority objects
             for idx, item in enumerate(subject_scores):
                 SubjectPriority.objects.create(
+                    owner=request.user,
                     subject=item['subject'],
                     priority_order=idx,
                     is_completed=False,
                     round_number=1
                 )
             
-            priorities = list(SubjectPriority.objects.all().order_by('priority_order'))
+            priorities = list(self.get_owned_queryset().order_by('priority_order'))
         else:
             # Sort existing priorities by priority_order
             priorities = sorted(priorities, key=lambda p: p.priority_order)
@@ -339,12 +354,13 @@ class SubjectPriorityViewSet(viewsets.ModelViewSet):
         # Update priority order for each subject
         for idx, subject_name in enumerate(order_data):
             try:
-                priority = SubjectPriority.objects.get(subject=subject_name)
+                priority = self.get_owned_queryset().get(subject=subject_name)
                 priority.priority_order = idx
                 priority.save()
             except SubjectPriority.DoesNotExist:
                 # Create if doesn't exist
                 SubjectPriority.objects.create(
+                    owner=request.user,
                     subject=subject_name,
                     priority_order=idx,
                     is_completed=False,
@@ -352,7 +368,7 @@ class SubjectPriorityViewSet(viewsets.ModelViewSet):
                 )
         
         # Return updated list
-        priorities = SubjectPriority.objects.all().order_by('priority_order')
+        priorities = self.get_owned_queryset().order_by('priority_order')
         serializer = self.get_serializer(priorities, many=True)
         return Response(serializer.data)
     
@@ -360,7 +376,7 @@ class SubjectPriorityViewSet(viewsets.ModelViewSet):
     def toggle(self, request, subject=None):
         """Toggle completion status for a subject"""
         try:
-            priority = SubjectPriority.objects.get(subject=subject)
+            priority = self.get_owned_queryset().get(subject=subject)
             priority.is_completed = not priority.is_completed
             priority.save()
             serializer = self.get_serializer(priority)
@@ -371,7 +387,7 @@ class SubjectPriorityViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def round_two(self, request):
         """Reset all completions and increment round number"""
-        priorities = SubjectPriority.objects.all()
+        priorities = self.get_owned_queryset()
         max_round = max([p.round_number for p in priorities], default=1)
         
         for priority in priorities:
@@ -380,7 +396,7 @@ class SubjectPriorityViewSet(viewsets.ModelViewSet):
             priority.save()
         
         # Return updated list
-        priorities = SubjectPriority.objects.all().order_by('priority_order')
+        priorities = self.get_owned_queryset().order_by('priority_order')
         serializer = self.get_serializer(priorities, many=True)
         return Response(serializer.data)
 
@@ -392,9 +408,9 @@ class DebugViewSet(viewsets.ViewSet):
     def stats(self, request):
         """Get table counts and connection status"""
         try:
-            exam_count = Exam.objects.count()
-            attempt_count = Attempt.objects.count()
-            daily_plan_count = DailyPlan.objects.count()
+            exam_count = Exam.objects.filter(owner=request.user).count()
+            attempt_count = Attempt.objects.filter(owner=request.user).count()
+            daily_plan_count = DailyPlan.objects.filter(owner=request.user).count()
             
             return Response({
                 'connected': True,
@@ -423,7 +439,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def subjects(self, request):
         """Calculate subject statistics"""
-        all_attempts = Attempt.objects.all()
+        all_attempts = Attempt.objects.filter(owner=request.user)
         subject_stats = {}
         
         # Initialize stats for all subjects
@@ -473,7 +489,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
         if not subject:
             return Response({'error': 'subject parameter required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        attempts = Attempt.objects.filter(subject=subject)
+        attempts = Attempt.objects.filter(owner=request.user, subject=subject)
         topic_stats = {}
         
         for attempt in attempts:
@@ -505,7 +521,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def trend(self, request):
         """Calculate overall accuracy trend"""
-        all_attempts = Attempt.objects.all().order_by('timestamp')
+        all_attempts = Attempt.objects.filter(owner=request.user).order_by('timestamp')
         
         # Group by date (using Ethiopian timezone with 6 AM day boundary)
         attempts_by_date = {}

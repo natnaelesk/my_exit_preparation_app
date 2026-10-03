@@ -6,22 +6,122 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://exit-exam-backend-qii8.onrender.com/api';
 
+const TOKEN_STORAGE_KEY = 'authToken';
+
+// Render's free tier sleeps when idle; waking can take ~30-60s.
+const SLOW_REQUEST_MS = 4000;
+const WAKE_STATUS_CODES = [502, 503, 504];
+const GET_RETRY_DELAYS_MS = [3000, 8000];
+
+export const UNAUTHORIZED_EVENT = 'auth:unauthorized';
+export const SERVER_STATUS_EVENT = 'api:server-status';
+
+export const getAuthToken = () => localStorage.getItem(TOKEN_STORAGE_KEY);
+
+export const setAuthToken = (token) => {
+  if (token) {
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  }
+};
+
+let slowRequestCount = 0;
+let serverUnreachable = false;
+
+const emitServerStatus = () => {
+  window.dispatchEvent(new CustomEvent(SERVER_STATUS_EVENT, {
+    detail: { waking: slowRequestCount > 0, unreachable: serverUnreachable },
+  }));
+};
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const serverUnavailableError = (cause) => {
+  const error = new Error(
+    'The server is waking up or unreachable. Free hosting sleeps when idle, so the first request can take up to a minute. Please retry shortly.'
+  );
+  error.isServerUnavailable = true;
+  error.cause = cause;
+  return error;
+};
+
+/**
+ * Single fetch with slow-request tracking (drives the "waking up" banner).
+ */
+async function trackedFetch(url, config) {
+  let isSlow = false;
+  const slowTimer = setTimeout(() => {
+    isSlow = true;
+    slowRequestCount += 1;
+    emitServerStatus();
+  }, SLOW_REQUEST_MS);
+
+  try {
+    return await fetch(url, config);
+  } finally {
+    clearTimeout(slowTimer);
+    if (isSlow) {
+      slowRequestCount -= 1;
+      emitServerStatus();
+    }
+  }
+}
+
 /**
  * Make API request with error handling
  */
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const token = getAuthToken();
   const config = {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Token ${token}` } : {}),
       ...options.headers,
     },
-    ...options,
   };
+  // Only idempotent reads are retried automatically while the server wakes.
+  const retryDelays = (config.method || 'GET') === 'GET' ? GET_RETRY_DELAYS_MS : [];
 
   try {
-    const response = await fetch(url, config);
-    
+    let response;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        response = await trackedFetch(url, config);
+      } catch (networkError) {
+        if (attempt < retryDelays.length) {
+          await sleep(retryDelays[attempt]);
+          continue;
+        }
+        serverUnreachable = true;
+        emitServerStatus();
+        throw serverUnavailableError(networkError);
+      }
+      if (WAKE_STATUS_CODES.includes(response.status) && attempt < retryDelays.length) {
+        await sleep(retryDelays[attempt]);
+        continue;
+      }
+      break;
+    }
+
+    if (serverUnreachable) {
+      serverUnreachable = false;
+      emitServerStatus();
+    }
+
+    if (WAKE_STATUS_CODES.includes(response.status)) {
+      const error = serverUnavailableError();
+      error.status = response.status;
+      throw error;
+    }
+
+    if (response.status === 401 && token) {
+      setAuthToken(null);
+      window.dispatchEvent(new CustomEvent(UNAUTHORIZED_EVENT));
+    }
+
     if (!response.ok) {
       let errorData;
       try {
@@ -32,6 +132,7 @@ async function apiRequest(endpoint, options = {}) {
       const errorMessage = errorData.error || errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
       const error = new Error(errorMessage);
       error.status = response.status;
+      error.data = errorData;
       throw error;
     }
     
@@ -101,4 +202,3 @@ export default {
   put,
   delete: del,
 };
-

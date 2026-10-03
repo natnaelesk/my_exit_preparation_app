@@ -10,13 +10,14 @@ from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from . import ai_client, study_chat, study_docs
+from .background import run_job
 from .models import StudyDoc, StudyMessage, StudySession
 from .pdf_pages import PdfReadError, extract_text, read_upload
 from .serializers import StudyDocSerializer, StudySessionDetailSerializer, StudySessionSerializer
 from .views import OwnedQuerysetMixin
 
 DATE_KEY_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
-NOT_CONFIGURED = 'The AI tutor is not configured on the server yet (AI_API_KEY / AI_MODEL).'
+NOT_CONFIGURED = 'The AI tutor is not configured on the server yet (CURSOR_API_KEY).'
 
 
 def _error(message, status_code):
@@ -59,7 +60,7 @@ class StudyDocViewSet(OwnedQuerysetMixin,
             text_excerpt=text_excerpt,
             status=StudyDoc.STATUS_DESCRIBING if configured else StudyDoc.STATUS_FAILED,
             error='' if configured else (
-                'AI descriptions are not configured on the server (AI_API_KEY / AI_MODEL). '
+                'AI descriptions are not configured on the server (CURSOR_API_KEY). '
                 'The file is saved; retry once AI is set up.'
             ),
         )
@@ -137,6 +138,12 @@ class StudySessionViewSet(OwnedQuerysetMixin,
             StudySessionDetailSerializer(session).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
+
+    def perform_destroy(self, instance):
+        agent_id = instance.cursor_agent_id
+        instance.delete()
+        if agent_id:
+            run_job(ai_client.delete_agent, agent_id)
 
     @action(detail=True, methods=['post'])
     def messages(self, request, pk=None):

@@ -119,17 +119,19 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Uploaded files (exam PDFs). Never served by URL; only read server-side.
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media'))
 
-# AI provider: any OpenAI-compatible chat-completions API with image input (xAI Grok, Cursor, OpenAI...).
-# Server-side only; never expose these to the frontend.
+# AI: Cursor Python SDK (cursor-sdk) no-repo cloud agents. Server-side only; never expose these to the frontend.
+CURSOR_API_KEY = os.environ.get('CURSOR_API_KEY', '')
+# Legacy name; only used when it holds a Cursor key (crsr_...).
 AI_API_KEY = os.environ.get('AI_API_KEY', '')
-AI_BASE_URL = os.environ.get('AI_BASE_URL', 'https://api.x.ai/v1').rstrip('/')
-AI_MODEL = os.environ.get('AI_MODEL', '')
-AI_TIMEOUT_SECONDS = int(os.environ.get('AI_TIMEOUT_SECONDS', '180'))
-AI_MAX_TOKENS = int(os.environ.get('AI_MAX_TOKENS', '8192'))
+# Optional fixed model id for every AI job; empty means auto-smart (tuned per job) from the account's catalog.
+CURSOR_MODEL = os.environ.get('CURSOR_MODEL') or os.environ.get('AI_MODEL', '')
+# Cloud agents are much slower than chat-completions; this is the wall-clock limit per AI run.
+AI_TIMEOUT_SECONDS = int(os.environ.get('AI_TIMEOUT_SECONDS', '600'))
 
 # PDF exam import
 EXAM_IMPORT_MAX_UPLOAD_MB = int(os.environ.get('EXAM_IMPORT_MAX_UPLOAD_MB', '25'))
 EXAM_IMPORT_MAX_PAGES = int(os.environ.get('EXAM_IMPORT_MAX_PAGES', '60'))
+# Cursor accepts at most 5 images per message, so batches are capped at 5 pages.
 EXAM_IMPORT_PAGES_PER_BATCH = int(os.environ.get('EXAM_IMPORT_PAGES_PER_BATCH', '3'))
 
 # Study materials (PDFs used as Study chat context)

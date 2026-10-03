@@ -32,7 +32,7 @@ def make_photo_pdf(page_count=2):
 
 
 def ai_reply(questions, title=''):
-    return json.dumps({'title': title, 'questions': questions}), 'stop'
+    return json.dumps({'title': title, 'questions': questions})
 
 
 AI_QUESTION = {
@@ -47,9 +47,7 @@ AI_QUESTION = {
 
 @override_settings(
     MEDIA_ROOT=TEST_MEDIA,
-    AI_API_KEY='server-secret-key',
-    AI_MODEL='vision-model',
-    AI_BASE_URL='https://ai.example.test/v1',
+    CURSOR_API_KEY='crsr_server-secret-key',
     AI_JOBS_RUN_INLINE=True,
     EXAM_IMPORT_PAGES_PER_BATCH=1,
 )
@@ -79,7 +77,7 @@ class ExamImportTests(APITestCase):
         self.as_user(self.token_a)
         upload = self.upload()
         self.assertEqual(upload.status_code, 201, upload.data)
-        with mock.patch.object(ai_client, 'chat_completion', side_effect=replies) as chat:
+        with mock.patch.object(ai_client, 'complete', side_effect=replies) as chat:
             response = self.client.post(f"/api/exam-imports/{upload.data['id']}/extract/")
         return upload.data['id'], response, chat
 
@@ -132,10 +130,20 @@ class ExamImportTests(APITestCase):
         self.assertTrue(any(part.get('type') == 'image_url' and part['image_url']['url'].startswith('data:image/jpeg;base64,')
                             for part in user_content))
 
+    @override_settings(EXAM_IMPORT_PAGES_PER_BATCH=20)
+    def test_batches_never_exceed_cursor_image_limit(self):
+        self.as_user(self.token_a)
+        upload = self.upload(data=make_photo_pdf(6))
+        with mock.patch.object(ai_client, 'complete', side_effect=[ai_reply([]), ai_reply([])]) as complete:
+            self.client.post(f"/api/exam-imports/{upload.data['id']}/extract/")
+        self.assertEqual(complete.call_count, 2)
+        images = [part for part in complete.call_args_list[0].args[0][1]['content'] if part['type'] == 'image_url']
+        self.assertEqual(len(images), ai_client.MAX_IMAGES_PER_SEND)
+
     def test_bad_ai_json_is_retried_once_then_fails_with_clear_error(self):
         import_id, response, chat = self.upload_and_extract([
-            ('Sure! Here are the questions:', 'stop'),
-            ('```json\n{"questions": [', 'length'),
+            'Sure! Here are the questions:',
+            '```json\n{"questions": [',
         ])
         self.assertEqual(chat.call_count, 2)
         data = self.client.get(f'/api/exam-imports/{import_id}/').data
@@ -145,8 +153,8 @@ class ExamImportTests(APITestCase):
         self.assertIn('Retry', data['error'])
         self.assertEqual(data['questions'], [])
 
-        with mock.patch.object(ai_client, 'chat_completion', side_effect=[
-            ('not json', 'stop'), ai_reply([AI_QUESTION]), ai_reply([]),
+        with mock.patch.object(ai_client, 'complete', side_effect=[
+            'not json', ai_reply([AI_QUESTION]), ai_reply([]),
         ]):
             retry = self.client.post(f'/api/exam-imports/{import_id}/extract/')
         self.assertEqual(retry.status_code, 202)
@@ -155,14 +163,14 @@ class ExamImportTests(APITestCase):
         self.assertEqual(len(data['questions']), 1)
 
     def test_rejected_api_key_fails_without_retry(self):
-        import_id, _response, chat = self.upload_and_extract(ai_client.AIConfigError('The AI provider rejected the server API key (check AI_API_KEY).'))
+        import_id, _response, chat = self.upload_and_extract(ai_client.AIConfigError('Cursor rejected the server API key (check CURSOR_API_KEY).'))
         self.assertEqual(chat.call_count, 1)
         data = self.client.get(f'/api/exam-imports/{import_id}/').data
         self.assertEqual(data['status'], 'failed')
-        self.assertIn('AI_API_KEY', data['error'])
+        self.assertIn('CURSOR_API_KEY', data['error'])
         self.assertNotIn('server-secret-key', json.dumps(data))
 
-    @override_settings(AI_API_KEY='')
+    @override_settings(CURSOR_API_KEY='', AI_API_KEY='')
     def test_extract_reports_missing_ai_configuration(self):
         self.as_user(self.token_a)
         upload = self.upload()
@@ -227,25 +235,3 @@ class ExamImportTests(APITestCase):
         self.assertEqual(self.client.get('/api/exams/').data['count'], 0)
         self.assertEqual(self.client.get(f'/api/exams/{exam_id}/').status_code, 404)
         self.assertEqual(self.client.get('/api/questions/').data['count'], 0)
-
-
-@override_settings(AI_API_KEY='server-secret-key', AI_MODEL='vision-model', AI_BASE_URL='https://ai.example.test/v1')
-class AIClientTests(APITestCase):
-    def test_sends_openai_compatible_request_with_server_key(self):
-        response = mock.Mock(status_code=200, ok=True)
-        response.json.return_value = {'choices': [{'message': {'content': '{"questions": []}'}, 'finish_reason': 'stop'}]}
-        with mock.patch('api.ai_client.requests.post', return_value=response) as post:
-            text, finish_reason = ai_client.chat_completion([{'role': 'user', 'content': 'hi'}])
-        self.assertEqual((text, finish_reason), ('{"questions": []}', 'stop'))
-        url, kwargs = post.call_args.args[0], post.call_args.kwargs
-        self.assertEqual(url, 'https://ai.example.test/v1/chat/completions')
-        self.assertEqual(kwargs['headers']['Authorization'], 'Bearer server-secret-key')
-        self.assertEqual(kwargs['json']['model'], 'vision-model')
-
-    def test_maps_provider_errors(self):
-        for status_code, error in [(401, ai_client.AIConfigError), (429, ai_client.AIUnavailableError), (503, ai_client.AIUnavailableError)]:
-            response = mock.Mock(status_code=status_code, ok=False)
-            response.json.return_value = {}
-            with self.subTest(status_code=status_code), mock.patch('api.ai_client.requests.post', return_value=response):
-                with self.assertRaises(error):
-                    ai_client.chat_completion([])

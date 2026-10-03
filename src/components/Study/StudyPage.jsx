@@ -40,7 +40,7 @@ const DocCard = ({ doc, onRetry, onDelete, onDownload, busy }) => (
 
     {doc.status === 'describing' && (
       <p className="text-sm text-muted flex items-center gap-2">
-        <ArrowPathIcon className="w-4 h-4 animate-spin" /> AI is reading this PDF…
+        <ArrowPathIcon className="w-4 h-4 animate-spin" /> AI is reading this PDF (this can take a few minutes)…
       </p>
     )}
     {doc.status === 'ready' && <p className="text-sm text-text">{doc.description}</p>}

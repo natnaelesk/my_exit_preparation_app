@@ -113,7 +113,7 @@ Create and manage personalized daily study plans to track your progress.
 
 ### Prerequisites
 - Node.js 16+ and npm
-- Python 3.8+
+- Python 3.10+ (required by `cursor-sdk`)
 - PostgreSQL (optional, SQLite for development)
 
 ### Installation
@@ -166,19 +166,16 @@ DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 DATABASE_URL=postgresql://user:password@localhost:5432/exitexam
 
-# AI (PDF exam import, study-doc descriptions, Study chat) — server only.
-# Target (prompt 06): Cursor SDK no-repo cloud agents. Account must allow no-repo agents.
+# AI (PDF exam import, study-doc descriptions, Study chat), server only.
+# Runs on Cursor Python SDK (cursor-sdk) no-repo cloud agents; the Cursor account must allow no-repo agents.
 CURSOR_API_KEY=crsr_your_key
-# CURSOR_MODEL=auto-smart   # optional; see docs/DEPLOY.md for vision vs chat defaults
-# AI_TIMEOUT_SECONDS=600    # cloud agents are slow; raise for exam-import batches
-
-# Legacy OpenAI-compatible path (pre–prompt 06 / until Cursor SDK lands):
-# AI_API_KEY=your-key
-# AI_MODEL=your-vision-capable-model
-# AI_BASE_URL=https://api.x.ai/v1
+# CURSOR_MODEL=            # optional fixed model id; empty = auto-smart tuned per job (see docs/DEPLOY.md)
+# AI_TIMEOUT_SECONDS=600   # wall-clock limit per AI run; cloud agents take tens of seconds to minutes
 ```
 
-> **Note:** AI keys live only on the backend; never put them in `VITE_` variables. Without `CURSOR_API_KEY` (or a valid legacy `AI_*` setup), the app still works and AI features show a "not configured" message. Full deploy checklist: [docs/DEPLOY.md](docs/DEPLOY.md).
+`cursor-sdk` needs **Python 3.10+** and bundles its own Node.js bridge, so `pip install -r backend/requirements.txt` is all the setup it needs. A legacy `AI_API_KEY` is still honoured if it is a Cursor key (`crsr_…`); `AI_BASE_URL` / `AI_MAX_TOKENS` are no longer used.
+
+> **Note:** AI keys live only on the backend; never put them in `VITE_` variables. Without `CURSOR_API_KEY`, the app still works and AI features show a "not configured" message. Full deploy checklist: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ---
 
@@ -226,7 +223,7 @@ See **[docs/DEPLOY.md](docs/DEPLOY.md)** for the step-by-step deploy checklist (
 
 **Backend connection errors:** Check Django server on port 8000, verify `VITE_API_BASE_URL` in `.env`, check CORS settings
 
-**AI features say "not configured":** set `CURSOR_API_KEY` on the backend (Render) after prompt 06, or legacy `AI_API_KEY` / `AI_MODEL` until then; redeploy. Other AI errors: check the Cursor key, model id, no-repo agent access, and timeout.
+**AI features say "not configured":** set `CURSOR_API_KEY` on the backend (Render) and redeploy. Other AI errors: check the Cursor key, `CURSOR_MODEL`, that no-repo cloud agents are enabled, and `AI_TIMEOUT_SECONDS`.
 
 **Database errors:** Run `python manage.py migrate`, check connection settings
 

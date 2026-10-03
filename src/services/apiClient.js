@@ -1,7 +1,6 @@
 /**
- * API Client for Django REST API
- * Replaces Firebase SDK calls with HTTP requests
- * Always uses production Supabase backend
+ * API client for the Django REST API (token auth, cold-start retries).
+ * VITE_API_BASE_URL is the only frontend setting; AI keys never belong here.
  */
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://exit-exam-backend-qii8.onrender.com/api';

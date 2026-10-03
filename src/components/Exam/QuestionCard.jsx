@@ -8,7 +8,7 @@ const QuestionCard = ({
   isLocked,
   onAnswerSelect,
   onShowAnswer,
-  onGrokClick
+  onTutorClick
 }) => {
   if (!question) return null;
 
@@ -26,10 +26,10 @@ const QuestionCard = ({
             {isLocked ? 'Answer Locked' : 'Show Answer'}
           </button>
           <button
-            onClick={onGrokClick}
+            onClick={onTutorClick}
             className="p-2 rounded-lg bg-primary-500/10 hover:bg-primary-500/20 text-primary-500 transition-colors active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-            title={isLocked ? 'Ask AI (answer locked)' : 'Show answer first to unlock AI'}
-            aria-label="Grok AI Assistant"
+            title={isLocked ? 'Study this topic with the AI tutor' : 'Show answer first to unlock the AI tutor'}
+            aria-label="Study tutor"
             disabled={!isLocked}
           >
             <SparklesIcon className="w-5 h-5" />

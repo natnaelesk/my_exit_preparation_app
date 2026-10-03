@@ -12,6 +12,7 @@ import {
   selectFocusSubject
 } from '../../services/dailyPlanService';
 import { getOrGenerateBonusChallenge } from '../../services/bonusChallengeService';
+import { openPlanStudySession } from '../../services/studyService';
 import { EXAM_MODES, OFFICIAL_SUBJECTS } from '../../utils/constants';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import ButtonLoading from '../Common/ButtonLoading';
@@ -28,7 +29,8 @@ import {
   ChartBarIcon,
   ClockIcon,
   FireIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { format, startOfWeek, addDays, isToday } from 'date-fns';
 import { getEthiopianDateKey, isTodayEthiopian, hasDayEnded } from '../../utils/ethiopianTime';
@@ -60,6 +62,8 @@ const PlanPage = () => {
   const [selectedDateKey, setSelectedDateKey] = useState(getDateKey());
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
+  const [isOpeningStudy, setIsOpeningStudy] = useState(false);
+  const [studyError, setStudyError] = useState('');
   const [error, setError] = useState('');
   const [allTopics, setAllTopics] = useState([]);
   const [topicStats, setTopicStats] = useState({});
@@ -251,6 +255,20 @@ const PlanPage = () => {
       }
     } catch (err) {
       console.error('Error loading daily plan:', err);
+    }
+  };
+
+  const handleStudyPlan = async () => {
+    const dateKey = viewingPlan?.dateKey || selectedDateKey;
+    if (!dateKey) return;
+    setIsOpeningStudy(true);
+    setStudyError('');
+    try {
+      const session = await openPlanStudySession(dateKey);
+      navigate(`/study/sessions/${session.id}`);
+    } catch (err) {
+      setStudyError(err.message || 'Could not open the study chat.');
+      setIsOpeningStudy(false);
     }
   };
 
@@ -1025,6 +1043,27 @@ const PlanPage = () => {
                   </>
                 )}
               </button>
+            )}
+
+            {activeTab === 'today' && viewingPlan && (
+              <div className="space-y-2">
+                <button
+                  className="w-full py-3 px-6 text-base font-semibold flex items-center justify-center gap-3 bg-card border-2 border-primary-500/40 hover:border-primary-500 text-primary-500 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleStudyPlan}
+                  disabled={isOpeningStudy}
+                  title="Learn this day's topics with the AI tutor, using your study materials"
+                >
+                  {isOpeningStudy ? (
+                    <ButtonLoading text="Opening..." />
+                  ) : (
+                    <>
+                      <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                      <span>Study these topics</span>
+                    </>
+                  )}
+                </button>
+                {studyError && <p className="text-sm text-red-500">{studyError}</p>}
+              </div>
             )}
 
             {/* Past Day Notice */}

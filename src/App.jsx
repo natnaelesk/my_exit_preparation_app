@@ -19,6 +19,8 @@ import PlanPage from './components/Plan/PlanPage';
 import ChecklistPage from './components/Plan/ChecklistPage';
 import ResetData from './components/Admin/ResetData';
 import QuestionBank from './components/Bank/QuestionBank';
+import StudyPage from './components/Study/StudyPage';
+import StudySessionPage from './components/Study/StudySessionPage';
 
 function AppContent() {
   const location = useLocation();
@@ -43,6 +45,8 @@ function AppContent() {
           <Route path="/analytics" element={<AnalyticsDashboard />} />
           <Route path="/plan" element={<PlanPage />} />
           <Route path="/plan-manager" element={<ChecklistPage />} />
+          <Route path="/study" element={<StudyPage />} />
+          <Route path="/study/sessions/:sessionId" element={<StudySessionPage />} />
           <Route path="/bank" element={<QuestionBank />} />
           <Route path="/admin/reset" element={<ResetData />} />
                   <Route path="/topic-focused" element={<TopicFocusedMode />} />

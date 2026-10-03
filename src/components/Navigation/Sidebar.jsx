@@ -7,6 +7,7 @@ import {
   ChartBarIcon, 
   CalendarDaysIcon,
   RectangleStackIcon,
+  AcademicCapIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 
@@ -26,6 +27,7 @@ const Sidebar = () => {
     { path: '/exams', icon: BookOpenIcon, label: 'Exams' },
     { path: '/bank', icon: RectangleStackIcon, label: 'Question Bank' },
     { path: '/plan', icon: CalendarDaysIcon, label: 'Plan' },
+    { path: '/study', icon: AcademicCapIcon, label: 'Study' },
     { path: '/analytics', icon: ChartBarIcon, label: 'Analytics' },
   ];
 

@@ -8,11 +8,14 @@ import SubjectCard from './SubjectCard';
 import QuickStats from './QuickStats';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import ButtonLoading from '../Common/ButtonLoading';
-import { EXAM_MODES, OFFICIAL_SUBJECTS } from '../../utils/constants';
+import { EXAM_MODES } from '../../utils/constants';
+import { useCurriculum } from '../../contexts/CurriculumContext';
+import NoCurriculumNotice from '../Curriculum/NoCurriculumNotice';
 import { format, addDays, subDays } from 'date-fns';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { 
   AcademicCapIcon, 
+  ClipboardDocumentListIcon,
   ChartBarIcon, 
   FireIcon, 
   BoltIcon,
@@ -37,6 +40,7 @@ const Dashboard = () => {
   const [isStarting, setIsStarting] = useState(false);
   const [startingMode, setStartingMode] = useState(null);
   const { startExam } = useExam();
+  const { blueprint, subjects, hasCurriculum, loading: curriculumLoading } = useCurriculum();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -399,7 +403,7 @@ const Dashboard = () => {
                 Exit Exam Preparation
               </h1>
               <p className="text-muted text-sm md:text-base">
-                Master the Ethiopian Computer Science BSc Exit Exam with intelligent practice
+                Master your Ethiopian national exit exam{blueprint ? ` (${blueprint.programName})` : ''} with intelligent practice
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -423,22 +427,27 @@ const Dashboard = () => {
 
         {examCount === 0 && overallStats.totalAttempted === 0 && (
           <div className="card border-2 border-primary-500/40 bg-gradient-to-br from-primary-500/10 via-card to-card">
-            <h2 className="text-xl font-bold text-text mb-1">Welcome! Three steps to get started</h2>
+            <h2 className="text-xl font-bold text-text mb-1">Welcome! Four steps to get started</h2>
             <p className="text-sm text-muted mb-4">Your account starts empty. Everything you add is private to you.</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <button onClick={() => navigate('/curriculum')} className="text-left p-4 rounded-xl bg-surface border border-border hover:border-primary-500/60 transition-colors">
+                <ClipboardDocumentListIcon className="w-6 h-6 text-primary-500 mb-2" />
+                <p className="font-semibold text-text">1. Upload your exit exam blueprint{hasCurriculum ? ' ✓' : ''}</p>
+                <p className="text-xs text-muted mt-1">Your program&apos;s official blueprint PDF sets up your courses, priorities and study focus.</p>
+              </button>
               <button onClick={() => navigate('/exams/create')} className="text-left p-4 rounded-xl bg-surface border border-border hover:border-primary-500/60 transition-colors">
                 <BookOpenIcon className="w-6 h-6 text-primary-500 mb-2" />
-                <p className="font-semibold text-text">1. Add an exam</p>
+                <p className="font-semibold text-text">2. Add an exam</p>
                 <p className="text-xs text-muted mt-1">Upload a PDF or photos of a past exam and the AI reads the questions, or import a JSON file.</p>
               </button>
               <button onClick={() => navigate('/study')} className="text-left p-4 rounded-xl bg-surface border border-border hover:border-primary-500/60 transition-colors">
                 <AcademicCapIcon className="w-6 h-6 text-primary-500 mb-2" />
-                <p className="font-semibold text-text">2. Upload study notes</p>
+                <p className="font-semibold text-text">3. Upload study notes</p>
                 <p className="text-xs text-muted mt-1">Add lecture notes or handouts as PDFs so the AI tutor can teach from them.</p>
               </button>
               <button onClick={() => navigate('/plan')} className="text-left p-4 rounded-xl bg-surface border border-border hover:border-primary-500/60 transition-colors">
                 <CalendarDaysIcon className="w-6 h-6 text-primary-500 mb-2" />
-                <p className="font-semibold text-text">3. Follow today&apos;s plan</p>
+                <p className="font-semibold text-text">4. Follow today&apos;s plan</p>
                 <p className="text-xs text-muted mt-1">Practice the day&apos;s questions, then press &ldquo;Study these topics&rdquo; to learn them with the tutor.</p>
               </button>
             </div>
@@ -619,19 +628,31 @@ const Dashboard = () => {
                 <ChartBarIcon className="w-6 h-6 text-primary-500" />
                 Subject Overview
               </h2>
-              <button 
-                className="text-primary-500 text-sm font-medium hover:text-primary-400 flex items-center gap-1"
-                onClick={() => navigate('/analytics')}
-              >
-                View All <ArrowRightIcon className="w-4 h-4" />
-              </button>
+              {hasCurriculum && (
+                <button 
+                  className="text-primary-500 text-sm font-medium hover:text-primary-400 flex items-center gap-1"
+                  onClick={() => navigate('/analytics')}
+                >
+                  View All <ArrowRightIcon className="w-4 h-4" />
+                </button>
+              )}
             </div>
+            {blueprint && (
+              <p className="-mt-2 mb-3 text-xs text-muted">
+                {blueprint.programName} · {subjects.length} courses ·{' '}
+                <button type="button" className="text-primary-500 hover:text-primary-400" onClick={() => navigate('/curriculum')}>
+                  Curriculum
+                </button>
+              </p>
+            )}
             
-            {isLoading ? (
+            {isLoading || curriculumLoading ? (
               <div className="text-center py-8 text-muted">Loading subjects...</div>
+            ) : !hasCurriculum ? (
+              <NoCurriculumNotice compact />
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                {OFFICIAL_SUBJECTS.slice(0, 6).map((subject) => {
+                {subjects.slice(0, 6).map((subject) => {
                   const stats = subjectStats[subject] || {
                     subject,
                     totalAttempted: 0,

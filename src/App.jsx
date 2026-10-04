@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, createBr
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ExamProvider } from './contexts/ExamContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { CurriculumProvider } from './contexts/CurriculumContext';
 import AuthPage from './components/Auth/AuthPage';
 import RequireAuth from './components/Auth/RequireAuth';
 import ServerStatusBanner from './components/Common/ServerStatusBanner';
@@ -21,6 +22,8 @@ import ResetData from './components/Admin/ResetData';
 import QuestionBank from './components/Bank/QuestionBank';
 import StudyPage from './components/Study/StudyPage';
 import StudySessionPage from './components/Study/StudySessionPage';
+import CurriculumPage from './components/Curriculum/CurriculumPage';
+import RequireCurriculum from './components/Curriculum/RequireCurriculum';
 
 function AppContent() {
   const location = useLocation();
@@ -42,16 +45,17 @@ function AppContent() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/exam" element={<ExamInterface />} />
           <Route path="/results" element={<ExamResults />} />
-          <Route path="/analytics" element={<AnalyticsDashboard />} />
-          <Route path="/plan" element={<PlanPage />} />
-          <Route path="/plan-manager" element={<ChecklistPage />} />
+          <Route path="/analytics" element={<RequireCurriculum><AnalyticsDashboard /></RequireCurriculum>} />
+          <Route path="/plan" element={<RequireCurriculum><PlanPage /></RequireCurriculum>} />
+          <Route path="/plan-manager" element={<RequireCurriculum><ChecklistPage /></RequireCurriculum>} />
           <Route path="/study" element={<StudyPage />} />
           <Route path="/study/sessions/:sessionId" element={<StudySessionPage />} />
-          <Route path="/bank" element={<QuestionBank />} />
+          <Route path="/bank" element={<RequireCurriculum><QuestionBank /></RequireCurriculum>} />
+          <Route path="/curriculum" element={<CurriculumPage />} />
           <Route path="/admin/reset" element={<ResetData />} />
-                  <Route path="/topic-focused" element={<TopicFocusedMode />} />
+                  <Route path="/topic-focused" element={<RequireCurriculum><TopicFocusedMode /></RequireCurriculum>} />
                   <Route path="/exams" element={<ExamsList />} />
-                  <Route path="/exams/create" element={<CreateExam />} />
+                  <Route path="/exams/create" element={<RequireCurriculum><CreateExam /></RequireCurriculum>} />
                   <Route path="/exams/:examId" element={<ExamDetail />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -73,7 +77,9 @@ function AuthenticatedApp() {
   // Keyed by user so in-memory exam state never carries over between accounts.
   return (
     <ExamProvider key={user.id}>
-      <AppContent />
+      <CurriculumProvider>
+        <AppContent />
+      </CurriculumProvider>
     </ExamProvider>
   );
 }

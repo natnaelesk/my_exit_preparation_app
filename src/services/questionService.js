@@ -1,5 +1,5 @@
 import { get, getAll, post } from './apiClient';
-import { normalizeSubject, normalizeTopic } from '../utils/subjectNormalization';
+import { courseKey, normalizeTopic } from '../utils/subjectNormalization';
 
 /**
  * Get all questions from API
@@ -19,29 +19,15 @@ export const getAllQuestions = async () => {
 export const getQuestionsBySubject = async (subject) => {
   try {
     const requested = String(subject || '').trim();
-    const normalizedRequested = normalizeSubject(requested) || requested;
-
-    // Try normalized subject first
-    let questions = await getAll('/questions/', { subject: normalizedRequested });
-    
+    const questions = await getAll('/questions/', { subject: requested });
     if (questions.length > 0) {
       return questions;
     }
 
-    // Try raw subject string
-    if (normalizedRequested !== requested && requested) {
-      questions = await getAll('/questions/', { subject: requested });
-      if (questions.length > 0) {
-        return questions;
-      }
-    }
-
-    // Fallback: load all and filter with normalization
+    // Fallback: older questions may spell the course differently ("Operating Systems", "&" for "and")
+    const requestedKey = courseKey(requested);
     const allQuestions = await getAllQuestions();
-    return allQuestions.filter((qDoc) => {
-      const docSubject = normalizeSubject(qDoc.subject) || String(qDoc.subject || '').trim();
-      return docSubject === normalizedRequested;
-    });
+    return allQuestions.filter((qDoc) => courseKey(qDoc.subject) === requestedKey);
   } catch (error) {
     console.error('Error fetching questions by subject:', error);
     throw error;
@@ -54,7 +40,7 @@ export const getQuestionsBySubject = async (subject) => {
 export const getQuestionsByTopic = async (subject, topics) => {
   try {
     const requestedSubject = String(subject || '').trim();
-    const normalizedRequestedSubject = normalizeSubject(requestedSubject) || requestedSubject;
+    const normalizedRequestedSubject = requestedSubject;
     const normalizedTopics = (topics || []).map(normalizeTopic).filter(Boolean);
 
     // If topics <= 10, try API query (Django supports 'in' queries)

@@ -1,25 +1,26 @@
 import { useMemo, useState } from 'react';
-import { OFFICIAL_SUBJECTS } from '../../utils/constants';
+import { useCurriculum } from '../../contexts/CurriculumContext';
+import { matchCourse } from '../../utils/subjectNormalization';
 import { publishExamImport } from '../../services/examImportService';
 
 let nextKey = 0;
 const newKey = () => `q${nextKey++}`;
 
-const toEditable = (q) => ({
+const toEditable = (q, subjects) => ({
   key: newKey(),
   question: q.question || '',
   choices: q.choices?.length ? [...q.choices] : ['', ''],
   correctIndex: q.choices ? q.choices.indexOf(q.correctAnswer) : -1,
   explanation: q.explanation || '',
-  subject: OFFICIAL_SUBJECTS.includes(q.subject) ? q.subject : '',
+  subject: matchCourse(q.subject, subjects) || '',
   topic: q.topic || '',
   sourcePages: q.sourcePages || [],
 });
 
-const blankQuestion = () => toEditable({ choices: ['', '', '', ''], topic: 'General' });
+const blankQuestion = () => toEditable({ choices: ['', '', '', ''], topic: 'General' }, []);
 
 // Mirrors validate_question in backend/api/exam_extraction.py.
-const validate = (q) => {
+const validate = (q, subjects) => {
   const errors = [];
   const choices = q.choices.map((c) => c.trim());
   if (!q.question.trim()) errors.push('Question text is empty.');
@@ -27,7 +28,7 @@ const validate = (q) => {
   if (choices.some((c) => !c)) errors.push('Choices cannot be empty.');
   if (new Set(choices).size !== choices.length) errors.push('Choices must be different from each other.');
   if (q.correctIndex < 0 || q.correctIndex >= choices.length) errors.push('Pick the correct answer.');
-  if (!OFFICIAL_SUBJECTS.includes(q.subject)) errors.push('Pick a subject from the official list.');
+  if (!subjects.includes(q.subject)) errors.push('Pick a subject from your curriculum.');
   return errors;
 };
 
@@ -40,7 +41,7 @@ const toPayload = (q) => ({
   topic: q.topic.trim(),
 });
 
-const QuestionEditor = ({ index, q, errors, onChange, onRemove }) => {
+const QuestionEditor = ({ index, q, errors, subjects, onChange, onRemove }) => {
   const update = (fields) => onChange({ ...q, ...fields });
 
   const updateChoice = (choiceIndex, value) => {
@@ -130,7 +131,7 @@ const QuestionEditor = ({ index, q, errors, onChange, onRemove }) => {
           aria-label={`Question ${index + 1} subject`}
         >
           <option value="">Select subject…</option>
-          {OFFICIAL_SUBJECTS.map((subject) => (
+          {subjects.map((subject) => (
             <option key={subject} value={subject}>{subject}</option>
           ))}
         </select>
@@ -155,10 +156,11 @@ const QuestionEditor = ({ index, q, errors, onChange, onRemove }) => {
 };
 
 const ExamImportReview = ({ examImport, onPublished, onCancel }) => {
+  const { subjects } = useCurriculum();
   const [title, setTitle] = useState(
     examImport.title || examImport.originalFilename.replace(/\.pdf$/i, '')
   );
-  const [questions, setQuestions] = useState(() => examImport.questions.map(toEditable));
+  const [questions, setQuestions] = useState(() => examImport.questions.map((q) => toEditable(q, subjects)));
   const [serverErrors, setServerErrors] = useState({});
   const [onlyProblems, setOnlyProblems] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -167,10 +169,10 @@ const ExamImportReview = ({ examImport, onPublished, onCancel }) => {
   const errorsByKey = useMemo(() => {
     const result = {};
     questions.forEach((q) => {
-      result[q.key] = [...new Set([...validate(q), ...(serverErrors[q.key] || [])])];
+      result[q.key] = [...new Set([...validate(q, subjects), ...(serverErrors[q.key] || [])])];
     });
     return result;
-  }, [questions, serverErrors]);
+  }, [questions, serverErrors, subjects]);
 
   const problemCount = questions.filter((q) => errorsByKey[q.key].length > 0).length;
   const visible = questions
@@ -246,6 +248,7 @@ const ExamImportReview = ({ examImport, onPublished, onCancel }) => {
           index={index}
           q={q}
           errors={errorsByKey[q.key]}
+          subjects={subjects}
           onChange={(updated) => updateQuestion(q.key, updated)}
           onRemove={() => setQuestions((prev) => prev.filter((item) => item.key !== q.key))}
         />

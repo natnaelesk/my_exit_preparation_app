@@ -10,7 +10,7 @@ from . import ai_client
 from .background import run_job, stale_after
 from .models import StudyDoc
 from .pdf_pages import PdfReadError, render_pages
-from .subjects import OFFICIAL_SUBJECTS, normalize_subject
+from .curriculum import active_blueprint, active_course_names, match_course
 
 logger = logging.getLogger(__name__)
 
@@ -24,15 +24,15 @@ CONTEXT_MAX_DOCS = 3
 CONTEXT_EXCERPT_CHARS = 1500
 EXCERPT_WINDOW_CHARS = 500
 
-SYSTEM_PROMPT = f"""You catalogue study materials for a university student preparing for the Ethiopian software engineering exit exam.
+SYSTEM_PROMPT = """You catalogue study materials for a university student preparing for the Ethiopian national exit exam ({program}).
 You receive the first pages of a PDF (page images plus any text layer) and describe the document so it can be matched to study topics later.
 
 Reply with ONLY a JSON object, no prose:
 {{"title": "short document title",
   "description": "1-3 sentences: what the document covers and what it is useful for when studying",
-  "subject": "the best match from this list, or an empty string: {'; '.join(OFFICIAL_SUBJECTS)}",
-  "topics": ["up to {MAX_TOPICS} short topic names covered, e.g. Normalization, Deadlock, TCP/IP model"],
-  "keyPoints": ["up to {MAX_KEY_POINTS} short facts or definitions the document teaches"]}}"""
+  "subject": "the best match from the student's courses, or an empty string: {subjects}",
+  "topics": ["up to {max_topics} short topic names covered, e.g. Normalization, Deadlock, TCP/IP model"],
+  "keyPoints": ["up to {max_key_points} short facts or definitions the document teaches"]}}"""
 
 
 def _clean_text(value, max_len):
@@ -52,7 +52,7 @@ def _clean_list(value, max_items, max_len):
     return items
 
 
-def normalize_description(data):
+def normalize_description(data, subjects):
     if not isinstance(data, dict):
         raise ai_client.BadAIOutput('expected a JSON object')
     description = _clean_text(data.get('description'), 800)
@@ -61,13 +61,13 @@ def normalize_description(data):
     return {
         'title': _clean_text(data.get('title'), 255),
         'description': description,
-        'subject': normalize_subject(data.get('subject')) or '',
+        'subject': match_course(data.get('subject'), subjects),
         'topics': _clean_list(data.get('topics'), MAX_TOPICS, 80),
         'key_points': _clean_list(data.get('keyPoints'), MAX_KEY_POINTS, 300),
     }
 
 
-def build_messages(doc, pages):
+def build_messages(doc, pages, program, subjects):
     content = [{
         'type': 'text',
         'text': (
@@ -80,7 +80,12 @@ def build_messages(doc, pages):
         content.append({'type': 'text', 'text': f'Page {page["number"]}:'})
         content.append({'type': 'image_url', 'image_url': {'url': page['image_data_url']}})
     return [
-        {'role': 'system', 'content': SYSTEM_PROMPT},
+        {'role': 'system', 'content': SYSTEM_PROMPT.format(
+            program=program or 'program not set yet',
+            subjects='; '.join(subjects) or '(no curriculum yet; use an empty string)',
+            max_topics=MAX_TOPICS,
+            max_key_points=MAX_KEY_POINTS,
+        )},
         {'role': 'user', 'content': content},
     ]
 
@@ -101,10 +106,12 @@ def describe(doc_id):
         with doc.file.open('rb') as handle:
             data = handle.read()
         pages = render_pages(data, 0, min(DESCRIBE_PAGES, doc.page_count))
-        messages = build_messages(doc, pages)
+        blueprint = active_blueprint(doc.owner)
+        subjects = active_course_names(doc.owner)
+        messages = build_messages(doc, pages, blueprint.program_name if blueprint else '', subjects)
         for attempt in range(2):
             try:
-                result = normalize_description(ai_client.parse_json_reply(ai_client.complete(messages)))
+                result = normalize_description(ai_client.parse_json_reply(ai_client.complete(messages)), subjects)
                 break
             except ai_client.AITimeoutError:
                 raise

@@ -11,14 +11,14 @@ from . import ai_client
 from .background import run_job, stale_after
 from .models import ExamImport
 from .pdf_pages import PdfReadError, render_pages
-from .subjects import OFFICIAL_SUBJECTS, normalize_subject
+from .curriculum import NO_CURRICULUM, active_blueprint, active_course_names, match_course
 
 logger = logging.getLogger(__name__)
 
 MAX_CHOICES = 8
 MAX_SHORT_FIELD = 255  # Question.correct_answer / topic column length
 
-SYSTEM_PROMPT = f"""You extract multiple-choice questions from pages of an Ethiopian Computer Science BSc exit exam.
+SYSTEM_PROMPT = """You extract multiple-choice questions from pages of an Ethiopian national exit exam ({program}).
 Pages are images (often phone photos or scans). A text layer is included when the PDF has one; trust the image when they disagree.
 
 Return ONLY a JSON object, with no markdown fences and no commentary, in exactly this shape:
@@ -30,7 +30,7 @@ Rules:
 - "choices": the option texts only, without labels such as "A." or "(b)".
 - "correctAnswer": must be exactly equal to one of the strings in "choices". If the page marks the answer by letter (A/B/C/D), return that choice's text. If no answer is marked, choose the correct one yourself.
 - "explanation": 1-2 sentences on why the answer is correct.
-- "subject": exactly one of: {'; '.join(OFFICIAL_SUBJECTS)}. If unclear, pick the best match from this list.
+- "subject": exactly one of the student's courses: {subjects}. If unclear, pick the best match from this list.
 - "topic": a short topic name (2-5 words).
 - Skip a question whose beginning is not visible because it continues from an earlier page. Include a question cut off at the end of the last page with whatever is visible.
 - If the pages contain no questions (cover page, instructions, answer sheet), return {{"title": "", "questions": []}}."""
@@ -63,7 +63,7 @@ def _clean_line(value):
     return ' '.join(str(value if value is not None else '').split())
 
 
-def validate_question(q):
+def validate_question(q, subjects):
     """Return a list of problems that block saving this (already cleaned) question."""
     errors = []
     if not q['question']:
@@ -83,14 +83,14 @@ def validate_question(q):
         errors.append('Correct answer must be one of the choices.')
     elif len(q['correctAnswer']) > MAX_SHORT_FIELD:
         errors.append(f'Correct answer text is longer than {MAX_SHORT_FIELD} characters.')
-    if q['subject'] not in OFFICIAL_SUBJECTS:
-        errors.append('Pick a subject from the official list.')
+    if q['subject'] not in subjects:
+        errors.append('Pick a subject from your curriculum.')
     if len(q['topic']) > MAX_SHORT_FIELD:
         errors.append(f'Topic is longer than {MAX_SHORT_FIELD} characters.')
     return errors
 
 
-def clean_submitted_question(raw):
+def clean_submitted_question(raw, subjects):
     """Clean a reviewed question submitted for publishing. Returns (question, errors)."""
     if not isinstance(raw, dict):
         return None, ['Malformed question.']
@@ -105,7 +105,7 @@ def clean_submitted_question(raw):
         'subject': _clean_line(raw.get('subject')),
         'topic': _clean_line(raw.get('topic')),
     }
-    return q, validate_question(q)
+    return q, validate_question(q, subjects)
 
 
 def _resolve_answer(answer, choices):
@@ -125,7 +125,7 @@ def _resolve_answer(answer, choices):
     return ''
 
 
-def normalize_ai_question(raw, source_pages):
+def normalize_ai_question(raw, source_pages, subjects):
     """Turn one AI-produced question into a draft question with any blocking issues listed."""
     if not isinstance(raw, dict):
         return None
@@ -144,11 +144,11 @@ def normalize_ai_question(raw, source_pages):
         'choices': choices,
         'correctAnswer': _resolve_answer(_clean_text(raw.get('correctAnswer')), choices),
         'explanation': _clean_text(raw.get('explanation')),
-        'subject': normalize_subject(raw.get('subject')) or '',
+        'subject': match_course(raw.get('subject'), subjects),
         'topic': _clean_line(raw.get('topic'))[:MAX_SHORT_FIELD] or 'General',
     }
     q['sourcePages'] = source_pages
-    q['issues'] = validate_question(q)
+    q['issues'] = validate_question(q, subjects)
     return q
 
 
@@ -167,7 +167,7 @@ def parse_ai_json(text):
 # AI extraction
 # ---------------------------------------------------------------------------
 
-def build_messages(pages, page_count):
+def build_messages(pages, page_count, program, subjects):
     content = [{
         'type': 'text',
         'text': f"Exam pages {pages[0]['number']}-{pages[-1]['number']} of {page_count}. Extract the questions as instructed.",
@@ -179,15 +179,15 @@ def build_messages(pages, page_count):
         content.append({'type': 'text', 'text': label})
         content.append({'type': 'image_url', 'image_url': {'url': page['image_data_url'], 'detail': 'high'}})
     return [
-        {'role': 'system', 'content': SYSTEM_PROMPT},
+        {'role': 'system', 'content': SYSTEM_PROMPT.format(program=program, subjects='; '.join(subjects))},
         {'role': 'user', 'content': content},
     ]
 
 
-def extract_batch(pages, page_count):
+def extract_batch(pages, page_count, program, subjects):
     """Extract (title, draft_questions) from a batch of rendered pages, retrying once on bad output."""
     page_range = f"{pages[0]['number']}-{pages[-1]['number']}"
-    messages = build_messages(pages, page_count)
+    messages = build_messages(pages, page_count, program, subjects)
     last_error = None
     for _attempt in range(2):
         try:
@@ -205,7 +205,7 @@ def extract_batch(pages, page_count):
             continue
 
         source_pages = [p['number'] for p in pages]
-        questions = [q for q in (normalize_ai_question(raw, source_pages) for raw in parsed['questions']) if q]
+        questions = [q for q in (normalize_ai_question(raw, source_pages, subjects) for raw in parsed['questions']) if q]
         return parsed['title'], questions
     raise last_error
 
@@ -277,8 +277,13 @@ def run_extraction(import_id):
                     data = pdf_file.read()
             except (FileNotFoundError, ValueError) as exc:
                 raise ExtractionError('The uploaded PDF is no longer on the server (it may have restarted). Please upload it again.') from exc
+            blueprint = active_blueprint(exam_import.owner)
+            if blueprint is None:
+                raise ExtractionError(NO_CURRICULUM)
             pages = render_pages(data, start, end)
-            title, questions = extract_batch(pages, exam_import.page_count)
+            title, questions = extract_batch(
+                pages, exam_import.page_count, blueprint.program_name, active_course_names(exam_import.owner),
+            )
         except (ExtractionError, PdfReadError) as exc:
             _fail(import_id, str(exc))
             return

@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from . import ai_client
 from .background import run_job, stale_after
+from .curriculum import active_blueprint, course_for_subject
 from .models import DailyPlan, Question, StudyMessage, StudySession
 from .study_docs import context_block, relevant_docs
 
@@ -18,11 +19,15 @@ MAX_SESSION_TOPICS = 8
 MAX_HISTORY_CHARS = 24000
 MAX_MESSAGE_CHARS = 4000
 
-SYSTEM_PROMPT = """You are a focused exit-exam tutor for a Software Engineering student in Ethiopia.
+SYSTEM_PROMPT = """You are a focused tutor for a student in Ethiopia preparing for the national exit exam.
 
 Session scope
+- Program: {program}
 - Subject: {subject}
 - Topics: {topics}
+
+What the official exit exam blueprint expects for this subject (cover these points; they are what gets examined)
+{focus_notes}
 
 Deep-study protocol (follow it strictly)
 1. Teach the session topics in EXACTLY 4 conceptual chunks in total, from foundations to exam-level detail. Start each chunk with a heading "## Chunk N of 4: <name>".
@@ -95,7 +100,11 @@ def get_or_create_session(owner, context):
 
 
 def build_messages(session, docs):
+    blueprint = active_blueprint(session.owner)
+    course = course_for_subject(session.owner, session.subject)
     system = SYSTEM_PROMPT.format(
+        program=blueprint.program_name if blueprint else 'not set',
+        focus_notes=(course.focus_notes.strip() if course else '') or '(no blueprint notes for this subject)',
         subject=session.subject or 'General',
         topics=', '.join(session.topics) or session.subject,
         materials=context_block(docs, session.topics),

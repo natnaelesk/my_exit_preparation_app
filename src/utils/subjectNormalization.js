@@ -1,54 +1,38 @@
-import { OFFICIAL_SUBJECTS } from './constants';
+// Mirrors course_key / match_course in backend/api/curriculum.py so the UI and server agree on subject names.
+const FILLER_PREFIXES = [
+  'fundamentals of ', 'fundamental of ', 'introduction to ', 'intro to ', 'principles of ', 'basics of ',
+  'advanced ', 'advance ',
+];
 
-/**
- * Maps common variations to official subject names.
- * Used on both upload and read, so the app can recover from older data inconsistencies.
- */
-export const SUBJECT_MAPPING = {
-  'fundamental of database systems': 'Database Systems',
-  'fundamentals of database systems': 'Database Systems',
-  'database systems': 'Database Systems',
-  'advance database systems': 'Database Systems',
-  'advanced database systems': 'Database Systems',
-  'computer organization and architecture': 'Computer Organization and Architecture',
-  'computer organization & architecture': 'Computer Organization and Architecture',
-  'data structure and algorithms': 'Data Structures and Algorithms',
-  'data structures and algorithm': 'Data Structures and Algorithms',
-  'data structures and algorithms': 'Data Structures and Algorithms',
-  'object oriented programming': 'Object Oriented Programming',
-  'oop': 'Object Oriented Programming',
-  'design and analysis of algorithms': 'Design and Analysis of Algorithms',
-  'web programming': 'Web Programming',
-  'software engineering': 'Software Engineering',
-  'operating system': 'Operating System',
-  'operating systems': 'Operating System',
-  'data communication and computer networking': 'Data Communication and Computer Networking',
-  'computer networking': 'Data Communication and Computer Networking',
-  'computer security': 'Computer Security',
-  'network and system administration': 'Network and System Administration',
-  'introduction to artificial intelligence': 'Introduction to Artificial Intelligence',
-  'artificial intelligence': 'Introduction to Artificial Intelligence',
-  'ai': 'Introduction to Artificial Intelligence',
-  'automata and complexity theory': 'Automata and Complexity Theory',
-  'automata': 'Automata and Complexity Theory',
-  'automata & complexity theory': 'Automata and Complexity Theory',
-  'compiler design': 'Compiler Design',
-  'computer programming': 'Computer Programming',
+export const courseKey = (value) => {
+  let text = String(value ?? '').toLowerCase().replace(/&/g, ' and ').split(/\s+/).filter(Boolean).join(' ');
+  const prefix = FILLER_PREFIXES.find((p) => text.startsWith(p));
+  if (prefix) text = text.slice(prefix.length);
+  const words = text.match(/[a-z0-9+#]+/g) || [];
+  return words.map((word) => (word.length > 3 && word.endsWith('s') ? word.slice(0, -1) : word)).join(' ');
 };
 
-export const normalizeSubject = (subject) => {
+/**
+ * The course name in `courseNames` that `value` refers to, or null when it matches none (or is ambiguous).
+ */
+export const matchCourse = (value, courseNames = []) => {
+  const key = courseKey(value);
+  if (!key) return null;
+  const byKey = new Map();
+  courseNames.forEach((name) => {
+    const k = courseKey(name);
+    if (!byKey.has(k)) byKey.set(k, name);
+  });
+  if (byKey.has(key)) return byKey.get(key);
+  const partial = [...byKey.entries()]
+    .filter(([candidate]) => Math.min(key.length, candidate.length) >= 4 && (candidate.includes(key) || key.includes(candidate)))
+    .map(([, name]) => name);
+  return partial.length === 1 ? partial[0] : null;
+};
+
+export const normalizeSubject = (subject, courseNames = []) => {
   if (!subject || typeof subject !== 'string') return null;
-
-  const normalized = subject.trim();
-  const lower = normalized.toLowerCase();
-
-  if (OFFICIAL_SUBJECTS.includes(normalized)) return normalized;
-  if (SUBJECT_MAPPING[lower]) return SUBJECT_MAPPING[lower];
-
-  const ciMatch = OFFICIAL_SUBJECTS.find((s) => s.toLowerCase() === lower);
-  if (ciMatch) return ciMatch;
-
-  return null;
+  return matchCourse(subject, courseNames);
 };
 
 export const normalizeTopic = (topic) => {
@@ -56,5 +40,3 @@ export const normalizeTopic = (topic) => {
   const t = topic.trim();
   return t || 'Unknown';
 };
-
-

@@ -1,6 +1,5 @@
 import { get } from './apiClient';
 import { getAllAttempts, getAttemptsBySubject, getAttemptsByTopic } from './attemptService';
-import { OFFICIAL_SUBJECTS } from '../utils/constants';
 import { calculateStatus } from '../utils/statusHelpers';
 import { format } from 'date-fns';
 import { timestampToEthiopianDateKey } from '../utils/ethiopianTime';
@@ -78,8 +77,8 @@ export const calculateSubjectStats = async () => {
     // For now, trend will be empty - can be enhanced later
     const allAttempts = await getAllAttempts();
     
-    // Build trend for each subject
-    OFFICIAL_SUBJECTS.forEach(subject => {
+    // Build trend for each subject of the active curriculum (the server only returns those)
+    Object.keys(subjectStats).forEach(subject => {
       if (subjectStats[subject] && subjectStats[subject].totalAttempted > 0) {
         const subjectAttempts = allAttempts.filter(a => a.subject === subject);
         

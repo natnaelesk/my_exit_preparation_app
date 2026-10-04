@@ -39,13 +39,14 @@ Environment variables:
 | `AI_TIMEOUT_SECONDS` | optional | Wall-clock limit per AI run, default `600` (10 min). Cloud agents are much slower than chat-completions; a run that passes the limit is cancelled and shown as "retry". |
 | `AI_API_KEY` | legacy | Used only if it starts with `crsr_` and `CURSOR_API_KEY` is unset. Old xAI/OpenAI keys are ignored; move the Cursor key to `CURSOR_API_KEY`. `AI_BASE_URL` and `AI_MAX_TOKENS` are no longer read; delete them. |
 | `EXAM_IMPORT_MAX_PAGES`, `EXAM_IMPORT_MAX_UPLOAD_MB`, `STUDY_DOC_MAX_PAGES`, `STUDY_DOC_MAX_UPLOAD_MB` | optional | Defaults `60`, `25`, `400`, `25` |
+| `BLUEPRINT_IMPORT_MAX_PAGES`, `BLUEPRINT_IMPORT_MAX_UPLOAD_MB`, `BLUEPRINT_IMPORT_PAGES_PER_BATCH` | optional | Defaults `60`, `25`, `4` (capped at 5 images per AI call) |
 | `ALLOWED_HOSTS` | no | Not read; the settings accept any host |
 
 Without `CURSOR_API_KEY` (or a valid `crsr_` `AI_API_KEY` fallback) the app still works: exams, practice, plans, JSON import, uploads. The AI features show a clear "not configured" message. AI stays **server-only**: never put Cursor keys in Vercel `VITE_` vars.
 
 How the AI runs:
 
-- **PDF exam import** (per batch of up to 5 pages) and **study-doc descriptions** each create a one-off cloud agent, wait for its reply, then delete the agent so the Cursor dashboard does not fill up.
+- **Blueprint import**, **PDF exam import** (per batch of up to 5 pages) and **study-doc descriptions** each create a one-off cloud agent, wait for its reply, then delete the agent so the Cursor dashboard does not fill up.
 - **Study chat** keeps one cloud agent per study session (`StudySession.cursor_agent_id`). Follow-up messages resume that agent; deleting the session deletes the agent (best effort). If Cursor no longer has the agent, a new one is started with the conversation so far.
 - `cursor-sdk` bundles its own Node.js bridge (a ~175 MB wheel, Linux x64 included), so Render needs nothing beyond `pip install`. The bridge process uses roughly 100 MB of RAM next to Django on the 512 MB free plan.
 - Cloud agents take from tens of seconds to a few minutes per reply. The frontend keeps polling, so you can leave the page.
@@ -62,10 +63,15 @@ How the AI runs:
 
 Uploaded PDFs are stored on the Render instance's local disk (`MEDIA_ROOT`). On the free plan that disk is **ephemeral**: it is wiped whenever the service redeploys, restarts, or spins down after ~15 minutes idle. No Supabase Storage / S3 integration exists yet.
 
+- **Blueprint import:** same as exam import. The reviewed curriculum is saved in the database when you apply it, and the PDF is deleted then.
 - **Exam PDF import:** finish extraction in one sitting. Drafts and published exams are in the database and are safe. If the file disappears mid-extraction, upload the PDF again. The PDF is deleted after publishing anyway.
 - **Study materials:** each doc's AI description, topics, key points and text excerpt are in the database. **Study chat keeps using them after the file is gone.** Download and "Retry description" need the file, so upload it again for those. The card says when the file is no longer stored.
 
-## 5. Accounts
+## 5. Upgrading an existing database: priorities are reset
+
+Before this version every account got the same 15 Computer Science subjects in Plan Manager automatically. Migration `0011_clear_seeded_subject_priorities` **deletes all Plan Manager priority rows** (order, completed ticks, round number) on purpose. They were seeded, not chosen. After deploying, each user applies their blueprint under **Curriculum**, which recreates the priorities from its courses, ordered by exam item count. Questions, exams, attempts, plans and study materials are not touched.
+
+## 6. Accounts
 
 Nobody needs an admin account. The giftee opens the Vercel URL and signs up. Each account sees only its own exams, questions, attempts, plans, study materials and chats.
 
@@ -74,17 +80,20 @@ Nobody needs an admin account. The giftee opens the Vercel URL and signs up. Eac
 Run this on the deployed URLs with a **fresh account**. Sample files are in `data/`.
 
 1. **Cold start:** open the Vercel URL after the backend has been idle for 15+ minutes. Expect a yellow "Waking up the server…" banner; within about a minute the login page works.
-2. **Register / log in:** sign up with a username and password. You land on the Dashboard, which shows a "Welcome! Three steps to get started" card and empty stats.
-3. **Upload a study PDF:** go to **Study** → *Choose PDFs* → `data/sample-study-notes.pdf`. Within a few minutes the card shows a short description, the subject *Database Systems*, and topics such as *Normalization*.
-4. **Create an exam from a PDF:** go to **Exams** → *Create* → **From PDF** → `data/sample-exam-photo.pdf` (image-only, like phone photos). Wait for both pages, review the 6 questions, then *Publish*.
+2. **Register / log in:** sign up with a username and password. You land on the Dashboard, which shows a "Welcome! Four steps to get started" card, empty stats and an **Upload your exit exam blueprint** button instead of subjects. Plan, Question Bank and Analytics show the same button.
+3. **Apply a blueprint:** go to **Curriculum** (sidebar, or the Dashboard button) → drop `data/sample-blueprint.pdf` → *Upload and extract curriculum*. After both pages are read, the review shows *BSc in Computer Science*, 3 themes and 8 courses with credit hours and item counts. Four courses have focus notes from page 2, e.g. Database Systems: normalization up to BCNF. Rename the program or edit a note, then *Apply curriculum*. The page now shows the active curriculum, and Plan Manager lists the 8 courses with the 15-item courses first.
+   - **History / switch:** apply the same PDF again with a different program name. *Blueprint history* lists both, with the new one active. Press *Make active* on the first; subjects and Plan Manager follow it.
+4. **Upload a study PDF:** go to **Study** → *Choose PDFs* → `data/sample-study-notes.pdf`. Within a few minutes the card shows a short description, the subject *Database Systems*, and topics such as *Normalization*.
+5. **Create an exam from a PDF:** go to **Exams** → *Create* → **From PDF** → `data/sample-exam-photo.pdf` (image-only, like phone photos). Wait for both pages, review the 6 questions, then *Publish*.
    - **JSON fallback** (no AI): **From JSON** → `testQuestions.json`.
-5. **Take the exam:** start it, answer a question, press *Show Answer*, then ✨. The Study tutor opens for that question's topic, which proves the server AI path. Finish the exam. Results appear, and Analytics counts each answer once.
-6. **Study from the planner:** go to **Plan** → **Study these topics** → *Start lesson*.
+6. **Take the exam:** start it, answer a question, press *Show Answer*, then ✨. The Study tutor opens for that question's topic, which proves the server AI path. Finish the exam. Results appear, and Analytics counts each answer once.
+7. **Study from the planner:** go to **Plan** → **Study these topics** → *Start lesson*.
    - Expect "Chunk 1 of 4" ending with **Memory Lock**, **Exam Traps** and **Likely Questions**, and a request to say "continue".
    - If your study notes match the day's topics, the header lists them under "Using your materials".
+   - The lesson follows the blueprint's focus notes for that course (e.g. BCNF and SQL joins for Database Systems).
    - Press **Continue** and you get Chunk 2. Refresh the page; the conversation is still there and is also listed under **Study**.
    - The day's focus subject comes from Plan Manager priorities. If the bank has no questions for it yet, the plan says so; the Study button still works.
-7. **Privacy:** log out, sign up a second account. It sees an empty dashboard, and none of the first account's exams, docs or chats.
+8. **Privacy:** log out, sign up a second account. It sees an empty dashboard with no curriculum, and none of the first account's blueprints, exams, docs or chats.
 
 ## Still manual before gifting
 

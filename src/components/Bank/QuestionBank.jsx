@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { OFFICIAL_SUBJECTS, EXAM_MODES } from '../../utils/constants';
+import { EXAM_MODES } from '../../utils/constants';
+import { useCurriculum } from '../../contexts/CurriculumContext';
 import { getQuestionsBySubject } from '../../services/questionService';
 import { getAnsweredQuestionIds } from '../../services/attemptService';
 import { calculateTopicStats } from '../../services/analyticsService';
@@ -11,11 +12,12 @@ import { BookOpenIcon, PlayIcon, FunnelIcon } from '@heroicons/react/24/outline'
 const QuestionBank = () => {
   const navigate = useNavigate();
   const { startExam } = useExam();
+  const { subjects } = useCurriculum();
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [selectedSubject, setSelectedSubject] = useState(OFFICIAL_SUBJECTS[0] || '');
+  const [selectedSubject, setSelectedSubject] = useState(subjects[0] || '');
   const [includeAnswered, setIncludeAnswered] = useState(true);
   const [questionCount, setQuestionCount] = useState(20);
 
@@ -150,7 +152,7 @@ const QuestionBank = () => {
                 onChange={(e) => setSelectedSubject(e.target.value)}
                 className="input w-full"
               >
-                {OFFICIAL_SUBJECTS.map((s) => (
+                {subjects.map((s) => (
                   <option key={s} value={s}>
                     {s} {s === selectedSubject ? `(${subjectQuestions.length})` : ''}
                   </option>

@@ -3,6 +3,7 @@ from django.core.cache import cache
 from rest_framework.test import APITestCase
 
 from .models import Attempt, DailyPlan, Question, SubjectPriority
+from .test_helpers import give_curriculum
 
 
 class TrustFixTestCase(APITestCase):
@@ -11,6 +12,9 @@ class TrustFixTestCase(APITestCase):
         self.token_a = self.signup('trust_a')
         self.token_b = self.signup('trust_b')
         self.user_a = get_user_model().objects.get(username='trust_a')
+        self.user_b = get_user_model().objects.get(username='trust_b')
+        give_curriculum(self.user_a)
+        give_curriculum(self.user_b)
 
     def signup(self, username):
         response = self.client.post('/api/auth/signup/', {'username': username, 'password': 'study-hard-2026'}, format='json')

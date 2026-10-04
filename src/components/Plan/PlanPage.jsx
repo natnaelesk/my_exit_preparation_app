@@ -13,7 +13,8 @@ import {
 } from '../../services/dailyPlanService';
 import { getOrGenerateBonusChallenge } from '../../services/bonusChallengeService';
 import { openPlanStudySession } from '../../services/studyService';
-import { EXAM_MODES, OFFICIAL_SUBJECTS } from '../../utils/constants';
+import { EXAM_MODES } from '../../utils/constants';
+import { useCurriculum } from '../../contexts/CurriculumContext';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import ButtonLoading from '../Common/ButtonLoading';
 import { 
@@ -55,6 +56,7 @@ const getBonusUnlockKey = (dateKey) => `bonus_unlocked_${dateKey}`;
 const PlanPage = () => {
   const navigate = useNavigate();
   const { startExam } = useExam();
+  const { subjects } = useCurriculum();
   
   const [subjectStats, setSubjectStats] = useState({});
   const [currentDailyPlan, setCurrentDailyPlan] = useState(null);
@@ -204,7 +206,7 @@ const PlanPage = () => {
       let focusSubject = await selectFocusSubject();
       if (!focusSubject) {
         // Fallback to first subject if no selection
-        focusSubject = OFFICIAL_SUBJECTS[0];
+        focusSubject = subjects[0];
       }
 
       const currentTodayKey = getDateKey();
@@ -246,7 +248,7 @@ const PlanPage = () => {
         // Use priority-based selection
         let focusSubject = await selectFocusSubject();
         if (!focusSubject) {
-          focusSubject = OFFICIAL_SUBJECTS[0];
+          focusSubject = subjects[0];
         }
         const newPlan = await getOrCreateDailyPlan(dateKey, focusSubject);
         setCurrentDailyPlan(newPlan);

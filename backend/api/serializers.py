@@ -5,8 +5,10 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from .models import (
     Question, Exam, Attempt, ExamSession, DailyPlan, ThemePreferences, SubjectPriority, ExamImport,
-    StudyDoc, StudySession, StudyMessage,
+    StudyDoc, StudySession, StudyMessage, BlueprintImport, UserBlueprint,
 )
+from .blueprint_extraction import pages_per_batch
+from .curriculum import blueprint_themes
 from .study_docs import relevant_docs
 
 
@@ -195,6 +197,55 @@ class ExamImportSerializer(serializers.ModelSerializer):
 
     def get_pagesPerBatch(self, obj):
         return max(1, settings.EXAM_IMPORT_PAGES_PER_BATCH)
+
+
+class BlueprintImportSerializer(serializers.ModelSerializer):
+    originalFilename = serializers.CharField(source='original_filename', read_only=True)
+    pageCount = serializers.IntegerField(source='page_count', read_only=True)
+    pagesProcessed = serializers.IntegerField(source='pages_processed', read_only=True)
+    pagesPerBatch = serializers.SerializerMethodField()
+    blueprintId = serializers.SerializerMethodField()
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    updatedAt = serializers.DateTimeField(source='updated_at', read_only=True)
+
+    class Meta:
+        model = BlueprintImport
+        fields = ['id', 'originalFilename', 'status', 'error', 'pageCount', 'pagesProcessed', 'pagesPerBatch',
+                  'draft', 'blueprintId', 'createdAt', 'updatedAt']
+        read_only_fields = fields
+
+    def get_pagesPerBatch(self, obj):
+        return pages_per_batch()
+
+    def get_blueprintId(self, obj):
+        applied = obj.applied_blueprints.order_by('-applied_at').first()
+        return applied.id if applied else None
+
+
+class UserBlueprintSerializer(serializers.ModelSerializer):
+    programName = serializers.CharField(source='program_name', read_only=True)
+    isActive = serializers.BooleanField(source='is_active', read_only=True)
+    appliedAt = serializers.DateTimeField(source='applied_at', read_only=True)
+    courseCount = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserBlueprint
+        fields = ['id', 'programName', 'label', 'isActive', 'appliedAt', 'courseCount']
+        read_only_fields = fields
+
+    def get_courseCount(self, obj):
+        return obj.courses.count()
+
+
+class UserBlueprintDetailSerializer(UserBlueprintSerializer):
+    themes = serializers.SerializerMethodField()
+
+    class Meta(UserBlueprintSerializer.Meta):
+        fields = UserBlueprintSerializer.Meta.fields + ['themes']
+        read_only_fields = fields
+
+    def get_themes(self, obj):
+        return blueprint_themes(obj)
 
 
 class StudyDocSerializer(serializers.ModelSerializer):

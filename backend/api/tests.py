@@ -1,7 +1,9 @@
 from django.core.cache import cache
+from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 
 from .models import Attempt, DailyPlan, Exam, Question, SubjectPriority
+from .test_helpers import give_curriculum
 
 
 QUESTION = {
@@ -103,6 +105,7 @@ class OwnershipIsolationTests(AuthTestCase):
         self.token_b = self.signup('user_b')
 
     def create_data_as_a(self):
+        give_curriculum(get_user_model().objects.get(username='user_a'))
         self.as_user(self.token_a)
         response = self.client.post('/api/questions/bulk/', {'questions': [QUESTION, QUESTION]}, format='json')
         self.assertEqual(response.data['created'], 2)
@@ -139,7 +142,11 @@ class OwnershipIsolationTests(AuthTestCase):
         self.assertEqual(self.client.get('/api/plans/recent/').data, [])
         self.assertEqual(self.client.get('/api/attempts/answered_ids/').data, [])
         self.assertEqual(self.client.get('/api/sessions/incomplete/').data, [])
-        self.assertEqual(self.client.get('/api/analytics/subjects/').data['Database Systems']['totalAttempted'], 0)
+        self.assertEqual(self.client.get('/api/analytics/subjects/').data, {})
+        self.assertEqual(self.client.get('/api/subject-priorities/').data, [])
+        self.assertEqual(self.client.get('/api/subjects/').data, [])
+        self.assertEqual(self.client.get('/api/blueprint/').status_code, 404)
+        self.assertEqual(self.client.get('/api/blueprints/').data, [])
         self.assertEqual(self.client.get('/api/analytics/trend/').data, [])
         self.assertEqual(self.client.get('/api/debug/stats/').data['tables'], {'exam': 0, 'attempt': 0, 'daily_plan': 0})
         self.assertEqual(self.client.get('/api/settings/theme/').data['favoriteDarkTheme'], 'dark')
@@ -178,7 +185,7 @@ class OwnershipIsolationTests(AuthTestCase):
         self.assertEqual(response.data['focusSubject'], 'Compiler Design')
         self.assertEqual(DailyPlan.objects.filter(date_key='2026-10-03').count(), 2)
 
-        self.client.get('/api/subject-priorities/')
+        give_curriculum(get_user_model().objects.get(username='user_b'))
         self.assertEqual(self.client.patch('/api/subject-priorities/Database Systems/toggle/').status_code, 200)
         self.assertEqual(SubjectPriority.objects.filter(subject='Database Systems', is_completed=True).count(), 1)
 

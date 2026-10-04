@@ -43,13 +43,17 @@ A private exam preparation app for Ethiopian Computer Science BSc students. Each
 
 ![Question Bank](readme-images/questions.png)
 
+### 📋 Curriculum from your exit exam blueprint
+
+The app has no built-in subject list. Each user uploads their program's official Ministry of Education exit exam blueprint PDF under **Curriculum**. The server reads it with the AI, and the user reviews the program name, themes, courses, credit hours, exam item counts and per-course focus notes before applying. The applied blueprint becomes the subject list for the Plan, Plan Manager priorities, Question Bank, Analytics, exam imports and study materials. The Study tutor also gets the course's focus notes. Any program works; Computer Science is just the sample in `data/sample-blueprint.pdf`. Every applied blueprint stays in the history, and one is active at a time; switching rebuilds the subject priorities (completion is kept for courses with the same name).
+
 ### 🤖 AI Study tutor
 
 Upload your notes under **Study**; the server gives each PDF a short AI description. From the daily plan, **Study these topics** opens a saved chat that teaches the day's topics in 4 chunks (Memory Lock, Exam Traps, Likely Questions) and waits for you to say "continue". The ✨ button on an exam question opens the same tutor for that question's topic. All AI calls run on the Django server; no keys are in the browser.
 
 ### 📊 Analytics & Performance
 
-Track performance across 15 subjects with detailed breakdowns, topic-level analysis, performance trends, and visual status indicators.
+Track performance across your curriculum's courses with detailed breakdowns, topic-level analysis, performance trends, and visual status indicators.
 
 ![Analytics Dashboard](readme-images/analysis.png)
 
@@ -197,23 +201,9 @@ See **[docs/DEPLOY.md](docs/DEPLOY.md)** for the step-by-step deploy checklist (
 
 ---
 
-## 📊 Official Subjects
+## 📊 Subjects
 
-1. Computer Programming
-2. Object Oriented Programming
-3. Data Structures and Algorithms
-4. Design and Analysis of Algorithms
-5. Database Systems
-6. Software Engineering
-7. Web Programming
-8. Operating System
-9. Computer Organization and Architecture
-10. Data Communication and Computer Networking
-11. Computer Security
-12. Network and System Administration
-13. Introduction to Artificial Intelligence
-14. Automata and Complexity Theory
-15. Compiler Design
+Subjects are the courses of your active exit exam blueprint (see **Curriculum** above). A new account has none until it applies a blueprint; pages that need subjects show an "Upload your exit exam blueprint" button instead.
 
 ---
 
@@ -238,7 +228,11 @@ POST /api/auth/signup/ | /api/auth/login/ | /api/auth/logout/   GET /api/auth/me
 GET  /api/questions/          - List questions (paginated; ?page_size= up to 1000)
 GET  /api/exams/              - List exams
 POST /api/exams/              - Create exam
-POST /api/exam-imports/       - Upload an exam PDF, then /extract/ and /publish/
+POST /api/blueprint-imports/  - Upload a blueprint PDF, then /extract/ (poll GET) and /apply/ with the reviewed draft
+GET  /api/blueprint/          - Active curriculum (404 until a blueprint is applied)
+GET  /api/blueprints/         - Applied blueprint history; POST /api/blueprints/<id>/activate/ switches the active one
+GET  /api/subjects/           - Active course names ([] without a blueprint)
+POST /api/exam-imports/       - Upload an exam PDF, then /extract/ and /publish/ (needs an active curriculum)
 GET  /api/attempts/           - List attempts
 GET  /api/analytics/subjects/ - Subject analytics
 GET  /api/analytics/topics/   - Topic analytics
@@ -260,6 +254,8 @@ POST /api/study-sessions/     - Open a Study chat for {planDateKey} or {subject,
   "topic": "Operators and Expressions"
 }
 ```
+
+`subject` must be one of your active curriculum's courses (close spellings such as "Operating System" for "Operating Systems" are matched).
 
 ---
 

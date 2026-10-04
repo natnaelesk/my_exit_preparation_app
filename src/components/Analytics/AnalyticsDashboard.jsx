@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import { calculateSubjectStats, calculateTopicStats, calculateOverallTrend } from '../../services/analyticsService';
-import { OFFICIAL_SUBJECTS } from '../../utils/constants';
+import { useCurriculum } from '../../contexts/CurriculumContext';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import ButtonLoading from '../Common/ButtonLoading';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -20,6 +20,7 @@ const AnalyticsDashboard = () => {
   const [improvingSubject, setImprovingSubject] = useState(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const { startExam } = useExam();
+  const { subjects } = useCurriculum();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -108,7 +109,7 @@ const AnalyticsDashboard = () => {
   };
 
   // Sort subjects by status (Excellent to Dead Zone), then by accuracy within same status
-  const sortedSubjects = [...OFFICIAL_SUBJECTS].sort((a, b) => {
+  const sortedSubjects = [...subjects].sort((a, b) => {
     const statsA = subjectStats[a] || { status: 'N/A', accuracy: 0, totalAttempted: 0 };
     const statsB = subjectStats[b] || { status: 'N/A', accuracy: 0, totalAttempted: 0 };
     

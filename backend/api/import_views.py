@@ -10,6 +10,7 @@ from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from . import ai_client
+from .curriculum import NO_CURRICULUM, active_course_names
 from .exam_extraction import claim_for_extraction, clean_submitted_question, mark_if_stale, start_extraction
 from .models import Exam, ExamImport, Question
 from .pdf_pages import PdfReadError, read_upload
@@ -67,6 +68,8 @@ class ExamImportViewSet(OwnedQuerysetMixin,
             return _error('This import was already published.', status.HTTP_409_CONFLICT)
         if exam_import.status == ExamImport.STATUS_READY:
             return _error('All pages were already extracted.', status.HTTP_409_CONFLICT)
+        if not active_course_names(request.user):
+            return _error(NO_CURRICULUM, status.HTTP_409_CONFLICT, code='no_curriculum')
         if not ai_client.is_configured():
             return _error(
                 'PDF import is not configured on the server yet (CURSOR_API_KEY). Use JSON import for now.',
@@ -99,9 +102,12 @@ class ExamImportViewSet(OwnedQuerysetMixin,
         if len(raw_questions) > MAX_PUBLISH_QUESTIONS:
             return _error(f'At most {MAX_PUBLISH_QUESTIONS} questions can be published at once.', status.HTTP_400_BAD_REQUEST)
 
+        subjects = active_course_names(request.user)
+        if not subjects:
+            return _error(NO_CURRICULUM, status.HTTP_409_CONFLICT, code='no_curriculum')
         cleaned, question_errors = [], []
         for index, raw in enumerate(raw_questions):
-            question, errors = clean_submitted_question(raw)
+            question, errors = clean_submitted_question(raw, subjects)
             if errors:
                 question_errors.append({'index': index, 'errors': errors})
             cleaned.append(question)

@@ -7,7 +7,6 @@ import {
   startRoundTwo 
 } from '../../services/subjectPriorityService';
 import { calculateSubjectStats } from '../../services/analyticsService';
-import { OFFICIAL_SUBJECTS } from '../../utils/constants';
 import LoadingAnimation from '../Common/LoadingAnimation';
 import ButtonLoading from '../Common/ButtonLoading';
 import {

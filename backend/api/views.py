@@ -11,7 +11,7 @@ from .serializers import (
     QuestionSerializer, ExamSerializer, AttemptSerializer, 
     ExamSessionSerializer, DailyPlanSerializer, ThemePreferencesSerializer, SubjectPrioritySerializer
 )
-from .subjects import OFFICIAL_SUBJECTS
+from .curriculum import active_course_names
 from .utils import get_ethiopian_date_key
 
 
@@ -304,57 +304,8 @@ class SubjectPriorityViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
     lookup_field = 'subject'
     
     def list(self, request):
-        """Get all subject priorities, initialize if needed"""
-        priorities = list(self.get_owned_queryset())
-        
-        # If no priorities exist, initialize them based on weakness scores
-        if not priorities:
-            # Calculate weakness scores for all subjects
-            all_attempts = Attempt.objects.filter(owner=request.user)
-            attempts_by_subject = {}
-            for attempt in all_attempts:
-                if attempt.subject not in attempts_by_subject:
-                    attempts_by_subject[attempt.subject] = []
-                attempts_by_subject[attempt.subject].append(attempt)
-            
-            # Calculate weakness score for each subject (matching frontend formula)
-            import math
-            subject_scores = []
-            for subject in OFFICIAL_SUBJECTS:
-                attempts = attempts_by_subject.get(subject, [])
-                if attempts:
-                    correct_count = sum(1 for a in attempts if a.is_correct)
-                    total = len(attempts)
-                    accuracy = (correct_count / total * 100) if total > 0 else 0
-                    # Match frontend formula: (100 - accuracy) * Math.log1p(totalAttempted)
-                    weakness_score = (100 - accuracy) * math.log1p(total)
-                else:
-                    weakness_score = 1000  # High score for subjects with no attempts
-                
-                subject_scores.append({
-                    'subject': subject,
-                    'weakness_score': weakness_score
-                })
-            
-            # Sort by weakness score (highest = weakest = highest priority)
-            subject_scores.sort(key=lambda x: x['weakness_score'], reverse=True)
-            
-            # Create SubjectPriority objects
-            for idx, item in enumerate(subject_scores):
-                SubjectPriority.objects.create(
-                    owner=request.user,
-                    subject=item['subject'],
-                    priority_order=idx,
-                    is_completed=False,
-                    round_number=1
-                )
-            
-            priorities = list(self.get_owned_queryset().order_by('priority_order'))
-        else:
-            # Sort existing priorities by priority_order
-            priorities = sorted(priorities, key=lambda p: p.priority_order)
-        
-        serializer = self.get_serializer(priorities, many=True)
+        """The user's subject priorities. Rows only come from applying a blueprint; never seeded here."""
+        serializer = self.get_serializer(self.get_owned_queryset().order_by('priority_order', 'subject'), many=True)
         return Response(serializer.data)
     
     @action(detail=False, methods=['patch'])
@@ -364,21 +315,9 @@ class SubjectPriorityViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
         if not order_data:
             return Response({'error': 'order array required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Update priority order for each subject
+        # Only reorder existing rows; the subject set itself comes from the active blueprint.
         for idx, subject_name in enumerate(order_data):
-            try:
-                priority = self.get_owned_queryset().get(subject=subject_name)
-                priority.priority_order = idx
-                priority.save()
-            except SubjectPriority.DoesNotExist:
-                # Create if doesn't exist
-                SubjectPriority.objects.create(
-                    owner=request.user,
-                    subject=subject_name,
-                    priority_order=idx,
-                    is_completed=False,
-                    round_number=1
-                )
+            self.get_owned_queryset().filter(subject=subject_name).update(priority_order=idx)
         
         # Return updated list
         priorities = self.get_owned_queryset().order_by('priority_order')
@@ -453,10 +392,11 @@ class AnalyticsViewSet(viewsets.ViewSet):
     def subjects(self, request):
         """Calculate subject statistics"""
         all_attempts = Attempt.objects.filter(owner=request.user)
+        subjects = active_course_names(request.user)
         subject_stats = {}
         
-        # Initialize stats for all subjects
-        for subject in OFFICIAL_SUBJECTS:
+        # Initialize stats for the active blueprint's courses
+        for subject in subjects:
             subject_stats[subject] = {
                 'subject': subject,
                 'totalAttempted': 0,
@@ -476,7 +416,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
             attempts_by_subject[subject].append(attempt)
         
         # Calculate stats
-        for subject in OFFICIAL_SUBJECTS:
+        for subject in subjects:
             attempts = attempts_by_subject.get(subject, [])
             if attempts:
                 correct_count = sum(1 for a in attempts if a.is_correct)

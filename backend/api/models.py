@@ -230,6 +230,95 @@ class ExamImport(models.Model):
         return f"{self.original_filename} ({self.status}, {self.pages_processed}/{self.page_count})"
 
 
+def blueprint_import_upload_path(instance, filename):
+    return f"blueprint_imports/{instance.owner_id}/{uuid.uuid4().hex}.pdf"
+
+
+class BlueprintImport(models.Model):
+    """An uploaded MoE exit-exam test blueprint PDF and the AI-extracted curriculum draft awaiting review."""
+    STATUS_PENDING = 'pending'
+    STATUS_EXTRACTING = 'extracting'
+    STATUS_READY = 'ready'
+    STATUS_FAILED = 'failed'
+    STATUS_APPLIED = 'applied'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_EXTRACTING, 'Extracting'),
+        (STATUS_READY, 'Ready for review'),
+        (STATUS_FAILED, 'Failed'),
+        (STATUS_APPLIED, 'Applied'),
+    ]
+
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='blueprint_imports')
+    pdf = models.FileField(upload_to=blueprint_import_upload_path, blank=True)
+    original_filename = models.CharField(max_length=255)
+    page_count = models.IntegerField(default=0)
+    pages_processed = models.IntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    error = models.TextField(blank=True)
+    # {"programName": str, "themes": [{"name", "creditHours", "itemShare", "order", "courses": [...]}]}
+    draft = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'blueprintImports'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.original_filename} ({self.status}, {self.pages_processed}/{self.page_count})"
+
+
+class UserBlueprint(models.Model):
+    """An applied curriculum in the user's history. At most one per user is active and drives their subjects."""
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='blueprints')
+    program_name = models.CharField(max_length=255)
+    label = models.CharField(max_length=255, blank=True)
+    source_import = models.ForeignKey(
+        BlueprintImport, on_delete=models.SET_NULL, null=True, blank=True, related_name='applied_blueprints',
+    )
+    is_active = models.BooleanField(default=False)
+    applied_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'userBlueprints'
+        ordering = ['-applied_at', '-id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['owner'], condition=models.Q(is_active=True), name='one_active_blueprint_per_owner',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.program_name} ({'active' if self.is_active else 'history'})"
+
+
+class BlueprintCourse(models.Model):
+    """One course of an applied blueprint, with its theme and the blueprint's focus notes."""
+    blueprint = models.ForeignKey(UserBlueprint, on_delete=models.CASCADE, related_name='courses')
+    name = models.CharField(max_length=255)
+    theme_name = models.CharField(max_length=255, blank=True)
+    theme_order = models.IntegerField(default=0)
+    theme_credit_hours = models.FloatField(null=True, blank=True)
+    theme_item_share = models.FloatField(null=True, blank=True)
+    credit_hours = models.FloatField(null=True, blank=True)
+    item_count = models.IntegerField(null=True, blank=True)
+    weight = models.FloatField(null=True, blank=True)
+    focus_notes = models.TextField(blank=True)
+    sort_order = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = 'blueprintCourses'
+        ordering = ['theme_order', 'sort_order', 'id']
+        constraints = [
+            models.UniqueConstraint(fields=['blueprint', 'name'], name='unique_course_per_blueprint'),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.theme_name})"
+
+
 def study_doc_upload_path(instance, filename):
     return f"study_docs/{instance.owner_id}/{uuid.uuid4().hex}.pdf"
 

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useExam } from '../../contexts/ExamContext';
 import { getQuestionsBySubject } from '../../services/questionService';
 import LoadingAnimation from '../Common/LoadingAnimation';
-import { OFFICIAL_SUBJECTS, EXAM_MODES } from '../../utils/constants';
+import { EXAM_MODES } from '../../utils/constants';
+import { useCurriculum } from '../../contexts/CurriculumContext';
 
 const TopicFocusedMode = () => {
   const [selectedSubject, setSelectedSubject] = useState('');
@@ -11,6 +12,7 @@ const TopicFocusedMode = () => {
   const [selectedTopics, setSelectedTopics] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const { startExam } = useExam();
+  const { subjects } = useCurriculum();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -82,7 +84,7 @@ const TopicFocusedMode = () => {
               className="input w-full"
             >
               <option value="">-- Select Subject --</option>
-              {OFFICIAL_SUBJECTS.map(subject => (
+              {subjects.map(subject => (
                 <option key={subject} value={subject}>
                   {subject}
                 </option>

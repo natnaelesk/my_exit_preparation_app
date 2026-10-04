@@ -12,6 +12,7 @@ from rest_framework.test import APITestCase
 from . import ai_client
 from .models import DailyPlan, Question, StudyDoc, StudyMessage, StudySession
 from .test_exam_import import make_photo_pdf
+from .test_helpers import give_curriculum
 
 TEST_MEDIA = tempfile.mkdtemp()
 
@@ -68,6 +69,7 @@ class StudyTestCase(APITestCase):
         self.token_a = self.signup('student_a')
         self.token_b = self.signup('student_b')
         self.user_a = get_user_model().objects.get(username='student_a')
+        give_curriculum(self.user_a)
 
     def signup(self, username):
         response = self.client.post('/api/auth/signup/', {'username': username, 'password': 'study-hard-2026'}, format='json')

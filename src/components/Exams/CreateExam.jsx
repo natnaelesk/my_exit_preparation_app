@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { uploadExamFromJSON } from '../../services/uploadService';
+import { useCurriculum } from '../../contexts/CurriculumContext';
 import PdfImport from './PdfImport';
 
 const CreateExam = () => {
@@ -12,6 +13,7 @@ const CreateExam = () => {
   const [uploadResult, setUploadResult] = useState(null);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { subjects } = useCurriculum();
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -91,7 +93,7 @@ const CreateExam = () => {
       const questions = validateJson();
       
       setIsUploading(true);
-      const result = await uploadExamFromJSON(questions, examTitle.trim());
+      const result = await uploadExamFromJSON(questions, examTitle.trim(), subjects);
       setUploadResult(result);
       
       setTimeout(() => {

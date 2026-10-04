@@ -1,22 +1,3 @@
-// Official 15 Subjects (Fixed & Authoritative)
-export const OFFICIAL_SUBJECTS = [
-  'Computer Programming',
-  'Object Oriented Programming',
-  'Data Structures and Algorithms',
-  'Design and Analysis of Algorithms',
-  'Database Systems',
-  'Software Engineering',
-  'Web Programming',
-  'Operating System',
-  'Computer Organization and Architecture',
-  'Data Communication and Computer Networking',
-  'Computer Security',
-  'Network and System Administration',
-  'Introduction to Artificial Intelligence',
-  'Automata and Complexity Theory',
-  'Compiler Design'
-];
-
 // Subject Status Thresholds
 export const STATUS_THRESHOLDS = {
   EXCELLENT: 90,           // >= 90% accuracy

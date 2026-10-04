@@ -4,6 +4,7 @@ import shutil
 import tempfile
 from unittest import mock
 
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
@@ -12,6 +13,7 @@ from rest_framework.test import APITestCase
 
 from . import ai_client
 from .models import Exam, ExamImport, Question
+from .test_helpers import give_curriculum
 
 TEST_MEDIA = tempfile.mkdtemp()
 
@@ -61,6 +63,8 @@ class ExamImportTests(APITestCase):
         cache.clear()
         self.token_a = self.signup('importer_a')
         self.token_b = self.signup('importer_b')
+        for username in ('importer_a', 'importer_b'):
+            give_curriculum(get_user_model().objects.get(username=username))
 
     def signup(self, username):
         response = self.client.post('/api/auth/signup/', {'username': username, 'password': 'study-hard-2026'}, format='json')
@@ -123,7 +127,7 @@ class ExamImportTests(APITestCase):
         self.assertEqual(second['question'], 'What is a queue?')
         self.assertEqual(second['correctAnswer'], 'FIFO')
         self.assertEqual(second['subject'], '')
-        self.assertIn('Pick a subject from the official list.', second['issues'])
+        self.assertIn('Pick a subject from your curriculum.', second['issues'])
         self.assertEqual(Question.objects.count(), 0)  # nothing is saved before publish
 
         user_content = chat.call_args_list[0].args[0][1]['content']

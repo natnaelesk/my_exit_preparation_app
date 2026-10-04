@@ -134,6 +134,11 @@ EXAM_IMPORT_MAX_PAGES = int(os.environ.get('EXAM_IMPORT_MAX_PAGES', '60'))
 # Cursor accepts at most 5 images per message, so batches are capped at 5 pages.
 EXAM_IMPORT_PAGES_PER_BATCH = int(os.environ.get('EXAM_IMPORT_PAGES_PER_BATCH', '3'))
 
+# MoE exit-exam blueprint import (curriculum). Batches are capped at 5 pages like exam import.
+BLUEPRINT_IMPORT_MAX_UPLOAD_MB = int(os.environ.get('BLUEPRINT_IMPORT_MAX_UPLOAD_MB', '25'))
+BLUEPRINT_IMPORT_MAX_PAGES = int(os.environ.get('BLUEPRINT_IMPORT_MAX_PAGES', '60'))
+BLUEPRINT_IMPORT_PAGES_PER_BATCH = int(os.environ.get('BLUEPRINT_IMPORT_PAGES_PER_BATCH', '4'))
+
 # Study materials (PDFs used as Study chat context)
 STUDY_DOC_MAX_UPLOAD_MB = int(os.environ.get('STUDY_DOC_MAX_UPLOAD_MB', '25'))
 STUDY_DOC_MAX_PAGES = int(os.environ.get('STUDY_DOC_MAX_PAGES', '400'))

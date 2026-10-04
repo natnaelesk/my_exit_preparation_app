@@ -15,7 +15,7 @@ Do **not** commit as Cursor Agent / bot identities.
 ## Cycle
 
 1. **Study PM** writes `prompts/NN-title.md` with a self-contained build task.
-2. A **coding agent** (Natnael's local agent) implements that prompt on `feat/NN-...` and opens a PR into the target named in the prompt (`dev-v0.2` for 01–05, `main` for 06).
+2. A **coding agent** (Natnael's local agent) implements that prompt on `feat/NN-...` and opens a PR into the target named in the prompt (`dev-v0.2` for 01–05, `main` for 06+).
 3. **Study PM** reviews against acceptance criteria, then merges.
 4. Next work continues on the updated integration branch (`dev-v0.2` historically; `main` after gift-ready / provider switch).
 
@@ -28,13 +28,16 @@ Do **not** commit as Cursor Agent / bot identities.
 | 03 | `03-study-docs-and-chat.md` | ✅ merged | Study PDF library + planner Study chat |
 | 04 | `04-trust-and-ux-fixes.md` | ✅ merged | Trust/UX: page-size, round-two, pause double-count, dashboard counters, wake polish |
 | 05 | `05-gift-ready.md` | ✅ merged | Gift-ready: strip FE AI keys, deploy checklist, smoke path |
-| 06 | `06-cursor-sdk-ai.md` | ready | Rebuild server AI on Cursor SDK no-repo cloud agents |
+| 06 | `06-cursor-sdk-ai.md` | ✅ merged | Rebuild server AI on Cursor SDK no-repo cloud agents |
+| 07 | `07-blueprint-curriculum.md` | ready | MoE blueprint PDF → per-user curriculum history (one active) |
 
 Prompt **06** is an explicit product decision: Natnael’s provider is Cursor Ultra / Cursor SDK (`crsr_…`), not an OpenAI-compatible xAI `/chat/completions` endpoint. Implement 06 from `main` → PR into `main`.
 
+Prompt **07+** still branches from / PRs into **`main`**. Prompt **07** replaces the shared CS subject list with per-user MoE blueprint curriculum (multi-history, one active).
+
 ## Building 03–05 in one agent run
 
-Allowed historically: one local agent implements **03, then 04, then 05** in order. Prefer **separate PRs per prompt** when practical. Prompt **06** is standalone (AI provider rebuild) and should not be bundled with UI gift polish.
+Allowed historically: one local agent implements **03, then 04, then 05** in order. Prefer **separate PRs per prompt** when practical. Prompt **06** is standalone (AI provider rebuild) and should not be bundled with UI gift polish. Prompt **07** is standalone (blueprint curriculum) and should not be bundled with other roadmap items.
 
 ## Prompt file conventions
 

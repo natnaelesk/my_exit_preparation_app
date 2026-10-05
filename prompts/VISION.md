@@ -18,7 +18,7 @@ Concise product and architecture target for agents working from `main` (post gif
 - **Auth + per-user ownership** on every model (no more `AllowAny` global data).
 - **AI: server-side only (Django)**, powered by the **Cursor Python SDK** (`cursor-sdk`) with **no-repo cloud agents** and `CURSOR_API_KEY` (`crsr_…`) — not OpenAI-compatible `/chat/completions` / xAI. Never `VITE_` keys in the client.
 - **Exam add:** drop PDF (often photo pages) → multimodal AI → validated JSON → review UI → save questions.
-- **Blueprint curriculum:** drop MoE test-blueprint PDF → multimodal AI → review themes/courses/focus notes → apply into per-user history (one active) — see `prompts/07-blueprint-curriculum.md`.
+- **Blueprint curriculum:** drop MoE test-blueprint PDF → multimodal AI → review themes/courses/focus notes → apply into per-user history (one active) — see `prompts/07-blueprint-curriculum.md`. Leftover hardcoded “15 subjects” analytics and ungated JSON question/study paths without an active blueprint are fixed by `prompts/08-curriculum-polish.md`.
 - **Profile:** upload study PDFs → Storage → AI short description → used in Study chat retrieval.
 - **Planner:** mostly the same daily plan, plus a Study button → persisted chat session fed by plan topics + relevant docs + active blueprint focus notes; deep-study prompt with 4 chunks + continue protocol.
 - Replace browser Groq chat with the **server Cursor SDK** path (see `prompts/06-cursor-sdk-ai.md`).
